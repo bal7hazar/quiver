@@ -18,7 +18,7 @@ component are written by ARC-03. The accepted API is in
 batches, progress, records, claims and pages. Error strings are in `quiver_quest::errors`.
 
 Every loop is bounded: `batch_merge` by `MAX_ENTRIES` (checked first; at most `MAX_ENTRIES²`
-comparisons when a task id repeats, one pass otherwise); the lookups of a merged batch
+comparisons when a task id repeats or two ids are equal modulo 128, one pass otherwise); the lookups of a merged batch
 (`batch_count_of`, `batch_first_position`, `progress_add`) by `MAX_ENTRIES`; the condition checks
 of `definition_new` by `MAX_CONDITIONS` (checked first); `prerequisites_met` by the one record per
 condition the caller passes, `MAX_CONDITIONS`. Tasks and pages are unrolled, without loops. The

@@ -19,3 +19,7 @@ events and error strings are named.
   `record_accept`, `record_abandon`, `claim`, `page_push`, `page_span`, `page_position`,
   `page_set`, `page_pop`.
 - `quiver_quest::errors`: the error strings of ARC-01 §3.5, as constants.
+- Packing panics `'Packing: field out of range'` on a `task_count` above 3, a `condition_count`
+  above 7 or a page `len` above 7, and unpacking panics `'Packing: reserved bits set'` on a felt
+  with a bit above the layout of §3.3 (or a page `len` above 7). Neither is an error of the API:
+  the component never packs or reads such a value.
