@@ -28,14 +28,16 @@ Nothing was built or run. A citation `quest/src/component.cairo:224` means
     are `u64`, so they cannot overflow.
   - There is an **optional accept step**. An acceptance holds for the interval in which it
     was made and **expires at rollover**.
-  - **Batches are bounded and aggregated.** `progress_many` takes at most 8 entries and
-    writes each affected record once per call.
+  - **Batches are bounded and aggregated.** The consumer aggregates its results by task and
+    calls `progress_many` once per player per transaction, with at most 16 distinct tasks
+    (Q-19). Each affected record is written once.
   - **Retirement frees association slots**, so the cap of 28 quests per task counts live
-    quests, not every quest ever defined.
+    quests, not every quest ever defined. A prerequisite cannot be retired while a live
+    quest names it (Q-20).
   - **Access control is built in**: a registry of reporters, plus two authorization hooks.
 - Both names, `quiver_quest` and `quiver_achievement`, are **free on scarbs.xyz** today
   (§6.5).
-- Nineteen open questions for A-G1 are listed in §7, each with a recommendation.
+- Twenty open questions for A-G1 are listed in §7, each with a recommendation.
 
 ---
 
@@ -522,7 +524,9 @@ These are defects of reading and documentation. None needs a test.
 | `quest_batch_duplicate_entries_merged` | Q with T (total 10) | `progress_many(P, [(T, 4), (T, 4)], Storage)` | Count 8; P written once |
 | `quest_batch_event_mode_one_event_per_task` | — | `progress_many(P, [(T1, 1), (T1, 2), (T2, 0), (T3, 1)], Event)` | Two events: `(T1, 3)` and `(T3, 1)`; nothing for `T2` |
 | `quest_batch_above_bound_reverts` | — | `progress_many` with `MAX_ENTRIES + 1` entries | Reverts `'Quest: too many entries'` |
-| `quest_batch_bound_accepted` | `MAX_ENTRIES` distinct tasks, each on `MAX_QUESTS_PER_TASK` quests | One `progress_many` | Succeeds within the worst-case budget of §5 |
+| `quest_batch_bound_accepted` | `MAX_ENTRIES` distinct tasks, each on `MAX_QUESTS_PER_TASK` quests without an accept step, each with 7 prerequisites met earlier and not yet cached (the witness of §5.1) | One `progress_many` | Succeeds within the worst-case budget of §5 |
+| `quest_batch_first_position_uses_zero_sentinel` | `QuestTasks` with `t0 = (T1, 5)` and `t1`, `t2` zero; batch `[(T2, 1), (T1, 1)]` | `batch_first_position(batch, B)` | `Some(1)`; the zero slots never match |
+| `quest_batch_rejects_task_zero` | — | `progress_many(P, [(0, 1)], Storage)` | Reverts `'Quest: invalid task'`, so the zero sentinel of unused slots can never match a batch entry |
 | `quest_task_shared_by_max_quests` | `MAX_QUESTS_PER_TASK` quests on T | One progress | All count; gas within the worst-case budget |
 | `quest_define_rejects_association_overflow` | `MAX_QUESTS_PER_TASK` live quests on T | Define one more on T | Reverts `'Quest: task full'` |
 | `quest_retire_frees_slot` | `MAX_QUESTS_PER_TASK` quests on T; Q3 retired | Define one more on T | Succeeds; the pages hold 28 ids, not Q3 |
@@ -531,6 +535,14 @@ These are defects of reading and documentation. None needs a test.
 | `quest_retired_accept_reverts` | Q retired | `accept(P, Q)` | Reverts `'Quest: retired'` |
 | `quest_retire_twice_reverts` | Q retired | `retire(Q)` | Reverts `'Quest: retired'` |
 | `quest_redefine_retired_reverts` | Q retired | `define(Q, …)` | Reverts `'Quest: already defined'` |
+| `quest_retired_is_not_accepted` | Q with `needs_accept`, accepted by P in the current interval, then retired | `quest_is_accepted(P, Q)`; `abandon(P, Q)` | `false`; abandon reverts `'Quest: retired'` |
+| `quest_retire_prerequisite_with_live_dependent_reverts` | A defined; B defined with `[A]` | `retire(A)` | Reverts `'Quest: has live dependents'`; `quest_definition(A).live_dependents == 1` |
+| `quest_retire_dependent_then_prerequisite` | Same | `retire(B)`, then `retire(A)` | Both succeed; after `retire(B)`, `live_dependents` of A is 0 |
+| `quest_define_rejects_retired_condition` | A retired | `define(B, …, [A])` | Reverts `'Quest: invalid condition'` |
+| `quest_define_counts_dependents` | A defined | `define(B, …, [A])`, `define(C, …, [A])` | `live_dependents` of A is 2 |
+| `quest_batch_duplicates_count_toward_bound` | — | `progress_many` with `MAX_ENTRIES + 1` entries naming the same task | Reverts `'Quest: too many entries'` (the bound is checked before merging) |
+| `quest_record_counters_past_u32` | `QuestRecord` with `completions = claims = 2^32 − 1` | `record_complete`, then `claim` | `completions == 2^32`, `claims == 2^32`, `claim_index == 2^32 − 1`; the pack round trip preserves them |
+| `quest_record_counters_saturate` | `QuestRecord` with `completions = claims = 2^64 − 1` | `record_complete`, then `claim` | No panic; both stay `2^64 − 1` |
 | `quest_interval_id_is_u64` | Q with `start = 0`, `interval = duration = 1` | Progress at time `2^40` | Interval id `2^40`, no overflow |
 | `quest_is_unlocked_evaluates_uncached` | A one-off, completed by P; B with `[A]`, no progress on B yet | `quest_is_unlocked(P, B)` | `true`, and `quest_record(P, B).unlocked` is still `false` (a view writes nothing) |
 | `quest_empty_slot_reads_undefined` | Nothing defined | `quest_definition(5)` | Reverts `'Quest: does not exist'` |
@@ -556,8 +568,8 @@ These are defects of reading and documentation. None needs a test.
 | Identifiers | `player_id: felt252` (A-3: the game passes an adventurer id or an account). `quest_id`, `achievement_id`, `task_id`: **`u32`** (docs/CAIRO.md §4 "u32 identifiers"; they make packing possible, §5). Id `0` is invalid (the empty-slot sentinel). Open question Q-1 |
 | Time | `u64` seconds from `starknet::get_block_timestamp()`. Interval ids are **`u64`**. `(time - start) / interval <= time < 2^64`, so an id never overflows, whatever the schedule. A `u32` id would overflow after 2^32 intervals: 136 years at `interval = 1`, which a valid schedule allows. Widening costs nothing measurable: ids are storage keys (hashed) or event data (one felt either way), and the record has room for 64 bits (§3.3) |
 | Counts | `u32` per call and per task, **saturating at the task's total** |
-| Bounds | `MAX_TASKS = 3` per quest or achievement; `MAX_CONDITIONS = 7` per quest; `MAX_QUESTS_PER_TASK = 28` **live** quests (4 pages of 7; retirement frees a slot); `MAX_ENTRIES = 8` entries per `progress_many` call. Every loop is bounded by one of these; the bounds are in each package's README |
-| One write per record per call | A progress call, single or batched, reads and writes each affected `QuestProgress`, `QuestRecord` or `AchievementProgress` **at most once** (docs/CAIRO.md §5). The consumer calls `progress_many` at most once per player per transaction; the package cannot see across calls, and the README says so |
+| Bounds | `MAX_TASKS = 3` per quest or achievement; `MAX_CONDITIONS = 7` per quest; `MAX_QUESTS_PER_TASK = 28` **live** quests (4 pages of 7; retirement frees a slot); `MAX_ENTRIES = 16` entries per `progress_many` call (Q-19). Every loop is bounded by one of these; the bounds are in each package's README |
+| One write per record per transaction | A progress call, single or batched, reads and writes each affected `QuestProgress`, `QuestRecord` or `AchievementProgress` **at most once** (docs/CAIRO.md §5). **The consumer's contract**, stated in the README and required for the rule to hold per transaction: the consumer aggregates its results by task id, one entry per task, and calls `progress_many` **once per player per transaction**. For Grim World this is the one dispatcher call of the results interface (ADR-0007 § The layering is kept). `MAX_ENTRIES` bounds the entries of that one call, which are the distinct tasks when the consumer aggregates. A list longer than `MAX_ENTRIES` is a **consumer error and reverts** (`'Quest: too many entries'`); there is no fallback of a second call. Duplicate task ids are still merged defensively, but they count towards the bound. The package cannot see across calls, so a second call in the same transaction breaks the contract, not the package |
 | Mode per call | `enum Mode { Storage, Event }` on `progress`. Definitions are always stored (Q-7) |
 | Never revert for a quest-level reason | Progress skips a quest that is inactive, locked, not accepted or already complete. It reverts only on access control or malformed input |
 | Checks, effects, hooks | State is written before a hook is called, so that a hook sees the new state and a re-entrant call sees it too |
@@ -571,7 +583,7 @@ pub const MAX_TASKS: u8 = 3;
 pub const MAX_CONDITIONS: u8 = 7;
 pub const QUESTS_PER_PAGE: u8 = 7;
 pub const MAX_PAGES: u8 = 4;               // MAX_QUESTS_PER_TASK = 28 live quests
-pub const MAX_ENTRIES: u32 = 8;            // entries per progress_many call
+pub const MAX_ENTRIES: u32 = 16;           // entries (distinct tasks) per progress_many call (Q-19)
 
 #[derive(Drop, Copy, Serde, PartialEq, Debug, starknet::Store)]
 pub enum Mode { #[default] Storage, Event }
@@ -592,6 +604,7 @@ pub struct QuestDefinition {           // storage slot A
     pub needs_accept: bool,
     pub defined: bool,                 // presence bit: true once define() wrote the slot
     pub retired: bool,                 // set by retire(); the quest is off every page
+    pub live_dependents: u16,          // defined, non-retired quests naming this one as a condition
 }
 
 pub struct QuestTasks {                // storage slot B; unused entries are zero
@@ -614,8 +627,8 @@ pub struct QuestProgress {             // per (player, quest, interval)
 }
 
 pub struct QuestRecord {               // per (player, quest), across intervals
-    pub completions: u32,              // completions in all intervals
-    pub claims: u32,                   // claims in all intervals
+    pub completions: u64,              // completions in all intervals; saturating increment
+    pub claims: u64,                   // claims in all intervals; saturating increment
     pub unlocked: bool,                // prerequisites seen met (cache)
     pub active: bool,                  // accepted, and not completed or abandoned since
     pub accepted_interval: u64,        // interval id in which it was accepted
@@ -663,13 +676,17 @@ pub fn conditions_span(conditions: @QuestConditions, count: u8) -> Span<u32>;
 
 // batch
 pub fn batch_merge(entries: Span<TaskProgress>) -> Span<TaskProgress>;
-    // panics 'Quest: too many entries' when entries.len() > MAX_ENTRIES;
-    // drops count == 0, sums duplicate task ids (saturating at 0xffffffff),
-    // keeps the order of first occurrence; at most MAX_ENTRIES² comparisons
+    // panics 'Quest: too many entries' when entries.len() > MAX_ENTRIES (checked first, so every
+    // loop below is bounded); panics 'Quest: invalid task' on a task_id 0 (so that the zero
+    // sentinel of unused task slots can never match); drops count == 0, sums duplicate task ids (saturating at
+    // 0xffffffff), keeps the order of first occurrence; at most MAX_ENTRIES² comparisons
 pub fn batch_count_of(batch: Span<TaskProgress>, task_id: u32) -> u32;          // 0 if absent
-pub fn batch_first_position(batch: Span<TaskProgress>, tasks: @QuestTasks, task_count: u8) -> Option<u32>;
-    // the smallest position in `batch` of any of the quest's tasks; the component processes
-    // a quest only at that position, so each quest is handled once per call
+pub fn batch_first_position(batch: Span<TaskProgress>, tasks: @QuestTasks) -> Option<u32>;
+    // B only, no task_count: scans t0, t1, t2 and ignores a slot whose task_id is 0 (the unused-slot
+    // sentinel: definition_new writes zeros there, and 0 is never a valid task id). Returns the
+    // smallest position in `batch` of any of the quest's tasks; the component processes a quest
+    // only at that position, so each quest is handled once per call, and a quest reached at a
+    // later entry is skipped before its A is read
 
 // progress
 pub fn progress_add(
@@ -684,7 +701,8 @@ pub fn progress_is_complete(progress: @QuestProgress, tasks: @QuestTasks, task_c
 pub fn prerequisites_met(records: Span<QuestRecord>) -> bool;   // every completions > 0
 pub fn record_is_accepted(record: @QuestRecord, interval_id: u64) -> bool;
     // record.active && record.accepted_interval == interval_id
-pub fn record_complete(record: QuestRecord) -> QuestRecord;     // completions + 1, active = false
+pub fn record_complete(record: QuestRecord) -> QuestRecord;
+    // completions + 1, saturating at 2^64 - 1; active = false
 pub fn record_accept(record: QuestRecord, interval_id: u64) -> QuestRecord;
     // panics 'Quest: already accepted' if record_is_accepted(record, interval_id);
     // else active = true, accepted_interval = interval_id (replaces an expired acceptance)
@@ -693,8 +711,19 @@ pub fn record_abandon(record: QuestRecord, interval_id: u64) -> QuestRecord;
 
 // claim
 pub fn claim(progress: QuestProgress, record: QuestRecord)
-    -> (QuestProgress, QuestRecord, u32 /* claim_index = record.claims before */);
-    // panics 'Quest: not completed', 'Quest: already claimed'
+    -> (QuestProgress, QuestRecord, u64 /* claim_index = record.claims before */);
+    // panics 'Quest: not completed', 'Quest: already claimed'; claims + 1, saturating at 2^64 - 1
+```
+
+**Why the record's counters are `u64`.** At most one completion and one claim happen per
+interval, and interval ids are `u64` (§3.1). A `u32` counter could therefore wrap: a quest
+recurring every second passes 2^32 completions after 136 years. With `u64` counters, a count
+reaches 2^64 − 1 only if the player completes in every interval of the whole `u64` time
+range. The increment saturates there instead of panicking, so no progress or claim can ever
+revert on a counter. The record stays in one felt (§3.3), and the hooks receive `u64`
+(§3.5).
+
+```cairo
 
 // pages
 pub fn page_push(page: QuestIdPage, quest_id: u32) -> QuestIdPage;   // panics when len == 7
@@ -743,12 +772,12 @@ pub struct Storage {
 
 | Slot | Bits (from 0) | Width and reason |
 |---|---|---|
-| **A** `QuestDefinition` | `start` [0, 64) · `end` [64, 128) · `duration` [128, 160) · `interval` [160, 192) · `task_count` [192, 194) · `condition_count` [194, 197) · `needs_accept` [197] · `defined` [198] · `retired` [199] | Times stay `u64` as Starknet gives them; `duration` and `interval` fit `u32` (136 years); counts fit 2 and 3 bits under the bounds; `defined` tells an existing quest from the zero value, since all other fields may be 0. **200 bits** |
+| **A** `QuestDefinition` | `start` [0, 64) · `end` [64, 128) · `duration` [128, 160) · `interval` [160, 192) · `task_count` [192, 194) · `condition_count` [194, 197) · `needs_accept` [197] · `defined` [198] · `retired` [199] · `live_dependents` [200, 216) | Times stay `u64` as Starknet gives them; `duration` and `interval` fit `u32` (136 years); counts fit 2 and 3 bits under the bounds; `defined` tells an existing quest from the zero value, since all other fields may be 0; `live_dependents` (`u16`) guards `retire` (§3.5, Q-20). **216 bits** |
 | **B** `QuestTasks` | `t{i}.task_id` [64i, 64i + 32) · `t{i}.total` [64i + 32, 64i + 64), i = 0..3 | Three tasks of two `u32`. **192 bits**. A fourth task at `u32` would need 256 bits > 251: hence `MAX_TASKS = 3` (Q-2) |
 | **C** `QuestConditions` | `q{i}` [32i, 32i + 32), i = 0..7 | Seven `u32` ids. **224 bits**. Read only while `record.unlocked` is false |
 | Page `QuestIdPage` | `ids.q{i}` [32i, 32i + 32), i = 0..7 · `len` [224, 227) | Seven quest ids per page. **227 bits**. Pages are **contiguous**: every page before the last non-full one is full, which `define` (append to the first non-full page) and `retire` (fill the hole with the last id) keep true. Pages 0..3 are read in order until a page with `len < 7`, or until the fourth page |
 | `QuestProgress` | `c0` [0, 32) · `c1` [32, 64) · `c2` [64, 96) · `completed` [96] · `claimed` [97] | All counts of one quest in one interval, so one read and one write per quest per call. **98 bits**. The completion time is not stored: it is in the block of `QuestCompleted` |
-| `QuestRecord` | `completions` [0, 32) · `claims` [32, 64) · `unlocked` [64] · `active` [65] · `accepted_interval` [66, 130) | The accepted interval is a full `u64`, like interval ids. **130 bits** |
+| `QuestRecord` | `completions` [0, 64) · `claims` [64, 128) · `unlocked` [128] · `active` [129] · `accepted_interval` [130, 194) | Counters and the accepted interval are full `u64`, like interval ids (§3.2). **194 bits** |
 | `Quest_reporters` | `bool` | One slot per reporter |
 
 Packing is done with arithmetic (multiplying and dividing by powers of two from a constant
@@ -843,12 +872,12 @@ pub trait QuestHooksTrait<TContractState> {
     /// After a completion is written. `completions` includes this one (1 for the first).
     fn on_quest_complete(
         ref self: ComponentState<TContractState>,
-        player_id: felt252, quest_id: u32, interval_id: u64, completions: u32,
+        player_id: felt252, quest_id: u32, interval_id: u64, completions: u64,
     );
     /// After a claim is written. `claim_index` is 0 for the first claim of this quest by this player.
     fn on_quest_claim(
         ref self: ComponentState<TContractState>,
-        player_id: felt252, quest_id: u32, interval_id: u64, claim_index: u32,
+        player_id: felt252, quest_id: u32, interval_id: u64, claim_index: u64,
     );
 }
 ```
@@ -869,11 +898,14 @@ pub impl InternalImpl<
         ref self: ComponentState<TContractState>,
         quest_id: u32, schedule: QuestSchedule, tasks: Span<QuestTask>,
         conditions: Span<u32>, needs_accept: bool,
-    );  // validates (§3.2) + each condition defined + not already defined + room in each task's pages;
+    );  // validates (§3.2) + each condition defined and not retired ('Quest: invalid condition')
+        // + not already defined + room in each task's pages; increments each condition's
+        // A.live_dependents ('Quest: too many dependents' at 0xffff) and writes it;
         // writes A (defined = 1), B, C (if conditions), one page per task; emits QuestDefined
     fn retire(ref self: ComponentState<TContractState>, quest_id: u32);
-        // panics 'Quest: does not exist', 'Quest: retired'; removes the quest from each of its
-        // tasks' pages (below), sets A.retired, emits QuestRetired
+        // panics 'Quest: does not exist', 'Quest: retired', 'Quest: has live dependents';
+        // removes the quest from each of its tasks' pages, decrements its conditions'
+        // live_dependents, sets A.retired, emits QuestRetired (algorithm below)
     fn set_reporter(ref self: ComponentState<TContractState>, reporter: ContractAddress, allowed: bool);
     fn progress(
         ref self: ComponentState<TContractState>,
@@ -888,12 +920,13 @@ pub impl InternalImpl<
         // 'Quest: not active' (outside the schedule), 'Quest: locked', 'Quest: already accepted',
         // 'Quest: already completed'
     fn abandon(ref self: ComponentState<TContractState>, player_id: felt252, quest_id: u32);
-        // panics 'Quest: not active' (outside the schedule), 'Quest: not accepted' (no acceptance in
-        // the current interval); sets active = false; the counts of the interval are kept
+        // panics 'Quest: does not exist', 'Quest: retired', 'Quest: not active' (outside the
+        // schedule), 'Quest: not accepted' (no acceptance in the current interval);
+        // sets active = false; the counts of the interval are kept
     fn claim(
         ref self: ComponentState<TContractState>,
         player_id: felt252, quest_id: u32, interval_id: u64,
-    ) -> u32;   // returns claim_index; writes progress and record, emits QuestClaimed,
+    ) -> u64;   // returns claim_index; writes progress and record, emits QuestClaimed,
                 // then calls on_quest_claim; allowed on a retired quest
     fn assert_reporter(self: @ComponentState<TContractState>, caller: ContractAddress);
         // panics 'Quest: not reporter'
@@ -909,7 +942,8 @@ pub impl InternalImpl<
         // otherwise reads C and each prerequisite's record and returns prerequisites_met.
         // It does not write the cache bit (a view); the next progress or accept does
     fn is_accepted(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32) -> bool;
-        // record_is_accepted(record, current interval); false outside the schedule
+        // reads A then R: false if the quest is not defined or is retired; false outside the
+        // schedule; otherwise record_is_accepted(record, current interval)
 }
 ```
 
@@ -923,9 +957,12 @@ pub impl InternalImpl<
    1. Read the pages of `e.task_id` in order, while `len == 7`, at most 4 pages. This gives
       the live quest ids on the task.
    2. For each quest `q` on those pages:
-      1. Read B. If `batch_first_position(batch, B, task_count) != Some(i)`, skip: `q` was
-         already handled at an earlier entry. This is how a quest with two batched tasks is
-         handled once.
+      1. Read B. If `batch_first_position(batch, B) != Some(i)`, skip: `q` was already
+         handled at an earlier entry. This is how a quest with two batched tasks is handled
+         once. The function needs **B only**: unused task slots hold task id 0, which is never
+         valid, so B alone tells the quest's tasks without `task_count`, which is in A. I chose
+         this over reading A first because it keeps the skip before A's read: a quest reached
+         again at a later entry costs one read (B), not two.
       2. Read A. If `schedule_interval_id(time)` is `None`, skip.
       3. If `needs_accept` or `condition_count > 0`, read the record `R(player, q)`:
          - if `needs_accept && !record_is_accepted(R, iid)`, skip;
@@ -968,19 +1005,41 @@ write. An empty batch (every count zero) emits nothing.
 **`retire`, step by step.** Pages must stay contiguous: every page before the last non-full
 page is full.
 
-1. Read A. Revert `'Quest: does not exist'` or `'Quest: retired'`. Read B.
+1. Read A. Revert `'Quest: does not exist'` or `'Quest: retired'`. Revert
+   `'Quest: has live dependents'` if `A.live_dependents > 0`. Read B.
 2. For each of the quest's tasks, at most 3:
    1. Read the task's pages, at most 4, and find the quest's page and position (`hole`).
    2. Find the last non-empty page (`last`), `page_pop` its last id, and, unless that id is
       the quest itself, `page_set` it at `hole`.
    3. Write the page of `hole` and the page of `last`: one write if they are the same page.
-3. Set `A.retired = 1` and write A. Emit `QuestRetired`.
+3. If `condition_count > 0`: read C, and for each prerequisite `p` (at most 7) read `A(p)`,
+   decrement `live_dependents`, and write `A(p)`.
+4. Set `A.retired = 1` and write A. Emit `QuestRetired`.
 
-Player data is left in place. Completed intervals stay claimable. `accept` refuses a retired
-quest, and progress never reaches it, because it is on no page. A retired prerequisite stays
-met for players who completed it. Other players can never meet it, so the admin retires or
-never defines its dependents. The package does not check this: that would need the reverse
-index that §3.9 drops. The README says so.
+**Lifecycle after retirement:**
+
+- **Player data** is left in place. Completed intervals stay claimable.
+- **No path counts a retired quest.** `accept` refuses it (`'Quest: retired'`), and progress
+  never reaches it, because it is on no page.
+- **`is_accepted` and `quest_is_accepted` return false** for a retired quest (they read A
+  first). A consumer that keeps a list of accepted quests (§3.8) therefore frees the active
+  slot at its next prune, with no call to the package.
+- **`abandon` is not needed and reverts `'Quest: retired'`.** The record's `active` bit may
+  still be set, but it is inert: every reader of acceptance checks `A.retired` first. Clearing
+  it would cost a write that changes no outcome. `quest_record` returns the raw bits, and the
+  README tells consumers to use `quest_is_accepted`.
+- **Prerequisites cannot be retired from under a live quest** (Q-20). `live_dependents`
+  counts the defined, non-retired quests that name this one as a condition: `define`
+  increments it and `retire` of a dependent decrements it. While it is above zero, `retire`
+  reverts `'Quest: has live dependents'`. The admin retires dependents first, so a live quest
+  can never be left with a prerequisite that players who have not completed it cannot meet.
+  `define` also refuses a retired quest as a condition (`'Quest: invalid condition'`).
+  Retiring a quest with no live dependents is always allowed. The dependents' players who had
+  already met the prerequisite are not affected, because a dependent is retired before its
+  prerequisite.
+- **Cost of the guard**, once per admin action: `define` writes K prerequisite A slots (it
+  already reads them to check that they are defined). `retire` reads C, then reads and writes
+  K prerequisite A slots. Nothing is added to progress, accept or claim.
 
 **External ABI.** This is optional: the consumer embeds `QuestImpl`, `QuestViewImpl`, both,
 or neither.
@@ -998,7 +1057,7 @@ pub trait IQuest<TState> {
                                                                      // caller is a registered reporter
     fn accept(ref self: TState, player_id: felt252, quest_id: u32);  // authorize_player(caller, player_id)
     fn abandon(ref self: TState, player_id: felt252, quest_id: u32); // authorize_player
-    fn claim(ref self: TState, player_id: felt252, quest_id: u32, interval_id: u64) -> u32; // authorize_player
+    fn claim(ref self: TState, player_id: felt252, quest_id: u32, interval_id: u64) -> u64; // authorize_player
 }
 
 #[starknet::interface]
@@ -1016,7 +1075,8 @@ pub trait IQuestView<TState> {
 Error strings are short-string constants in `quiver_quest::errors`: `'Quest: invalid id'`,
 `'Quest: invalid tasks'`, `'Quest: invalid window'`, `'Quest: invalid interval'`,
 `'Quest: invalid condition'`, `'Quest: too many conditions'`, `'Quest: already defined'`,
-`'Quest: does not exist'`, `'Quest: retired'`, `'Quest: task full'`,
+`'Quest: does not exist'`, `'Quest: retired'`, `'Quest: has live dependents'`,
+`'Quest: too many dependents'`, `'Quest: invalid task'`, `'Quest: task full'`,
 `'Quest: too many entries'`, `'Quest: no accept step'`, `'Quest: not active'`,
 `'Quest: locked'`, `'Quest: already accepted'`, `'Quest: already completed'`,
 `'Quest: not accepted'`, `'Quest: not completed'`, `'Quest: already claimed'`,
@@ -1091,12 +1151,12 @@ mod Persistent {
             false
         }
         fn on_quest_complete(ref self: QuestComponent::ComponentState<ContractState>,
-            player_id: felt252, quest_id: u32, interval_id: u64, completions: u32) {
+            player_id: felt252, quest_id: u32, interval_id: u64, completions: u64) {
             let mut game = self.get_contract_mut();
             // e.g. record the completion for the Warden title (design/13)
         }
         fn on_quest_claim(ref self: QuestComponent::ComponentState<ContractState>,
-            player_id: felt252, quest_id: u32, interval_id: u64, claim_index: u32) {
+            player_id: felt252, quest_id: u32, interval_id: u64, claim_index: u64) {
             let mut game = self.get_contract_mut();
             // grant xp, gold, items; merit diminished by claim_index (design/06 § Rules)
         }
@@ -1105,6 +1165,9 @@ mod Persistent {
     #[external(v0)]
     fn submit_results(ref self: ContractState, adventurer_id: felt252, progress: Span<TaskProgress>) {
         assert(get_caller_address() == self.ephemeral.read(), 'not ephemeral');   // A-5
+        // `progress` is the expedition's results, already aggregated by task id by the
+        // ephemeral contract: one entry per task, at most MAX_ENTRIES. One call per adventurer
+        // per transaction, never split (§3.1)
         self.quest.progress_many(adventurer_id, progress, Mode::Storage);
     }
 
@@ -1113,7 +1176,7 @@ mod Persistent {
         // game checks: caller owns adventurer; rank; in a hub; a contract must be in today's draw.
         // "At most 3 active": the game keeps the adventurer's accepted quest ids (at most 3) and
         // drops each one for which self.quest.is_accepted(adventurer_id, id) is false (completed,
-        // abandoned or expired at rollover), then refuses if 3 remain. Bounded: 3 reads.
+        // abandoned, expired at rollover, or retired), then refuses if 3 remain. Bounded: 3 × 2 reads.
         self.quest.accept(adventurer_id, quest_id);
         // then: add quest_id to the adventurer's list; grant the skills given on acceptance
     }
@@ -1154,7 +1217,7 @@ The same shape as quest, without intervals, prerequisites or acceptance. `Mode` 
 pub const MAX_TASKS: u8 = 3;
 pub const ACHIEVEMENTS_PER_PAGE: u8 = 7;
 pub const MAX_PAGES: u8 = 4;               // MAX_ACHIEVEMENTS_PER_TASK = 28 live achievements
-pub const MAX_ENTRIES: u32 = 8;            // entries per progress_many call
+pub const MAX_ENTRIES: u32 = 16;           // entries (distinct tasks) per progress_many call (Q-19)
 
 pub enum Mode { #[default] Storage, Event }
 pub struct AchievementWindow { pub start: u64, pub end: u64 }    // 0 = open on that side
@@ -1181,7 +1244,8 @@ pub fn definition_new(achievement_id: u32, window: AchievementWindow, tasks: Spa
     // 'Achievement: invalid id', 'Achievement: invalid tasks' (empty, > 3, id 0, total 0, repeated)
 pub fn task_index_of(definition: @AchievementDefinition, extra: @AchievementExtraTasks, task_id: u32) -> Option<u8>;
 pub fn batch_merge(entries: Span<TaskProgress>) -> Span<TaskProgress>;
-    // 'Achievement: too many entries' above MAX_ENTRIES; drops zeros, merges duplicates (saturating)
+    // 'Achievement: too many entries' above MAX_ENTRIES; 'Achievement: invalid task' on task_id 0;
+    // drops zero counts, merges duplicates (saturating)
 pub fn batch_count_of(batch: Span<TaskProgress>, task_id: u32) -> u32;
 pub fn batch_first_position(batch: Span<TaskProgress>, definition: @AchievementDefinition,
                             extra: @AchievementExtraTasks) -> Option<u32>;
@@ -1332,7 +1396,7 @@ else.
 Errors, in `quiver_achievement::errors`: `'Achievement: invalid id'`,
 `'Achievement: invalid tasks'`, `'Achievement: invalid window'`,
 `'Achievement: already defined'`, `'Achievement: does not exist'`, `'Achievement: retired'`,
-`'Achievement: task full'`, `'Achievement: too many entries'`, `'Achievement: not completed'`,
+`'Achievement: task full'`, `'Achievement: invalid task'`, `'Achievement: too many entries'`, `'Achievement: not completed'`,
 `'Achievement: already claimed'`, `'Achievement: not reporter'`, `'Achievement: not admin'`,
 `'Achievement: not authorized'`.
 
@@ -1375,7 +1439,7 @@ event-mode titles, both `on_achievement_*` hooks are empty and `authorize_*` ret
 | A-2 | Prerequisites (AND) | **Covered, adapted** | `conditions: Span<u32>`, AND, at most 7, already defined. Met when each prerequisite was completed at least once, evaluated lazily (§3.2), without the defects D-2 to D-7 (Q-3) |
 | A-3 | Progress keyed by a `felt252` the game chooses | **Covered** | `player_id: felt252` on every call; the component never interprets it |
 | A-4 | A claim hook the game implements | **Covered, adapted** | `on_quest_claim(player_id, quest_id, interval_id, claim_index)`; the game grants the rewards |
-| A-5 | Progress reported by the causing contract, never the client; callable from the ephemeral contract's results interface | **Covered** | External: only registered reporters. Internal: `progress_many`, called by the persistent contract's results entrypoint after its own check (§3.6, §3.8). A results list with more than `MAX_ENTRIES` entries reverts. The game then makes a second call, which is still correct but may write a record twice in the transaction, or the bound is raised (Q-19) |
+| A-5 | Progress reported by the causing contract, never the client; callable from the ephemeral contract's results interface | **Covered** | External: only registered reporters. Internal: `progress_many`, called by the persistent contract's results entrypoint after its own check (§3.6, §3.8). The game aggregates the expedition's results by task id and makes **one** `progress_many` call per adventurer per transaction, inside the results interface's one dispatcher call. A list with more than `MAX_ENTRIES` distinct tasks is a consumer error and reverts; there is no second call (§3.1, Q-19) |
 | A-6 | Storage or event mode, per call | **Covered, adapted** | `mode: Mode` on `progress` and `progress_many`. Definitions are always stored (Q-7) |
 | A-7 | Achievements with tiers sharing one task | **Covered** | One achievement per tier, same `task_id`, up to 28 live achievements per task (retirement frees a slot, Q-14). Test `achievement_tiers_share_task` |
 | A-8 | No Dojo; Cairo 2.19; `snforge_std` dev-dependency | **Covered** | §1.10, §6 |
@@ -1410,7 +1474,8 @@ Notation:
 - **Pg**: association pages read for one task: `min(⌊N / 7⌋ + 1, 4)`. Reading stops at the
   first page with `len < 7`, so N = 0 reads 1 page, N = 6 reads 1, N = 7 reads 2, and
   N = 28 reads 4 (the page bound).
-- **E**: distinct tasks with a non-zero count in a batch, after merging (≤ `MAX_ENTRIES` = 8).
+- **E**: distinct tasks with a non-zero count in a batch, after merging (≤ `MAX_ENTRIES` = 16,
+  the recommended value of Q-19).
 
 A call whose counts are all zero reads, writes and emits **nothing**, in either mode.
 
@@ -1427,20 +1492,30 @@ A call whose counts are all zero reads, writes and emits **nothing**, in either 
 | Same, later calls (`unlocked` cached) | Pg + B + A + R + P = **5** | 1 | 0 | 0 |
 | Storage, a locked quest (prerequisites not met) | Pg + B + A + R + C + K = **4 + K** | 0 | 0 | 0 |
 | Daily interval | The same as the one-off rows: the interval id is arithmetic; the first call of a day writes a new P key | = | = | = |
-| **Worst case, `progress`**: one task shared by N = 28 quests, each needing acceptance, with K = 7 unmet-then-met prerequisites, all completing in this call | Pg + N × (B + A + R + C + K + P) = 4 + 28 × 12 = **340** | N × 2 = **56** | 28 | 28 |
+| **Worst case, `progress`**: one task shared by N = 28 quests **without an accept step**, each with K = 7 prerequisites that the player completed earlier but that no call has yet observed for this quest (`unlocked` not cached), all completing in this call | Pg + N × (B + A + R + C + K + P) = 4 + 28 × 12 = **340** | N × 2 = **56** | 28 | 28 |
 | `progress_many`, two tasks of one quest (Q has T1, T2; nothing else on them) | 2 pages + B twice + A + P (+ R on completion) = **6** (7) | **1** (P), 2 on completion | 0, or 1 on completion | 0 or 1 |
-| **Worst case, `progress_many`**: E = 8 distinct tasks, each with N = 28 live quests, all 224 quests distinct, each needing acceptance, with K = 7 prerequisites met in this call, all completing | Pages 8 × 4 = 32; B once per (task, quest) pair, 224; per quest A + R + C + K + P = 11, 224 × 11 = 2 464. **2 720** | Each quest's P and R once: **448** | 224 | 224 |
-| Same, when quests share batched tasks (each quest has 3 of the 8 tasks) | Fewer quests, each read B up to 3 times: bounded by the row above | ≤ 2 per quest | ≤ 1 per quest | ≤ 1 per quest |
+| **Worst case, `progress_many`** at `MAX_ENTRIES = 16`: E = 16 distinct tasks, each with N = 28 live quests, all 448 quests distinct and each on one batched task, none with an accept step, each with K = 7 prerequisites met earlier and first observed in this call, all completing | Pages 16 × 4 = 64; B once per (task, quest) pair, 448; per quest A + R + C + K + P = 11, 448 × 11 = 4 928. **5 440** | Each quest's P and R once: **896** | 448 | 448 |
+| Same, when quests share batched tasks (a quest with 3 of the batched tasks) | Fewer distinct quests; each extra occurrence costs one B read: bounded by the row above | ≤ 2 per quest | ≤ 1 per quest | ≤ 1 per quest |
 | Claim | P + R = **2** | **2** | 1 | 1 |
 | Accept | A + R + P (+ C + K while not unlocked) = **3 to 11** | 1 (R) | 0 | 0 |
 | Abandon | A + R = **2** | 1 (R) | 0 | 0 |
-| Retire (admin) | A + B + per task (≤ 3) its pages (≤ 4): **≤ 14** | Per task 1 or 2 pages, + A: **≤ 7** | 1 | 0 |
-| Define (once) | Each condition's A (K), each task's pages (≤ 4) | A, B, C, one page per task | 1 | 0 |
+| Retire (admin) | A + B + per task (≤ 3) its pages (≤ 4) + C + K prerequisite A: **≤ 22** | Per task 1 or 2 pages, + K prerequisite A, + A: **≤ 14** | 1 | 0 |
+| Define (once) | Each condition's A (K), each task's pages (≤ 4) | A, B, C, one page per task, + K prerequisite A (`live_dependents`) | 1 | 0 |
+
+**Why the witnesses are reachable, and what they exclude.** `accept` evaluates the
+prerequisites and caches `unlocked` (§3.5). An **accepted** quest therefore reaches progress
+with `unlocked` already set, and costs B + A + R + P = 4 reads, not 11. The worst case is
+reached only by quests **without** an accept step whose prerequisites were met in earlier
+transactions and are first observed by this call. An example is a story chain whose earlier
+quests the player finished before the dependent's task was ever reported. A quest with
+`needs_accept` bounds the per-quest cost at 4 reads and 2 writes. The totals are linear in
+the bound: `340 × E` reads and `56 × E` writes for quests; `88 × E` reads and `28 × E` writes
+for achievements.
 
 The worst case of `progress_many` is the product of the bounds, not a case of the game's
 design, where an expedition reports a few tasks and each task feeds a few live quests. It is
-the case the benchmark of ARC-03 measures (docs/CAIRO.md §2), and the reason for
-`MAX_ENTRIES` (Q-19).
+the case the benchmark of ARC-03 measures (docs/CAIRO.md §2), and the reason `MAX_ENTRIES` is
+a question for the owner (Q-19).
 
 ### 5.2 `quiver_achievement`, per call
 
@@ -1451,7 +1526,7 @@ the case the benchmark of ARC-03 measures (docs/CAIRO.md §2), and the reason fo
 | Storage, one single-task achievement, not completing | Pg (1) + A + P = **3** | **1** | 0 |
 | Storage, a title of 3 tiers on one task | 1 + 3 × 2 = **7** | **3** | 0, or 1 per tier reached |
 | Worst case, `progress`: 28 achievements of 3 tasks on the task, all completing | 4 + 28 × (A + B + P) = **88** | **28** | 28 |
-| Worst case, `progress_many`: E = 8 tasks × 28 live achievements, 224 distinct, 3 tasks each, all completing | 32 pages + 224 × (A + B) + 224 P = **704** | **224** (each P once) | 224 |
+| Worst case, `progress_many` at `MAX_ENTRIES = 16`: E = 16 tasks × 28 live achievements, 448 distinct, each with 3 tasks of which one is batched, all completing | 64 pages + 448 × (A + B) + 448 P = **1 408** | **448** (each P once) | 448 |
 | Claim | P | 1 | 1 |
 | Retire (admin) | A + B + per task its pages: **≤ 14** | **≤ 7** | 1 |
 
@@ -1632,9 +1707,10 @@ A name can be taken by anyone until first publication. Q-15 covers this.
 | Q-11 | Claim of past intervals | (a) Allowed without limit, as Dojo; (b) only the current and previous interval | **(a)**. The game can refuse in `on_quest_claim` |
 | Q-12 | Repeatable quests with no interval ("repeatable (board)", design/06) | (a) Not in 0.1; (b) a flag keying progress by run number (`record.claims`) instead of interval | **(a)**, unless the game confirms the need: A-1 asks for one-shot and daily only. **A question for the game's designer** |
 | Q-13 | A shared package (`quiver_core`) for `Mode`, `TaskProgress`, pages and packing helpers | (a) No: each package is self-contained; (b) yes | **(a)** for 0.1; revisit when a third package needs them |
-| Q-14 | How quests or achievements leave a task, given 4 pages of 7 per task. Without removal, 28 is a **lifetime** cap, and an ended quest still costs a definition read on every progress call to its task | (a) **Retirement**, as specified in §3.5 and §3.11: an admin `retire` removes the id from its tasks' pages (filling the hole with the last id, so pages stay contiguous) and sets a `retired` bit. Cost: ≤ 14 reads and ≤ 7 writes, once per retirement. Rules: player data kept; completed intervals and achievements stay claimable; accept refused; ids never reused; dependents of a retired prerequisite are the admin's to retire. The cap becomes **28 live** per task, and ended quests cost nothing on progress; (b) **task ids chosen by the consumer to spread load**, e.g. versioned or per region (`kill_runt_r1`, `kill_runt_r2`): no package change, but it leaves the cap a lifetime cap per id, and expired quests still read on progress until the consumer moves to a new id; (c) **accept a lifetime cap**, 28, or 56 with 8 pages (2 more page reads in the worst case) | **(a)**, with (b) always open to the consumer. The game adds quests region by region, and a common task such as a kill of a caste will outlive 28 quests over the game's life. The rest of §3 and §5 assumes (a); under (b) or (c), drop `retire`, the `retired` bit, `QuestRetired` and `AchievementRetired` |
+| Q-14 | How quests or achievements leave a task, given 4 pages of 7 per task. Without removal, 28 is a **lifetime** cap, and an ended quest still costs a definition read on every progress call to its task | (a) **Retirement**, as specified in §3.5 and §3.11: an admin `retire` removes the id from its tasks' pages (filling the hole with the last id, so pages stay contiguous) and sets a `retired` bit. Cost: ≤ 14 reads and ≤ 7 writes, once per retirement. Rules: player data kept; completed intervals and achievements stay claimable; accept refused; `quest_is_accepted` false, so the consumer's active slot is freed; ids never reused; a prerequisite with live dependents cannot be retired (Q-20). The cap becomes **28 live** per task, and ended quests cost nothing on progress; (b) **task ids chosen by the consumer to spread load**, e.g. versioned or per region (`kill_runt_r1`, `kill_runt_r2`): no package change, but it leaves the cap a lifetime cap per id, and expired quests still read on progress until the consumer moves to a new id; (c) **accept a lifetime cap**, 28, or 56 with 8 pages (2 more page reads in the worst case) | **(a)**, with (b) always open to the consumer. The game adds quests region by region, and a common task such as a kill of a caste will outlive 28 quests over the game's life. The rest of §3 and §5 assumes (a); under (b) or (c), drop `retire`, the `retired` bit, `QuestRetired` and `AchievementRetired` |
 | Q-15 | Names | `quiver_quest`, `quiver_achievement` (free, §6.5) | **Confirm**, and publish 0.1.0 of `quiver_quest` when ARC-03 is accepted, so that the name is held |
 | Q-16 | First version | 0.1.0 until Grim World integrates (GLD-02), then 1.0.0 | **0.1.0** |
 | Q-17 | Daily alignment on 00:00 UTC | (a) Document that `start` must be a multiple of 86 400, and test it; (b) the package enforces it when `interval` is a multiple of 86 400 | **(a)**. (b) would forbid legitimate local-time schedules for other consumers |
 | Q-18 | How long does an acceptance hold for a recurring quest? | (a) **Until rollover**: it holds in the interval in which it was made, and an unfinished daily contract must be accepted again the next day, through that day's draw (§3.2, §3.5); (b) until completion or abandon, across intervals: the contract carries over, and the game alone must stop a held contract from bypassing the next day's draw; (c) a per-quest flag choosing (a) or (b) | **(a)**. Design/14 offers contracts per day and holds one at a time, and (a) makes the package enforce it without a write at rollover. For one-off quests the choices coincide: their interval is always 0. **To confirm with the game's designer**: design/14 does not say whether a held contract survives the day |
-| Q-19 | Entries per `progress_many` call | (a) `MAX_ENTRIES = 8`; (b) 16; (c) no package bound, left to the consumer | **(a)**. It bounds the worst case at ≈ 2 720 reads and 448 writes (§5.1, estimates). An expedition's results name a few tasks (kills by caste, a gate reached, a boss); a longer list reverts, and the game makes a second call. (b) doubles the worst case; (c) breaks the bounded-execution rule (COMMON §4) |
+| Q-19 | `MAX_ENTRIES`: the most distinct tasks one call may carry. The consumer aggregates its results by task id and calls `progress_many` **once per player per transaction** (§3.1). A list with more distinct tasks is a consumer error and reverts; there is no second call | What one expedition can report, from the design: **kills by caste** (design/14 names runts, slingers, a hobgoblin, shamans, wolf riders, pack leaders and a named goblin in Region 1: about 7); **places reached** (gates, landmarks, markers, an overlook, a dungeon entrance: 1 to 3 in one zone); **a boss** (1); **items collected or handed in** (a strongbox, a totem, a charred ear, three ingredients, a parcel: up to about 5); **things activated, lured or spoken to** (braziers, packs, settlers: 1 to 3). That is about **12 to 19** quest tasks for a long expedition. Titles report through the achievement component's own call, with its own bound. Options: (a) **16**: worst case `progress_many` 5 440 reads, 896 writes, 448 events for quests; 1 408 reads and 448 writes for achievements (§5, estimates); (b) **8**: half of that, but a long Region 1 expedition could exceed it and revert; (c) **32**: double of (a), covering later regions with more castes and items | **(a) 16**, for both packages, and the game reports only the task ids that its quest registry uses. **A question for the game**: the design documents do not bound the distinct tasks of one expedition. The castes, items and landmarks of later regions are not listed, and "kill N goblins of caste X" (design/06) makes each caste a task. The game should confirm a ceiling on reported task ids per expedition, or ask for (c) |
+| Q-20 | Retiring a quest that is a prerequisite of a live quest | (a) **Refuse**: `retire` reverts `'Quest: has live dependents'` while a live quest names it. This is guarded by a `u16` `live_dependents` counter in the prerequisite's A slot, written at `define` (K writes) and at the dependent's `retire` (C read, K reads and writes). There is no cost on progress, accept or claim (§3.5); (b) **cascade**: `retire` also retires every dependent, transitively. This needs the reverse index that §3.9 drops, and its depth and width are unbounded; (c) **leave it to the admin**: `retire` always succeeds, and a live dependent becomes impossible for every player who had not completed the prerequisite. That is stated in the README, but nothing prevents it | **(a)**. It makes the harmful state unreachable for a few writes per admin action, and the admin keeps full control by retiring the dependents first. (b) is unbounded; (c) turns an admin mistake into a player-visible dead quest |
