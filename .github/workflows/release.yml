@@ -1,0 +1,55 @@
+# Release check (ARC-02), on a tag `quiver_<name>-v<x.y.z>`: the workspace is green, the tag's
+# version is the manifest's, the changelog has a section for it, and `scarb package` of that
+# package succeeds; the archive is kept as a workflow artifact for the owner to inspect.
+#
+# This workflow NEVER publishes and holds no token: publishing is the owner's act (D-128), done by
+# hand from a machine that holds the registry token. See docs/WORKSPACE.md.
+name: release
+
+on:
+  push:
+    tags: ["quiver_*-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  # The same jobs as cairo.yml, every package: a tag is never released on a red workspace.
+  workspace:
+    uses: ./.github/workflows/cairo.yml
+
+  package:
+    needs: workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: versions
+        run: python3 .github/ci/affected.py versions
+
+      - uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd # v1.6.2
+        with:
+          scarb-version: ${{ steps.versions.outputs.scarb }}
+          scarb-lock: Scarb.lock
+
+      # The tag is chosen by whoever pushes it: it reaches the script as an argument through the
+      # environment, never inlined in a command.
+      - name: tag, manifest version and changelog agree
+        id: check
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 .github/ci/release_check.py "$TAG"
+
+      - name: scarb package
+        env:
+          DIR: ${{ steps.check.outputs.dir }}
+        run: scarb --manifest-path "$DIR/Scarb.toml" package
+
+      # actions/upload-artifact must be pinned by commit SHA like the others: see REPORT.md
+      # (escalation), the SHA could not be resolved from the agent's sandbox.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.ref_name }}
+          path: target/package/*.tar.zst
+          if-no-files-found: error

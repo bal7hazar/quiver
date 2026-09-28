@@ -14,7 +14,6 @@ set -euo pipefail
 
 case "$SNFORGE" in
   0.61.0) snforge_sha=fdd3b5d9b5a927a31ca45088b1c9a820519f8b2d2cc93193d790bcd5ece9359b ;;
-  0.51.2) snforge_sha=9a8f9bdf69dd2e3a501949182520dccc77067c2c05d2a9ba835ec28234d4028a ;;
   *)
     echo "no pinned SHA-256 for snforge $SNFORGE: add it to .github/ci/install-snforge.sh" >&2
     exit 1
