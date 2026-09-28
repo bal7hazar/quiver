@@ -165,7 +165,7 @@ pub fn one_entry(task_id: u32, count: u32) -> Span<TaskProgress> {
 }
 
 /// The panic data of a failed call starts with `error`.
-pub fn assert_error(result: Result<(), Array<felt252>>, error: felt252) {
+pub fn assert_error<T, +Drop<T>>(result: Result<T, Array<felt252>>, error: felt252) {
     match result {
         Result::Ok(_) => panic!("expected {}, the call succeeded", error),
         Result::Err(data) => assert!(*data.at(0) == error, "expected {}, got {:?}", error, data),
