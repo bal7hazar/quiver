@@ -1,0 +1,86 @@
+# PENDING A-G1 — Is the API of quiver accepted?
+
+| | |
+|---|---|
+| Gate | **A-G1** of track ARC (PLAN.md; the game's PLAN § Track ARC) |
+| Asked by | `[Opus 5.5]` orchestrator of `quiver`, 2026-09-28 |
+| Decides | The project manager, on this recommendation, reporting to the owner afterwards (D-128) |
+| Source | [docs/research/ARC-01-quest-achievement.md](../research/ARC-01-quest-achievement.md) (ARC-01, `[Opus 5.5]`), §3 the API, §7 the twenty questions |
+| Audit | `[GPT-6-Sol]`, three passes: FAIL, FAIL, then **PASS WITH FINDINGS**, after three fix loops; no open blocker or major. Reports in [docs/reports/](../reports/ARC-01-audit-gpt-6-sol-3.md). Merged as [#2](https://github.com/bal7hazar/quiver/pull/2) |
+| Blocks | ARC-02 (workspace, CI by affected package) and everything after it. No implementation starts before the answer |
+
+## Question
+
+Is the proposed API of `quiver_quest` and `quiver_achievement` accepted as the base of the
+implementation (ARC-02, ARC-03, ARC-04), with the answers recommended for Q-1 to Q-20?
+
+## What the analysis found
+
+- The Dojo packages `quest` and `achievement` of `cartridge-gg/arcade` (`c53fadc`) were read
+  in full. **ADR-0004 points 3 and 4 are all confirmed** (event mode never tested; unlock
+  firing on every decrement; an inactive dependent reverting the prerequisite's progress; a
+  recurring prerequisite underflowing a one-off dependent's lock counter), and ten further
+  defects were found. Each is a named test case for ARC-03 or ARC-04.
+- The proposed API keeps the concepts (tasks with a target, windows, intervals, AND
+  prerequisites, completion, claim, hooks, a mode per call) and changes how they work:
+
+| Change | Why |
+|---|---|
+| Prerequisites evaluated lazily: met once each has been completed at least once, cached per player | Removes the unlock defects by construction; no fan-out when a prerequisite completes |
+| `u32` ids, `u64` interval ids and counters, every record packed in one storage slot | Cost first (docs/CAIRO.md): a progress call on one quest is about 4 reads and 1 write (estimate) |
+| Optional accept step per quest; an acceptance holds for its interval and expires at rollover | The game's 3 active quests and its daily contracts; the limit itself stays the game's |
+| One aggregated `progress_many` call per player per transaction, at most 16 distinct tasks | One write per record per transaction; bounded execution |
+| Retirement frees a task's association slots; refused while a live quest depends on the retired one | The cap of 28 quests per task counts live quests, not every quest ever defined |
+| Access control in the package: only registered reporters report progress; admin and player authorisation are hooks the consumer implements; a trusted internal layer for the consumer's own entrypoints | Need A-5; Grim World calls the internal layer from its results entrypoint |
+| Storage or event mode per call; definitions always stored | Need A-6 |
+| No presentation on-chain (names, icons, JSON): the consumer's registry or events | Small, frozen events; no git dependency that would block publishing |
+
+- The game's needs **A-1 to A-9** are all covered, some adapted (§4 of the report). The rules
+  that stay with the game are named there: the limit of 3 active quests, diminishing merit
+  (the claim hook receives the claim count), the daily board draw, "distinct" counters.
+- Both names, **`quiver_quest`** and **`quiver_achievement`**, are free on scarbs.xyz
+  (checked by the agent and again by the orchestrator on 2026-09-28).
+
+## Options
+
+| Option | Meaning | Next |
+|---|---|---|
+| **A. Accept** | The API of §3 with the recommended answers to Q-1 to Q-20 | ARC-02 (Sonnet 5.5), then ARC-03 `quiver_quest` (Opus 5.5) |
+| B. Accept with amendments | The API, with named questions answered otherwise | The orchestrator amends the report in a small task, then ARC-02 |
+| C. Not accepted | A new analysis on named points | ARC-01 resumed on those points |
+
+## Recommendation
+
+**A.** The questions that shape the implementation most, with the recommended answer:
+
+| # | Question | Recommended |
+|---|---|---|
+| Q-1 | Id width | `u32` ids (packing is most of the saving) |
+| Q-2 | Tasks per quest or achievement | 3 (design/14's quests have 1 or 2 objectives) |
+| Q-3 | When is a prerequisite met? | Completed at least once, ever |
+| Q-4 | Accept step | Optional per quest; the active-quest limit is the consumer's |
+| Q-14, Q-20 | Leaving a task; retiring a prerequisite | Retirement; refused while live dependents name it |
+| Q-18 | Acceptance of a recurring quest | Expires at rollover |
+| Q-19 | Distinct tasks per call | 16, **provided the game enforces a ceiling of 16 distinct reported task ids per expedition** (the audit's last major finding; need A-5 depends on it). Worst case estimated at 5 440 reads and 896 writes for quests, a figure ARC-03 measures and budgets |
+| Q-15, Q-16 | Names, first version | `quiver_quest`, `quiver_achievement`; 0.1.0 |
+
+The others (Q-5 to Q-13, Q-17) are in §7 of the report, each with its recommendation.
+
+## For the game
+
+These do not block A-G1; they shape how Grim World uses the packages. The report raises them
+for the game's project manager and designer:
+
+| | |
+|---|---|
+| Q-18 | Does a held guild contract survive the day? design/14 is silent; the API recommends no |
+| Q-19 | A ceiling on the distinct task ids one expedition reports; later regions are not bounded by the design |
+| Q-12 | Are repeatable board quests with no interval (design/06 `repeatable`) needed? Not in 0.1 unless the game asks |
+| Q-17 | A daily quest rolls over at 00:00 UTC only if its `start` is a multiple of 86 400; the package documents and tests it |
+| Titles | design/13 § Implementation notes reads as titles built on the game's own counters and a tier table; ADR-0007 puts them on `achievement` in event mode. Which one the game intends decides whether ARC-04 is on Grim World's path |
+
+## Publication
+
+Not asked at this gate. Publishing on a registry stays the owner's act (D-128): the first
+publication of each package is asked when ARC-03 is accepted (Q-15 recommends publishing
+`quiver_quest` 0.1.0 then, to hold the name).

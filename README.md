@@ -10,8 +10,8 @@ The first packages are native rewrites of the owner's
 
 | Package | Does | State |
 |---|---|---|
-| `quiver_quest` | Quests made of tasks with a target count; one-shot or recurring on an interval; prerequisites; claim through a hook the consumer implements | Analysis (ARC-01) |
-| `quiver_achievement` | Achievements made of tasks, with tiers sharing a task; points; storage or event mode per call | Analysis (ARC-01) |
+| `quiver_quest` | Quests made of tasks with a target count; one-shot or recurring on an interval; prerequisites; claim through a hook the consumer implements | API proposed ([ARC-01](docs/research/ARC-01-quest-achievement.md)), gate A-G1 |
+| `quiver_achievement` | Achievements made of tasks, with tiers sharing a task; points; storage or event mode per call | API proposed ([ARC-01](docs/research/ARC-01-quest-achievement.md)), gate A-G1 |
 
 Names: packages of our own take the prefix of the repository (`quiver_quest`); a mirror of a
 Rust crate keeps the crate's name (Grim World, D-126). Names are confirmed at gate A-G1 with

@@ -26,8 +26,8 @@ scarbs.xyz and consumed by the game **by version**.
 | ID | Task | Depends on | Executor | Audits | Status |
 |---|---|---|---|---|---|
 | ARC-00 | The repository: name, visibility (owner); minimum, launcher, CI of the tooling | — | Project manager; orchestrator | — | done: `bal7hazar/quiver`, first pull request |
-| ARC-01 | **Analysis** of `quest` and `achievement` as they are: data model, modes, hooks, intervals, prerequisites, claim, what depends on Dojo; the defects of ADR-0004 points 3 to 5 confirmed or refuted as test cases; the **API of the native packages**; coverage of the game's needs A-1 to A-9; cost per call; the workspace and its CI by affected package. Report `docs/research/ARC-01-quest-achievement.md` | ARC-00 | Opus 5.5, research | GPT-6-Sol | running |
-| **Gate A-G1** | **Is the API accepted?** Owner's decision, through the project manager. Package names confirmed with the registry's availability | ARC-01 | Owner | — | — |
+| ARC-01 | **Analysis** of `quest` and `achievement` as they are: data model, modes, hooks, intervals, prerequisites, claim, what depends on Dojo; the defects of ADR-0004 points 3 to 5 confirmed or refuted as test cases; the **API of the native packages**; coverage of the game's needs A-1 to A-9; cost per call; the workspace and its CI by affected package. Report `docs/research/ARC-01-quest-achievement.md` | ARC-00 | Opus 5.5, research | GPT-6-Sol | done: [#2](https://github.com/bal7hazar/quiver/pull/2), three fix loops |
+| **Gate A-G1** | **Is the API accepted?** The project manager decides on the recommendation (D-128). Package names confirmed with the registry's availability | ARC-01 | Project manager | — | asked: [PENDING-A-G1](docs/decisions/PENDING-A-G1.md) |
 | ARC-02 | Workspace, **CI by affected package**, gas tooling, publication pipeline per package | A-G1 | Sonnet 5.5 | GPT-6-Luna | todo |
 | ARC-03 | `quiver_quest`: implementation, test-driven; released on scarbs.xyz after the project manager's go | ARC-02 | Opus 5.5 | GPT-6-Astra (access control, ownership) | todo |
 | ARC-04 | `quiver_achievement`: implementation, release | ARC-03 | Opus 5.5 | GPT-6-Astra | todo |
