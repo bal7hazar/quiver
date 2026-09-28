@@ -51,11 +51,8 @@ Bash(gh pr create*)
 Bash(gh pr edit*)
 Bash(gh pr comment*)
 
-# Never: publish a package. A release on scarbs.xyz cannot be undone and needs the project
-# manager's go; the orchestrator publishes.
-!Bash(scarb publish*)
-!Bash(scarb * publish*)
-!Bash(scripts/lock.sh * publish*)
+# Never: publish a package (denied in research.txt, included through audit). A release is the
+# owner's act (D-128).
 
 # Never: rebase (a branch that needs it merges origin/main instead), skip hooks, merge or
 # close the pull request, act on another repository, force-add ignored files, use the stash
