@@ -25,7 +25,7 @@ fn daily() -> quiver_quest::logic::QuestSchedule {
 }
 
 #[test]
-#[available_gas(l2_gas: 7851336)]
+#[available_gas(l2_gas: 7845109)]
 fn quest_accept_required() {
     let q = with_accept(one_off(), 10);
     report(q, PLAYER, T, 1, Mode::Storage);
@@ -37,7 +37,7 @@ fn quest_accept_required() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10738472)]
+#[available_gas(l2_gas: 10736131)]
 fn quest_completion_releases_acceptance() {
     let q = with_accept(one_off(), 2);
     accept(q, PLAYER, Q);
@@ -48,7 +48,7 @@ fn quest_completion_releases_acceptance() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9871846)]
+#[available_gas(l2_gas: 9863278)]
 fn quest_acceptance_expires_at_rollover() {
     let q = with_accept(daily(), 10);
     accept(q, PLAYER, Q);
@@ -88,7 +88,7 @@ fn quest_accept_twice_same_interval_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 10858708)]
+#[available_gas(l2_gas: 10856366)]
 fn quest_accept_after_completion_reverts() {
     let q = with_accept(one_off(), 1);
     accept(q, PLAYER, Q);
@@ -100,7 +100,7 @@ fn quest_accept_after_completion_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 11671985)]
+#[available_gas(l2_gas: 11669644)]
 fn quest_accept_after_daily_completion() {
     let q = with_accept(daily(), 1);
     accept(q, PLAYER, Q);
@@ -126,7 +126,7 @@ fn quest_abandon_expired_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9677229)]
+#[available_gas(l2_gas: 9668661)]
 fn quest_abandon_keeps_counts() {
     let q = with_accept(one_off(), 10);
     accept(q, PLAYER, Q);
@@ -144,7 +144,7 @@ fn quest_abandon_keeps_counts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 10427435)]
+#[available_gas(l2_gas: 10413701)]
 fn quest_accept_refusals() {
     let q = deploy();
     at(q, 1000);
@@ -176,7 +176,7 @@ fn quest_abandon_refusals() {
 
 /// `accept` evaluates the prerequisites and caches the unlock.
 #[test]
-#[available_gas(l2_gas: 14837395)]
+#[available_gas(l2_gas: 14827840)]
 fn quest_accept_caches_unlock() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);

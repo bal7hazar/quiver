@@ -63,7 +63,7 @@ fn quest_event_mode_cannot_be_claimed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6257467)]
+#[available_gas(l2_gas: 6255126)]
 fn quest_modes_do_not_mix() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 10);

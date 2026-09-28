@@ -14,7 +14,7 @@ use super::setup::{
 };
 
 #[test]
-#[available_gas(l2_gas: 22689978)]
+#[available_gas(l2_gas: 22685295)]
 fn quest_claim_index_counts_claims() {
     let q = deploy();
     at(q, 0);
@@ -34,7 +34,7 @@ fn quest_claim_index_counts_claims() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 13652684)]
+#[available_gas(l2_gas: 13650343)]
 fn quest_claim_twice_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 1);
@@ -47,7 +47,7 @@ fn quest_claim_twice_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6897877)]
+#[available_gas(l2_gas: 6895535)]
 fn quest_claim_uncompleted_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -60,7 +60,7 @@ fn quest_claim_uncompleted_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13381900)]
+#[available_gas(l2_gas: 13379558)]
 fn quest_claim_emits_and_writes() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 1);
@@ -85,7 +85,7 @@ fn quest_claim_emits_and_writes() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10158557)]
+#[available_gas(l2_gas: 10156216)]
 fn quest_complete_hook_after_state_written() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);
@@ -109,7 +109,7 @@ fn quest_complete_hook_after_state_written() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13369132)]
+#[available_gas(l2_gas: 13366790)]
 fn quest_claim_hook_after_state_written() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);
@@ -135,7 +135,7 @@ fn quest_claim_hook_after_state_written() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 8438615)]
+#[available_gas(l2_gas: 8435066)]
 fn quest_complete_hook_panic_reverts_progress() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);
@@ -153,7 +153,7 @@ fn quest_complete_hook_panic_reverts_progress() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 11584405)]
+#[available_gas(l2_gas: 11582063)]
 fn quest_claim_hook_panic_reverts_claim() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);

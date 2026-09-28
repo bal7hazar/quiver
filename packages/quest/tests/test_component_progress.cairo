@@ -24,7 +24,7 @@ fn completed_events(ref spy: snforge_std::EventSpy) -> u32 {
 }
 
 #[test]
-#[available_gas(l2_gas: 7795973)]
+#[available_gas(l2_gas: 7791805)]
 fn quest_inactive_quest_skipped_not_reverted() {
     let q = deploy();
     at(q, 1000);
@@ -36,7 +36,7 @@ fn quest_inactive_quest_skipped_not_reverted() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10728451)]
+#[available_gas(l2_gas: 10723768)]
 fn quest_count_saturates_at_total() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 10);
@@ -50,7 +50,7 @@ fn quest_count_saturates_at_total() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10635642)]
+#[available_gas(l2_gas: 10629415)]
 fn quest_count_max_value() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, U32_MAX);
@@ -62,7 +62,7 @@ fn quest_count_max_value() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10610127)]
+#[available_gas(l2_gas: 10603900)]
 fn quest_one_off_completes_once() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 2);
@@ -75,7 +75,7 @@ fn quest_one_off_completes_once() {
 }
 
 #[test]
-#[available_gas(l2_gas: 21199421)]
+#[available_gas(l2_gas: 21188511)]
 fn quest_recurring_completes_each_interval() {
     let q = deploy();
     at(q, 0);
@@ -101,7 +101,7 @@ fn quest_recurring_completes_each_interval() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7593750)]
+#[available_gas(l2_gas: 7589067)]
 fn quest_daily_interval_aligned_on_utc_midnight() {
     let q = deploy();
     define_simple(q, 1, schedule(0, 0, DAY, DAY), 7, 10);
@@ -117,7 +117,7 @@ fn quest_daily_interval_aligned_on_utc_midnight() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7408057)]
+#[available_gas(l2_gas: 7403374)]
 fn quest_daily_rollover_starts_from_zero() {
     let q = deploy();
     at(q, 0);
@@ -131,7 +131,7 @@ fn quest_daily_rollover_starts_from_zero() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6125885)]
+#[available_gas(l2_gas: 6123544)]
 fn quest_interval_id_is_u64() {
     let q = deploy();
     define_simple(q, 1, schedule(0, 0, 1, 1), 7, 10);
@@ -143,7 +143,7 @@ fn quest_interval_id_is_u64() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10852624)]
+#[available_gas(l2_gas: 10853370)]
 fn quest_batch_two_tasks_one_quest_one_write() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span(), false);
@@ -182,7 +182,7 @@ fn baseline_batch_two_tasks_one_quest() {
 
 /// Not completing: one write, P.
 #[test]
-#[available_gas(l2_gas: 6587850)]
+#[available_gas(l2_gas: 6588595)]
 fn quest_batch_two_tasks_one_quest_one_write_not_completing() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span(), false);
@@ -202,7 +202,7 @@ fn baseline_batch_two_tasks_one_quest_not_completing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5913158)]
+#[available_gas(l2_gas: 5910817)]
 fn quest_batch_duplicate_entries_merged() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 10);
@@ -212,7 +212,7 @@ fn quest_batch_duplicate_entries_merged() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3396666)]
+#[available_gas(l2_gas: 3398346)]
 fn quest_batch_above_bound_reverts() {
     let q = deploy();
     let mut entries = array![];
@@ -233,7 +233,7 @@ fn quest_batch_above_bound_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3122700)]
+#[available_gas(l2_gas: 3123540)]
 fn quest_batch_duplicates_count_toward_bound() {
     let q = deploy();
     as_reporter(q);
@@ -246,7 +246,7 @@ fn quest_batch_duplicates_count_toward_bound() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3180432)]
+#[available_gas(l2_gas: 3182112)]
 fn quest_batch_rejects_task_zero() {
     let q = deploy();
     as_reporter(q);
@@ -260,7 +260,7 @@ fn quest_batch_rejects_task_zero() {
 
 /// A quest with two tasks reached through both entries of a batch counts both, once.
 #[test]
-#[available_gas(l2_gas: 8989977)]
+#[available_gas(l2_gas: 8990439)]
 fn quest_batch_quest_on_two_entries_handled_once() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span(), false);
@@ -273,7 +273,7 @@ fn quest_batch_quest_on_two_entries_handled_once() {
 
 /// Players are separate: progress of one is not the other's.
 #[test]
-#[available_gas(l2_gas: 6032204)]
+#[available_gas(l2_gas: 6029863)]
 fn quest_progress_is_per_player() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -284,7 +284,7 @@ fn quest_progress_is_per_player() {
 
 /// `MAX_QUESTS_PER_TASK` live quests on one task: one progress counts on each.
 #[test]
-#[available_gas(l2_gas: 177360001)]
+#[available_gas(l2_gas: 177360263)]
 fn quest_task_shared_by_max_quests() {
     let q = deploy();
     let max: u32 = (QUESTS_PER_PAGE * MAX_PAGES).into();

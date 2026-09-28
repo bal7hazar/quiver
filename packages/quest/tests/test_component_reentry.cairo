@@ -100,7 +100,7 @@ fn hook_calls(r: Reentrant) -> Array<HookCall> {
 /// the second, which the call read from the task's pages before.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 13893869)]
+#[available_gas(l2_gas: 13891013)]
 fn quest_retired_by_hook_not_progressed() {
     let r = deploy();
     define(r, 1, T, false);
@@ -124,7 +124,7 @@ fn quest_retired_by_hook_not_progressed() {
 /// Progress from `on_quest_complete` on the same quest, same interval: no second completion, no
 /// second hook call.
 #[test]
-#[available_gas(l2_gas: 11377078)]
+#[available_gas(l2_gas: 11373687)]
 fn quest_reentrant_progress_same_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, false);
@@ -146,7 +146,7 @@ fn quest_reentrant_progress_same_quest_completes_once() {
 /// Progress from the first quest's hook on the same task completes the second quest inside the
 /// hook; the outer call then reaches the second quest, finds it completed, and skips it.
 #[test]
-#[available_gas(l2_gas: 18216432)]
+#[available_gas(l2_gas: 18210930)]
 fn quest_reentrant_progress_later_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, false);
@@ -167,7 +167,7 @@ fn quest_reentrant_progress_later_quest_completes_once() {
 /// reverts the outer claim; nothing is claimed twice.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 12015073)]
+#[available_gas(l2_gas: 12014149)]
 fn quest_reentrant_claim_same_quest_refused() {
     let r = deploy();
     define(r, 1, T, false);
@@ -198,7 +198,7 @@ fn quest_reentrant_claim_same_quest_refused() {
 /// which reverts the outer progress.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 8184830)]
+#[available_gas(l2_gas: 8183203)]
 fn quest_reentrant_accept_after_completion_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -289,28 +289,28 @@ fn assert_outer_unchanged(reentry: Reentry) -> Reentrant {
 }
 
 #[test]
-#[available_gas(l2_gas: 62668242)]
+#[available_gas(l2_gas: 62663055)]
 fn quest_reentrant_progress_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'progress', 0, 8));
     assert!(r.view.quest_progress(PLAYER, 3, 0).completed);
 }
 
 #[test]
-#[available_gas(l2_gas: 61182938)]
+#[available_gas(l2_gas: 61178675)]
 fn quest_reentrant_claim_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'claim', 4, 0));
     assert!(r.view.quest_progress(PLAYER, 4, 0).claimed);
 }
 
 #[test]
-#[available_gas(l2_gas: 58422393)]
+#[available_gas(l2_gas: 58418130)]
 fn quest_reentrant_accept_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'accept', 5, 0));
     assert!(r.view.quest_is_accepted(PLAYER, 5));
 }
 
 #[test]
-#[available_gas(l2_gas: 57755822)]
+#[available_gas(l2_gas: 57751559)]
 fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'retire', 6, 0));
     let (definition, _, _) = r.view.quest_definition(6);

@@ -72,7 +72,7 @@ fn quest_set_reporter_admin_only() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5580047)]
+#[available_gas(l2_gas: 5582567)]
 fn quest_progress_rejects_unregistered_caller() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -88,7 +88,7 @@ fn quest_progress_rejects_unregistered_caller() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 2989067)]
+#[available_gas(l2_gas: 2989907)]
 fn quest_progress_many_rejects_unregistered_caller() {
     let q = deploy();
     caller(q, stranger());
@@ -100,7 +100,7 @@ fn quest_progress_many_rejects_unregistered_caller() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7366897)]
+#[available_gas(l2_gas: 7362214)]
 fn quest_progress_accepts_registered_reporter() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -128,7 +128,7 @@ fn quest_progress_accepts_registered_reporter() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5096175)]
+#[available_gas(l2_gas: 5097015)]
 fn quest_reporter_revoked() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -143,7 +143,7 @@ fn quest_reporter_revoked() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15307442)]
+#[available_gas(l2_gas: 15305101)]
 fn quest_claim_requires_player_authorization() {
     let q = completed();
     caller(q, stranger());
@@ -159,7 +159,7 @@ fn quest_claim_requires_player_authorization() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5369312)]
+#[available_gas(l2_gas: 5365773)]
 fn quest_accept_requires_player_authorization() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 1)].span(), array![].span(), true);
@@ -185,7 +185,7 @@ fn quest_abandon_requires_player_authorization() {
 /// The owner of one player cannot act for another.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5159385)]
+#[available_gas(l2_gas: 5155847)]
 fn quest_player_authorization_is_per_player() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 5)].span(), array![].span(), true);
@@ -219,7 +219,7 @@ fn quest_internal_layer_not_reachable_from_abi() {
 /// The consumer's own entrypoints reach the internal layer after the consumer's checks.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6262165)]
+#[available_gas(l2_gas: 6260663)]
 fn quest_consumer_calls_the_internal_layer() {
     let (address, consumer, view) = deploy_consumer();
     let safe = IMockConsumerSafeDispatcher { contract_address: address };

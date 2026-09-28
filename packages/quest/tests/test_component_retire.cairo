@@ -111,7 +111,7 @@ fn quest_retire_last_quest_empties_page() {
 }
 
 #[test]
-#[available_gas(l2_gas: 8259706)]
+#[available_gas(l2_gas: 8257364)]
 fn quest_retired_not_progressed() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 5);
@@ -123,7 +123,7 @@ fn quest_retired_not_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13354106)]
+#[available_gas(l2_gas: 13351765)]
 fn quest_retired_completed_still_claimable() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -135,7 +135,7 @@ fn quest_retired_completed_still_claimable() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5380358)]
+#[available_gas(l2_gas: 5376819)]
 fn quest_retired_accept_reverts() {
     let q = deploy();
     define(q, 1, one_off(), array![task(T, 1)].span(), array![].span(), true);

@@ -20,8 +20,8 @@ pub mod QuestComponent {
         Mode, QuestConditions, QuestDefinition, QuestIdPage, QuestProgress, QuestRecord,
         QuestSchedule, QuestTask, QuestTasks, TaskProgress, batch_first_position, batch_merge,
         claim as claim_logic, conditions_span, definition_new, page_pop, page_position, page_push,
-        page_set, page_span, prerequisites_met, progress_add, record_abandon, record_accept,
-        record_complete, record_is_accepted, schedule_interval_id, tasks_span,
+        page_set, progress_add, record_abandon, record_accept, record_complete, record_is_accepted,
+        schedule_interval_id, tasks_span,
     };
 
     /// Members are prefixed with `Quest_` so that they do not collide in the consumer's storage.
@@ -266,20 +266,36 @@ pub mod QuestComponent {
             let mut position: u32 = 0;
             for entry in batch {
                 let task_id = *entry.task_id;
-                // The live quests on the task, read before any of them is processed
-                let mut pages: Array<QuestIdPage> = array![];
-                let mut index: u8 = 0;
-                while index < MAX_PAGES {
-                    let page = self.Quest_task_pages.read((task_id, index));
-                    pages.append(page);
-                    if page.len < QUESTS_PER_PAGE {
-                        break;
+                // The live quests on the task, read before any of them is processed. The first
+                // page alone when it is not full, as with a few quests per task
+                let first = self.Quest_task_pages.read((task_id, 0));
+                let mut pages: Array<QuestIdPage> = array![first];
+                if first.len == QUESTS_PER_PAGE {
+                    let mut index: u8 = 1;
+                    while index < MAX_PAGES {
+                        let page = self.Quest_task_pages.read((task_id, index));
+                        pages.append(page);
+                        if page.len < QUESTS_PER_PAGE {
+                            break;
+                        }
+                        index += 1;
                     }
-                    index += 1;
                 }
                 for page in pages {
-                    for quest_id in page_span(@page) {
-                        self.progress_quest(player_id, *quest_id, batch, position, time);
+                    let QuestIdPage { len, ids } = page;
+                    let mut slot: u8 = 0;
+                    while slot < len {
+                        let quest_id = match slot {
+                            0 => ids.q0,
+                            1 => ids.q1,
+                            2 => ids.q2,
+                            3 => ids.q3,
+                            4 => ids.q4,
+                            5 => ids.q5,
+                            _ => ids.q6,
+                        };
+                        self.progress_quest(player_id, quest_id, batch, position, time);
+                        slot += 1;
                     }
                 }
                 position += 1;
@@ -436,7 +452,8 @@ pub mod QuestComponent {
         impl Hooks: QuestHooksTrait<TContractState>,
         +Drop<TContractState>,
     > of PrivateTrait<TContractState> {
-        /// Step 2.2 of `progress_many` (ARC-01 §3.5) for one quest reached at `position`.
+        /// Step 2.2 of `progress_many` (ARC-01 §3.5) for one quest reached at `position` of the
+        /// merged `batch`.
         fn progress_quest(
             ref self: ComponentState<TContractState>,
             player_id: felt252,
@@ -445,9 +462,12 @@ pub mod QuestComponent {
             position: u32,
             time: u64,
         ) {
-            // 1. B; a quest reached at a later entry was handled at its first one
+            // 1. B; a quest reached at a later entry was handled at its first one. A quest of one
+            // task (t1 unused) is on this task's page only, so this entry is its first position
+            // and its only count: neither needs a scan of the batch
             let quest_tasks = self.Quest_tasks.read(quest_id);
-            if batch_first_position(batch, @quest_tasks) != Option::Some(position) {
+            let single = quest_tasks.t1.task_id == 0;
+            if !single && batch_first_position(batch, @quest_tasks) != Option::Some(position) {
                 return;
             }
             // 2. A; skip a quest retired since the pages were read (a hook of an earlier quest
@@ -490,8 +510,13 @@ pub mod QuestComponent {
                 return;
             }
             // 5. Every batched count of the quest's tasks at once
+            let counts = if single {
+                batch.slice(position, 1)
+            } else {
+                batch
+            };
             let (progress, changed, completed) = progress_add(
-                progress, @quest_tasks, definition.task_count, batch,
+                progress, @quest_tasks, definition.task_count, counts,
             );
             if !changed && !record_marked {
                 return;
@@ -520,7 +545,9 @@ pub mod QuestComponent {
             }
         }
 
-        /// Reads C and the record of each prerequisite (at most `MAX_CONDITIONS`).
+        /// Reads C, then the record of each prerequisite in order (at most `MAX_CONDITIONS`),
+        /// stopping at the first one never completed: the result of `prerequisites_met` over all
+        /// of them, without reading the rest.
         fn prerequisites_are_met(
             self: @ComponentState<TContractState>,
             player_id: felt252,
@@ -528,11 +555,12 @@ pub mod QuestComponent {
             condition_count: u8,
         ) -> bool {
             let conditions = self.Quest_conditions.read(quest_id);
-            let mut records: Array<QuestRecord> = array![];
             for condition in conditions_span(@conditions, condition_count) {
-                records.append(self.Quest_records.read((player_id, *condition)));
+                if self.Quest_records.read((player_id, *condition)).completions == 0 {
+                    return false;
+                }
             }
-            prerequisites_met(records.span())
+            true
         }
 
         /// The first page of `task_id` with room, and its index. Panics `'Quest: task full'`

@@ -8,7 +8,7 @@ use super::helpers::{one_off, schedule, task};
 use super::setup::{PLAYER, at, claim, define, define_simple, deploy, report, retire};
 
 #[test]
-#[available_gas(l2_gas: 16880464)]
+#[available_gas(l2_gas: 16878123)]
 fn quest_events_keys_and_data() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 2);
