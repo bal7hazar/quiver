@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 21:57 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 22:22 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -15,7 +15,12 @@ package skeletons, CI by affected package, the gas tool, a release check that ne
 `quiver_quest`, 166 tests within budget; `[GPT-6-Astra]` audit FAIL (packing could let a narrow
 field spill into its neighbour, reserved bits unchecked), then PASS WITH FINDINGS after one fix
 loop. **Next: ARC-03b**, the component ([brief](docs/briefs/ARC-03b-quest-component.md)), on Opus
-5.5 with a `[GPT-6-Astra]` audit, **running** since 21:56 UTC. Publications follow
+5.5: done (21:56 to 22:19 UTC), [#7](https://github.com/bal7hazar/quiver/pull/7), 292 tests within
+budget, CI green; the reads and writes of every worst case equal the §5.1 estimates. The worst
+`progress_many` (16 tasks, each shared by 28 live quests with 7 prerequisites first observed)
+measures **about 704 M L2 gas** for the component alone: to compare with the network's
+per-transaction limit before relying on the bound at its maximum. Its `[GPT-6-Astra]` audit
+waits for a Grim World slot. Publications follow
 D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 `PENDING-publish-*` file and publishes after a go naming package, version and commit.
 
@@ -32,7 +37,8 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | `quiver-ARC-03b-215611` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Running |
+| ARC-03b quest component | `quiver-ARC-03b-215611` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Exited 0; #7 |
+| ARC-03b audit | setsid (codex) | `gpt-6-astra` | audit | Waits for a slot |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
 to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
