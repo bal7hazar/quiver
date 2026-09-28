@@ -45,3 +45,7 @@ game has nothing ready. A codex audit counts as an agent while it runs. Threshol
 launcher: no launch above a 5-minute load of 12 or under 8 GB available. Rules: the game's OPERATIONS.md; common rules of briefs:
 [docs/briefs/COMMON.md](docs/briefs/COMMON.md); Cairo rules: [docs/CAIRO.md](docs/CAIRO.md).
 After three fix loops on one lot, the orchestrator escalates to the project manager.
+**Launcher**: `scripts/agent.sh` follows the game's, the reference of the three launchers: the
+commit of the game's `scripts/agent.sh` that its CHANGELOG marks as "launcher reference" after a
+passed audit. The orchestrator reads it at its check-ins and syncs in one pull request naming the
+commit; a sync never delays a task of the track.
