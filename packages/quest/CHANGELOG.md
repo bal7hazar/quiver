@@ -53,7 +53,10 @@ The first version: the API accepted at gate A-G1
     `definition`, `progress_of`, `record_of`, `current_interval`, `is_unlocked`,
     `is_accepted`;
   - the optional external impls `QuestImpl` (`IQuest`, access-checked) and `QuestViewImpl`
-    (`IQuestView`).
+    (`IQuestView`);
+  - `progress_many` skips a quest retired since its task's pages were read, for instance by a
+    hook of an earlier quest in the same call: it counts nothing, completes nothing and calls no
+    hook.
 - **Interfaces** `quiver_quest::interface`: `IQuest` (`define`, `retire`, `set_reporter`,
   `progress`, `progress_many`, `accept`, `abandon`, `claim`) and `IQuestView`
   (`quest_definition`, `quest_progress`, `quest_record`, `quest_current_interval`,

@@ -121,6 +121,12 @@ registry on its own entrypoints.
 the first claim of that quest by that player). A hook that panics reverts the whole call: that is
 how a consumer refuses a claim.
 
+A hook may re-enter the component, since the state is written first. A quest completed by a
+re-entrant `progress` is not completed again by the outer call. A quest retired by a hook is
+skipped by the rest of the call that ran the hook. A re-entrant `claim` of the claim being made,
+or `accept` of the quest just completed, is refused (`'Quest: already claimed'`,
+`'Quest: already completed'`) and so reverts the whole outer call.
+
 ## Modes
 
 `progress` and `progress_many` take a `Mode`, per call.
@@ -189,6 +195,34 @@ Every loop is bounded:
 
 The worst case of one `progress_many` call is 16 tasks × 28 quests, each with 7 prerequisites
 evaluated for the first time: 5 440 storage reads and 896 writes, measured (`quest_batch_bound_accepted`).
+
+## Integration budget
+
+A Starknet transaction may use at most **1.1 × 10⁹ L2 gas** ("Max L2 gas per transaction" in the
+chain-information table of
+[docs.starknet.io](https://docs.starknet.io/learn/cheatsheets/chain-info), Mainnet 0.14.2 and
+Sepolia 0.14.3, read on 2026-09-28; 6 × 10⁹ per block). The worst `progress_many` call the package
+allows, measured through a dispatcher with hooks that do nothing
+(`bench_progress_many_worst_late_collision`: 16 entries `[1..=15, 129]`, whose merge takes the
+slow path, 16 × 28 = 448 quests with 7 prerequisites each first observed, all completing), costs
+**704 804 763 L2 gas**, 64 % of the ceiling.
+
+That leaves about 395 × 10⁶ L2 gas, 36 %, for everything else in the transaction: the
+consumer's own entrypoint and logic, its **448 `on_quest_complete` hooks** in that case (about
+0.88 × 10⁶ each if they had all of it, which one storage write and one event already approach),
+and the account's validation and execution. The figures per entrypoint are in
+[docs/BUDGETS.md](../../docs/BUDGETS.md).
+
+**Rule for consumers.** The package's bounds (`MAX_ENTRIES` entries, 28 live quests per task, 7
+prerequisites) keep one call below the ceiling, not the consumer's whole transaction. A consumer
+whose transaction could exceed 1.1 × 10⁹ L2 gas at those bounds, counting its hooks and its own
+work, **must enforce a smaller practical bound**: fewer entries per call, fewer live quests per
+task, or fewer prerequisites, sized from its own measured worst case. Grim World caps the tasks
+one expedition reports (A-10); its fan-out per task is set by its content.
+
+**The reporter check in event mode.** The external `progress` and `progress_many` of `QuestImpl`
+read the reporter registry once (one storage read), in `Mode::Event` too, before emitting. Called
+through the internal layer, event mode reads and writes nothing.
 
 ## Library
 
