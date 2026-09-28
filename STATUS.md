@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 23:52 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 23:58 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -32,9 +32,11 @@ the slow merge path tested; 310 tests within budget, CI green). **Fix loop 2** (
 22:44 to 23:42 UTC) measured `progress_many` on a grid of 111 points (model within 0.02 %),
 removed about 3 % of waste, measured the game's own use at **10.1M**, and **stopped as its brief
 said**: a completed quest costs about 1.17M, most of it its two changed storage slots, so even one
-quest per task and no prerequisite measures 20.6M at 16 tasks. **Asked of the project manager:**
-[PENDING-quest-cost-cap](docs/decisions/PENDING-quest-cost-cap.md) (recommendation: progress walks
-the player's short list of accepted quests, H = 4, about 5.6M worst case, as a new lot ARC-03c).
+quest per task and no prerequisite measures 20.6M at 16 tasks. **Decided by the project manager,
+D-135** ([decision](docs/decisions/2026-09-28-quest-cost-cap.md)): acceptance mandatory, at most
+H = 4 held quests per player (8 at most), progress walks the held list, prerequisites checked at
+acceptance. **Next: ARC-03c** ([brief](docs/briefs/ARC-03c-quest-held.md)), Opus 5.5, from
+ARC-03b's branch; #7 is superseded and closed when ARC-03c's pull request opens.
 
 **Launcher** ([#8](https://github.com/bal7hazar/quiver/pull/8), CI green, `[GPT-6-Sol]` audit
 waiting for a slot): the budget of 3 counted by the launcher across the three tracks, failing
@@ -64,8 +66,9 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Exited 0 after fix loop 2; waits for the cost-cap decision |
-| PR-8 audit | setsid (codex) | `gpt-6-sol` | audit | Queued after ARC-03b (cap 1) |
+| ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
+| ARC-03c quest held list | — | `claude-opus-5-5` / — | implement | Ready; after the PR-8 audit (cap 1) |
+| PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | Running since 23:44 UTC |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25

@@ -1,4 +1,4 @@
-# PENDING — `quiver_quest`: no cap fits 16 tasks under 20M L2 gas; how to bound the worst call
+# `quiver_quest`: how the worst call is bounded — decided 2026-09-28 (D-135)
 
 | | |
 |---|---|
@@ -62,3 +62,23 @@ publication request.
 
 If (d) is not taken: (c) at 21M with one quest per task (b) is the smallest change, at the price
 of the game's model.
+
+## Answer
+
+Decided by the project manager `[Fable 5.1]` on 2026-09-28, **D-135** (under D-128; it amends the
+API accepted at gate A-G1, D-131). Record in the game:
+[docs/decisions/2026-09-28-quest-cost-cap.md](https://github.com/bal7hazar/grimworld/blob/main/docs/decisions/2026-09-28-quest-cost-cap.md)
+(`003a626`); the game's needs gain **A-12**.
+
+**Option (d).** Acceptance is mandatory for every quest; a player holds at most **H = 4** quests,
+a constant of 0.1.0, 8 at most; progress walks the player's held quests, not the pages of the
+tasks; prerequisites are checked at acceptance. New lot **ARC-03c** (Opus 5.5, audit
+`[GPT-6-Astra]`), keeping from ARC-03b the component's frame, access control, events, hooks,
+re-entry and claim. Its brief asks: the worst call **measured**, not estimated, for H = 4 and
+H = 8, with hooks empty and with a hook that writes one slot; the game's use as a benchmark;
+`GAS.md` stating the measured cost of a changed slot (about 402 000 L2 gas) and how many slots each
+entrypoint changes.
+
+For the game: every quest is accepted before it progresses; H = 4 is its 3 active quests and one
+contract; a changed storage slot costing about 0.4M L2 gas per transaction is the first item of
+its ENG-01 cost budget (D-129).
