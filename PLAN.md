@@ -26,7 +26,7 @@ scarbs.xyz and consumed by the game **by version**.
 | ID | Task | Depends on | Executor | Audits | Status |
 |---|---|---|---|---|---|
 | ARC-00 | The repository: name, visibility (owner); minimum, launcher, CI of the tooling | — | Project manager; orchestrator | — | done: `bal7hazar/quiver`, first pull request |
-| ARC-01 | **Analysis** of `quest` and `achievement` as they are: data model, modes, hooks, intervals, prerequisites, claim, what depends on Dojo; the defects of ADR-0004 points 3 to 5 confirmed or refuted as test cases; the **API of the native packages**; coverage of the game's needs A-1 to A-9; cost per call; the workspace and its CI by affected package. Report `docs/research/ARC-01-quest-achievement.md` | ARC-00 | Opus 5.5, research | GPT-6-Sol | todo |
+| ARC-01 | **Analysis** of `quest` and `achievement` as they are: data model, modes, hooks, intervals, prerequisites, claim, what depends on Dojo; the defects of ADR-0004 points 3 to 5 confirmed or refuted as test cases; the **API of the native packages**; coverage of the game's needs A-1 to A-9; cost per call; the workspace and its CI by affected package. Report `docs/research/ARC-01-quest-achievement.md` | ARC-00 | Opus 5.5, research | GPT-6-Sol | running |
 | **Gate A-G1** | **Is the API accepted?** Owner's decision, through the project manager. Package names confirmed with the registry's availability | ARC-01 | Owner | — | — |
 | ARC-02 | Workspace, **CI by affected package**, gas tooling, publication pipeline per package | A-G1 | Sonnet 5.5 | GPT-6-Luna | todo |
 | ARC-03 | `quiver_quest`: implementation, test-driven; released on scarbs.xyz after the project manager's go | ARC-02 | Opus 5.5 | GPT-6-Astra (access control, ownership) | todo |
@@ -41,7 +41,7 @@ game and the map library. Split (game OPERATIONS §3, "Split between the three t
 On a freed shared slot, a task whose report opens a gate of the owner comes first (ARC-01), then
 the game, the library, quiver. After ARC-01 and its audit, this track has no slot of its own
 before the game's Phase 2: it launches only while fewer than 3 Grim World agents run and the
-game has nothing ready. A codex audit counts as an agent while it runs. Thresholds of the launcher: no launch above a 5-minute load of 12 or
-under 8 GB available. Rules: the game's OPERATIONS.md; common rules of briefs:
+game has nothing ready. A codex audit counts as an agent while it runs. Thresholds of the
+launcher: no launch above a 5-minute load of 12 or under 8 GB available. Rules: the game's OPERATIONS.md; common rules of briefs:
 [docs/briefs/COMMON.md](docs/briefs/COMMON.md); Cairo rules: [docs/CAIRO.md](docs/CAIRO.md).
 After three fix loops on one lot, the orchestrator escalates to the project manager.
