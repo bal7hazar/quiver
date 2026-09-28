@@ -41,10 +41,16 @@ jobs:
           done
           grep -q -- '^# \[Opus 5.5\] smoke resume (implement)' \
             <<< "$(scripts/agent.sh --dry-run smoke claude opus resume "x" implement)"
-          # The implement profile denies publishing a package.
-          out=$(scripts/agent.sh --dry-run smoke claude opus new "x" implement)
-          grep -qF -- '--disallowedTools' <<< "$out"
-          grep -qF -- 'Bash\(scarb\ publish\*\)' <<< "${out#*--disallowedTools}"
+          # Every profile denies publishing a package and reading the user-level settings, which
+          # hold the registry token (D-128).
+          for profile in research audit implement; do
+            out=$(scripts/agent.sh --dry-run smoke claude opus new "x" "$profile")
+            deny=${out#*--disallowedTools}
+            [ "$deny" != "$out" ] || { echo "no deny rules: $profile" >&2; exit 1; }
+            grep -qF -- 'Bash\(scarb\ publish\*\)' <<< "$deny"
+            grep -qF -- 'Read\(~/.claude/settings.json\)' <<< "$deny"
+            grep -qF -- 'Bash\(printenv\*\)' <<< "$deny"
+          done
           for model in gpt-6-astra gpt-6-sol gpt-6-luna; do
             out=$(scripts/agent.sh --dry-run smoke codex "$model" new "x")
             grep -q -- ' -s read-only ' <<< "$out"

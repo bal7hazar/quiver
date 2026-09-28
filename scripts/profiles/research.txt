@@ -79,3 +79,21 @@ Bash(asdf list*)
 !Bash(find * -ok*)
 !Bash(find * -fprint*)
 !Bash(find * -fls*)
+
+# Never: read the user-level Claude Code settings, which hold the registry token that every
+# claude process inherits (D-128), or print the environment; never publish a package, which is
+# the owner's act. Every profile includes this one, so these rules hold for all of them. They
+# are guard-rails: code an agent runs (a test, an interpreter) can still read its environment.
+!Read(~/.claude/settings.json)
+!Read(~/.claude/settings.local.json)
+!Read(//home/claude/.claude/settings.json)
+!Read(//home/claude/.claude/settings.local.json)
+!Bash(*.claude/settings*)
+!Bash(*settings.json*)
+!Bash(env)
+!Bash(env *)
+!Bash(printenv*)
+!Bash(*_TOKEN*)
+!Bash(scarb publish*)
+!Bash(scarb * publish*)
+!Bash(scripts/lock.sh * publish*)
