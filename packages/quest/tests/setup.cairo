@@ -2,6 +2,7 @@
 
 use quiver_quest::interface::{
     IQuestDispatcher, IQuestDispatcherTrait, IQuestSafeDispatcher, IQuestViewDispatcher,
+    IQuestViewSafeDispatcher,
 };
 use quiver_quest::logic::{Mode, QuestSchedule, QuestTask, TaskProgress};
 use snforge_std::{
@@ -45,6 +46,7 @@ pub struct Quest {
     pub quest: IQuestDispatcher,
     pub safe: IQuestSafeDispatcher,
     pub view: IQuestViewDispatcher,
+    pub safe_view: IQuestViewSafeDispatcher,
     pub mock: IMockQuestDispatcher,
 }
 
@@ -56,6 +58,7 @@ pub fn deploy() -> Quest {
         quest: IQuestDispatcher { contract_address: address },
         safe: IQuestSafeDispatcher { contract_address: address },
         view: IQuestViewDispatcher { contract_address: address },
+        safe_view: IQuestViewSafeDispatcher { contract_address: address },
         mock: IMockQuestDispatcher { contract_address: address },
     };
     as_admin(quest);
