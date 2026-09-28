@@ -46,7 +46,7 @@ jobs:
           for profile in research audit implement; do
             for mode in new resume; do
               out=$(scripts/agent.sh --dry-run smoke claude opus "$mode" "x" "$profile")
-              for var in SCARB_REGISTRY_AUTH_TOKEN STARKNET_NETWORK STARKNET_RPC_URL STARKNET_ACCOUNT_ADDRESS STARKNET_PRIVATE_KEY; do
+              for var in SCARB_REGISTRY_AUTH_TOKEN STARKNET_NETWORK STARKNET_RPC_URL STARKNET_RPC STARKNET_ACCOUNT_ADDRESS STARKNET_PRIVATE_KEY; do
                 grep -qF -- "\\\"$var\\\":\\\"\\\"" <<< "$out" || { echo "$var not emptied: $profile $mode" >&2; exit 1; }
               done
               grep -qF -- ' --settings ' <<< "$out"
@@ -76,6 +76,39 @@ jobs:
           if scripts/agent.sh --dry-run smoke claude sonnet-4 new "x"; then exit 1; fi
           if scripts/agent.sh --dry-run smoke claude sonnet new "x" ../profiles/implement; then exit 1; fi
           if scripts/agent.sh --dry-run --with-assets smoke claude sonnet new "x"; then exit 1; fi
+          # The agent budget (the game's OPERATIONS §3), with systemctl and pgrep stubbed: three agents
+          # refuse, two allow, a count that fails refuses (exit 4).
+          stubs=$(mktemp -d); fake=$(mktemp -d)   # a fake HOME: no launcher records of the machine
+          stub() { printf '#!/bin/sh\n%s\n' "$2" > "$stubs/$1"; chmod +x "$stubs/$1"; }
+          stub pgrep 'exit 1'
+          stub systemctl 'printf "grimworld-a.service loaded active running a\nhexmap-b.service loaded active running b\nquiver-c.service loaded active running c\n"'
+          set +e; HOME=$fake PATH="$stubs:$PATH" scripts/agent.sh thresholds; s=$?; set -e; [ "$s" = 4 ]
+          stub systemctl 'printf "grimworld-a.service loaded active running a\nhexmap-b.service loaded active running b\n"'
+          HOME=$fake PATH="$stubs:$PATH" scripts/agent.sh thresholds
+          stub systemctl 'exit 1'
+          set +e; HOME=$fake PATH="$stubs:$PATH" scripts/agent.sh thresholds; s=$?; set -e; [ "$s" = 4 ]
+          stub systemctl 'exit 0'
+          stub pgrep 'exit 3'
+          set +e; HOME=$fake PATH="$stubs:$PATH" scripts/agent.sh thresholds; s=$?; set -e; [ "$s" = 4 ]
+          # Detached agents from the launchers' pid files: two launches in one directory count once; a
+          # pid whose live process is not its launch (a reused pid) does not count.
+          flogs=$fake/projects/quiver/.claude/worktrees/logs; mkdir -p "$flogs" "$fake/projects/quiver/wt" "$fake/projects/quiver/wt2"
+          stub pgrep 'exit 1'
+          stub systemctl 'printf "grimworld-a.service loaded active running a\nhexmap-b.service loaded active running b\n"'
+          (cd "$fake/projects/quiver/wt" && exec bash -c 'sleep 120; :' "$flogs/one.log") & echo $! > "$flogs/one.pid"
+          (cd "$fake/projects/quiver/wt" && exec bash -c 'sleep 120; :' "$flogs/two.log") & echo $! > "$flogs/two.pid"
+          (cd "$fake/projects/quiver/wt2" && exec sleep 120) & echo $! > "$flogs/reused.pid"
+          set +e; out=$(HOME=$fake PATH="$stubs:$PATH" scripts/agent.sh thresholds 2>&1); s=$?; set -e
+          echo "$out"; [ "$s" = 4 ]; grep -qF '3 Grim World agents running (2 units, 1 detached)' <<< "$out"
+          # The launch lock: while another launcher holds it, a launch waits (killed by timeout: 124);
+          # once released, the same launch goes on to the count, which refuses (4). Nothing is launched.
+          mkdir -p "$fake/orchestrator"
+          flock "$fake/orchestrator/agent-launch.lock" sleep 6 & holder=$!; sleep 1
+          set +e
+          HOME=$fake PATH="$stubs:$PATH" timeout 3 scripts/agent.sh locktest claude opus new "x" research; s=$?
+          set -e; [ "$s" = 124 ]; wait "$holder"
+          set +e; HOME=$fake PATH="$stubs:$PATH" scripts/agent.sh locktest claude opus new "x" research; s=$?; set -e; [ "$s" = 4 ]
+          kill $(cat "$flogs"/*.pid) 2> /dev/null || true
           # The build lock wraps build and test subcommands only.
           for bad in "rm -rf x" "scarb publish" "scarb run x" "--heavy scarb publish" "pnpm install" "snforge"; do
             if scripts/lock.sh $bad 2> /dev/null; then echo "lock.sh accepted: $bad" >&2; exit 1; fi

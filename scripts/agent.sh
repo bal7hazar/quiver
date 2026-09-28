@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # quiver launcher: start or resume a sub-agent in its task worktree. claude agents run as
 # transient systemd user units, outside the process tree and the cgroup of the calling session
-# (a restart of the desktop app must not kill them), or detached with `setsid nohup` where there
-# is no systemd user manager; codex auditors are always detached with setsid (see the note at
+# (a restart of the desktop app must not kill them), never detached (they could not be counted);
+# codex auditors are always detached with setsid (see the note at
 # the launch below). Copied from bal7hazar/grimworld (itself ported from the owner's glam-cairo
 # launcher), with one deliberate difference kept: agents never run with
 # --dangerously-skip-permissions. Differences from the game's copy: units are named quiver-<task>,
@@ -119,10 +119,11 @@ reported_model() { # <task>
     paste -sd, - | grep . || echo unknown
 }
 
-# Machine thresholds (OPERATIONS §3): no agent starts or resumes while the 5-minute load
-# average is above 12 or less than 8 GB of memory is available. Fixed here on purpose: no
-# variable can relax them. Running agents are never stopped for load.
-MAX_LOAD5=12 MIN_MEM_GB=8
+# Machine thresholds and agent budget (the game's OPERATIONS §3): no agent starts or resumes
+# while the 5-minute load average is above 12, less than 8 GB of memory is available, or 3 Grim
+# World agents already run across the three tracks (game, map library, quiver). Fixed here on
+# purpose: no variable can relax them. Running agents are never stopped for load.
+MAX_LOAD5=12 MIN_MEM_GB=8 MAX_AGENTS=3
 thresholds_ok() { # prints the reason and returns 1 when a launch must wait
   local load5 mem_kb
   load5=$(cut -d' ' -f2 /proc/loadavg)
@@ -139,7 +140,42 @@ thresholds_ok() { # prints the reason and returns 1 when a launch must wait
     echo "agent.sh: $((mem_kb / 1048576)) GB of memory available, under $MIN_MEM_GB: wait and check again" >&2
     return 1
   fi
-  echo "agent.sh: load $load5, $((mem_kb / 1048576)) GB available: a launch may proceed"
+  # The budget, whoever launched the agents (as the game's launcher, bal7hazar/grimworld#48). A
+  # count that cannot be made refuses the launch (fails closed).
+  local units ulist plist dirs detached agents rc=0 f pid
+  if ! ulist=$(systemctl --user list-units --type=service --no-legend --plain \
+      --state=active,activating,deactivating,reloading 'grimworld-*' 'hexmap-*' 'quiver-*' 2>&1); then
+    echo "agent.sh: cannot list the systemd user units, so the agents cannot be counted: wait and check again" >&2
+    return 1
+  fi
+  units=$(grep -c . <<< "$ulist" || true)
+  # Detached agents (codex audits), one per working directory under the three repositories (a
+  # codex audit runs several processes): codex `exec` processes, and the live pids recorded by the
+  # launchers, checked to be the launch they record (their command line holds the task's log, so
+  # a reused pid is not counted). A pid whose directory cannot be read counts as an agent.
+  plist=$(pgrep -f '^/usr/bin/node .*codex[^ ]* exec( |$)') || rc=$?
+  if [ "$rc" -gt 1 ]; then   # 1: no process matched
+    echo "agent.sh: pgrep failed, so the agents cannot be counted: wait and check again" >&2
+    return 1
+  fi
+  for f in "$HOME"/projects/{grimworld,hexx-cairo,quiver}/.claude/worktrees/logs/*.pid; do
+    [ -f "$f" ] || continue
+    pid=$(cat "$f" 2> /dev/null || true)
+    if ! [[ $pid =~ ^[0-9]+$ ]] || ! kill -0 "$pid" 2> /dev/null; then continue; fi
+    tr '\0' '\n' < "/proc/$pid/cmdline" 2> /dev/null | grep -qxF -- "${f%.pid}.log" || continue
+    plist+=$'\n'"$pid"
+  done
+  dirs=$(while read -r p; do
+      [ -n "$p" ] || continue
+      readlink "/proc/$p/cwd" 2> /dev/null || echo "/projects/quiver/unreadable-$p"
+    done <<< "$plist" | grep -E '/projects/(grimworld|hexx-cairo|quiver)(/|$)' | sort -u || true)
+  detached=$(grep -c . <<< "$dirs" || true)
+  agents=$((units + detached))
+  if [ "$agents" -ge "$MAX_AGENTS" ]; then
+    echo "agent.sh: $agents Grim World agents running ($units units, $detached detached), the budget is $MAX_AGENTS: wait and check again" >&2
+    return 1
+  fi
+  echo "agent.sh: load $load5, $((mem_kb / 1048576)) GB available, $agents of $MAX_AGENTS agents: a launch may proceed"
 }
 
 case "${1:-}" in
@@ -211,7 +247,7 @@ load_profile "$profile"
 
 # Variables of the user-level settings that no agent may see (names from the game's
 # OPERATIONS §7): emptied on every claude launch and resume.
-secrets_off='{"env":{"SCARB_REGISTRY_AUTH_TOKEN":"","STARKNET_NETWORK":"","STARKNET_RPC_URL":"","STARKNET_ACCOUNT_ADDRESS":"","STARKNET_PRIVATE_KEY":""}}'
+secrets_off='{"env":{"SCARB_REGISTRY_AUTH_TOKEN":"","STARKNET_NETWORK":"","STARKNET_RPC_URL":"","STARKNET_RPC":"","STARKNET_ACCOUNT_ADDRESS":"","STARKNET_PRIVATE_KEY":""}}'
 
 # Every launch prompt carries the foreground rule (OPERATIONS §3), whatever the brief says.
 if [ "$cli" = claude ]; then end="Your turn ends when REPORT.md is written."
@@ -277,6 +313,12 @@ if [ "$dry" = 1 ]; then
   exit 0
 fi
 
+# One launch at a time across the orchestrators (the game's OPERATIONS §3): the count and the start
+# happen under the shared lock of the three launchers, so two of them cannot both take the last
+# slot. The agent does not inherit the lock (9>&- below).
+mkdir -p "$HOME/orchestrator"
+exec 9>> "$HOME/orchestrator/agent-launch.lock"
+flock -w 600 9 || die "the launch lock $HOME/orchestrator/agent-launch.lock is held: try again"
 thresholds_ok || exit 4
 if [ ! -d "$wt" ]; then
   [ -n "$branch" ] || die "no worktree $wt (create it, or pass --branch <type>/<task-id>-<slug>)"
@@ -293,7 +335,10 @@ if running "$task"; then die "$task: already running"; fi
 # calling session and keeps its sandbox; a restart of the desktop app kills it, and it is then
 # resumed (`codex exec resume`). An agent without sandbox is never the answer.
 use_unit=0
-if [ "$cli" = claude ] && systemctl --user list-units > /dev/null 2>&1; then use_unit=1; fi
+if [ "$cli" = claude ]; then
+  systemctl --user list-units > /dev/null 2>&1 || die "no systemd user manager: a claude agent is never detached, it could not be counted"
+  use_unit=1
+fi
 
 echo "$profile" > "$L/$task.profile"
 echo "$cli $model_id" > "$L/$task.cli"
@@ -301,7 +346,7 @@ stat -c %s "$L/$task.log" 2> /dev/null > "$L/$task.start" || echo 0 > "$L/$task.
 echo "--- $(date -u +%FT%TZ) $desc $cli $model_id $([ "$use_unit" = 1 ] && echo "unit=$unit" || echo setsid)" >> "$L/$task.log"
 rm -f "$L/$task.unit" "$L/$task.pid"
 if [ "$use_unit" = 1 ]; then
-  "${run[@]}" bash -c "$inner" "$L/$task.log" "${cmd[@]}"
+  "${run[@]}" bash -c "$inner" "$L/$task.log" "${cmd[@]}" 9>&-
   echo "$unit" > "$L/$task.unit"
   echo "$task: started [$label] as systemd user unit $unit, log $L/$task.log"
 else
@@ -312,7 +357,7 @@ else
     LANG="${LANG:-C.UTF-8}" PATH="$path" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
     DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
     BASH_DEFAULT_TIMEOUT_MS=1800000 BASH_MAX_TIMEOUT_MS=3600000 \
-    QV_AGENT_SH="$root/scripts/agent.sh" QV_TASK="$task" nice -n 10 setsid nohup bash -c "$inner" "$L/$task.log" "${cmd[@]}" > /dev/null 2>&1 &
+    QV_AGENT_SH="$root/scripts/agent.sh" QV_TASK="$task" nice -n 10 setsid nohup bash -c "$inner" "$L/$task.log" "${cmd[@]}" > /dev/null 2>&1 9>&- &
   echo "$!" > "$L/$task.pid"
   echo "$task: started [$label] detached with setsid, pid $!, log $L/$task.log"
 fi
