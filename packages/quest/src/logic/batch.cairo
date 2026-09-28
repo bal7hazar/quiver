@@ -72,6 +72,10 @@ fn merge_plain(entries: Span<TaskProgress>) -> Span<TaskProgress> {
 
 /// The count of the first entry for `task_id`; 0 if absent. At most `batch.len()` comparisons,
 /// `MAX_ENTRIES` on a merged batch.
+///
+/// Expects a merged batch (`batch_merge` first), where each task has one entry. On an unmerged
+/// batch it returns the count of the first matching entry only; later entries of the same task
+/// are ignored, not summed.
 pub fn batch_count_of(batch: Span<TaskProgress>, task_id: u32) -> u32 {
     let mut batch = batch;
     while let Some(entry) = batch.pop_front() {

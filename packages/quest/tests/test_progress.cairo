@@ -1,6 +1,5 @@
 use quiver_quest::logic::{
-    QuestProgress, QuestTasks, TaskProgress, batch_count_of, batch_merge, progress_add,
-    progress_is_complete,
+    QuestProgress, QuestTasks, TaskProgress, batch_merge, progress_add, progress_is_complete,
 };
 use super::helpers::{
     U32_MAX, distinct_entries, entry, no_progress, one_task, progress, task, tasks,
@@ -127,7 +126,24 @@ fn progress_add_keeps_claimed() {
     assert!(p == progress(2, 0, 0, true, true));
 }
 
-// The oracle: ARC-01 §3.2's formula, written plainly with `batch_count_of` and u64 sums.
+// The oracle: ARC-01 §3.2's formula, written plainly with its own lookup and u64 sums. It uses
+// nothing of the library but the types.
+
+/// The count of the first entry naming `task_id`, by index; 0 if none.
+fn plain_lookup(batch: Span<TaskProgress>, task_id: u32) -> u32 {
+    let mut found: Option<u32> = None;
+    let mut i = 0;
+    while i < batch.len() {
+        if found.is_none() && *batch[i].task_id == task_id {
+            found = Some(*batch[i].count);
+        }
+        i += 1;
+    }
+    match found {
+        Some(count) => count,
+        None => 0,
+    }
+}
 
 fn plain_count(count: u32, add: u32, total: u32) -> u32 {
     let sum: u64 = count.into() + add.into();
@@ -143,13 +159,13 @@ fn plain_add(
 ) -> (QuestProgress, bool, bool) {
     let mut next = p;
     if task_count >= 1 {
-        next.c0 = plain_count(p.c0, batch_count_of(batch, b.t0.task_id), b.t0.total);
+        next.c0 = plain_count(p.c0, plain_lookup(batch, b.t0.task_id), b.t0.total);
     }
     if task_count >= 2 {
-        next.c1 = plain_count(p.c1, batch_count_of(batch, b.t1.task_id), b.t1.total);
+        next.c1 = plain_count(p.c1, plain_lookup(batch, b.t1.task_id), b.t1.total);
     }
     if task_count >= 3 {
-        next.c2 = plain_count(p.c2, batch_count_of(batch, b.t2.task_id), b.t2.total);
+        next.c2 = plain_count(p.c2, plain_lookup(batch, b.t2.task_id), b.t2.total);
     }
     let all_done = (task_count < 1 || next.c0 == b.t0.total)
         && (task_count < 2 || next.c1 == b.t1.total)
@@ -168,13 +184,13 @@ fn assert_matches_plain(
 }
 
 #[test]
-#[available_gas(l2_gas: 6718341)]
+#[available_gas(l2_gas: 9848097)]
 fn progress_add_matches_the_plain_formula() {
     let b = tasks(task(1, 10), task(2, 20), task(3, U32_MAX));
     let batches = array![
         array![].span(), array![entry(1, 3)].span(), array![entry(3, 1), entry(2, 25)].span(),
         array![entry(9, 1), entry(2, 5), entry(1, 10), entry(3, U32_MAX)].span(),
-        // an unmerged batch: the first entry of a task counts, as batch_count_of says
+        // an unmerged batch: only the first entry of a task counts (a merged batch is expected)
         array![entry(1, 1), entry(1, 9), entry(2, 2), entry(2, 30)].span(),
         distinct_entries(1, 16, 7), distinct_entries(2, 16, 0),
     ];

@@ -192,7 +192,7 @@ fn definition(
 // QuestDefinition (slot A)
 
 #[test]
-#[available_gas(l2_gas: 2656101)]
+#[available_gas(l2_gas: 2656878)]
 fn quest_packing_round_trip_definition_zero() {
     let zero = definition(0, 0, 0, 0, 0, 0, false, false, false, 0);
     check_definition(zero);
@@ -200,7 +200,7 @@ fn quest_packing_round_trip_definition_zero() {
 }
 
 #[test]
-#[available_gas(l2_gas: 29061942)]
+#[available_gas(l2_gas: 29070489)]
 fn quest_packing_round_trip_definition_max() {
     check_definition(
         definition(U64_MAX, U64_MAX, U32_MAX, U32_MAX, 3, 7, true, true, true, 0xffff),
@@ -219,7 +219,7 @@ fn quest_packing_round_trip_definition_max() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7936688)]
+#[available_gas(l2_gas: 7939019)]
 fn quest_packing_round_trip_definition_mixed() {
     check_definition(
         definition(
@@ -245,7 +245,7 @@ fn quest_packing_presence_bits_at_their_positions() {
 }
 
 #[test]
-#[available_gas(l2_gas: 40089)]
+#[available_gas(l2_gas: 39879)]
 fn quest_empty_slot_reads_undefined() {
     let empty = StorePacking::<QuestDefinition, felt252>::unpack(0);
     assert!(!empty.defined);
@@ -256,7 +256,7 @@ fn quest_empty_slot_reads_undefined() {
 // QuestTasks (slot B)
 
 #[test]
-#[available_gas(l2_gas: 15893273)]
+#[available_gas(l2_gas: 15891383)]
 fn quest_packing_round_trip_tasks() {
     check_tasks(tasks(task(0, 0), task(0, 0), task(0, 0)));
     check_tasks(tasks(task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX)));
@@ -293,7 +293,7 @@ fn quest_packing_round_trip_conditions() {
 // QuestIdPage
 
 #[test]
-#[available_gas(l2_gas: 13562682)]
+#[available_gas(l2_gas: 13568604)]
 fn quest_packing_round_trip_page() {
     check_page(page(0, ids(0, 0, 0, 0, 0, 0, 0)));
     let m = U32_MAX;
@@ -307,7 +307,7 @@ fn quest_packing_round_trip_page() {
 // QuestProgress
 
 #[test]
-#[available_gas(l2_gas: 12500240)]
+#[available_gas(l2_gas: 12504681)]
 fn quest_packing_round_trip_progress() {
     check_progress(progress(0, 0, 0, false, false));
     check_progress(progress(U32_MAX, U32_MAX, U32_MAX, true, true));
@@ -323,7 +323,7 @@ fn quest_packing_round_trip_progress() {
 // QuestRecord
 
 #[test]
-#[available_gas(l2_gas: 13596597)]
+#[available_gas(l2_gas: 13594707)]
 fn quest_packing_round_trip_record() {
     check_record(record(0, 0, false, false, 0));
     check_record(record(U64_MAX, U64_MAX, true, true, U64_MAX));
@@ -334,4 +334,138 @@ fn quest_packing_round_trip_record() {
     check_record(record(0, 0, false, false, U64_MAX));
     check_record(record(0x100000000, 0xffffffff, true, false, 0x10000000000));
     check_record(record(3, 1, false, true, 0x8000000000000001));
+}
+
+// Fix loop 1: packing never lets a field spill into its neighbour (§3.3 widths), and unpacking
+// rejects a felt the package did not write (a bit set above the encoding, or a page len above 7).
+
+fn pack_definition(d: QuestDefinition) -> felt252 {
+    StorePacking::<QuestDefinition, felt252>::pack(d)
+}
+
+fn pack_page(p: QuestIdPage) -> felt252 {
+    StorePacking::<QuestIdPage, felt252>::pack(p)
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_task_count_4() {
+    pack_definition(definition(0, 0, 0, 0, 4, 0, false, true, false, 0));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_task_count_255() {
+    pack_definition(definition(0, 0, 0, 0, 255, 0, false, true, false, 0));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_condition_count_8() {
+    pack_definition(definition(0, 0, 0, 0, 1, 8, false, true, false, 0));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_condition_count_16() {
+    // 16 = 2^4 would have set `defined` (bit 198)
+    pack_definition(definition(0, 0, 0, 0, 1, 16, false, false, false, 0));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_page_len_8() {
+    pack_page(page(8, ids(1, 2, 3, 4, 5, 6, 7)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_page_len_255() {
+    pack_page(page(255, ids(1, 2, 3, 4, 5, 6, 7)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 416000)]
+fn quest_unpacking_rejects_definition_bit_216() {
+    StorePacking::<QuestDefinition, felt252>::unpack(to_felt(pow2(216)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 35238)]
+fn quest_unpacking_rejects_definition_felt_minus_one() {
+    StorePacking::<QuestDefinition, felt252>::unpack(-1);
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 377202)]
+fn quest_unpacking_rejects_tasks_bit_192() {
+    StorePacking::<QuestTasks, felt252>::unpack(to_felt(pow2(192)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 396008)]
+fn quest_unpacking_rejects_conditions_bit_224() {
+    StorePacking::<QuestConditions, felt252>::unpack(to_felt(pow2(224)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 429450)]
+fn quest_unpacking_rejects_page_len_8() {
+    // 2^227: the len field decodes to 8
+    StorePacking::<QuestIdPage, felt252>::unpack(to_felt(pow2(227)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 427613)]
+fn quest_unpacking_rejects_page_bit_230() {
+    StorePacking::<QuestIdPage, felt252>::unpack(to_felt(pow2(230)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 373884)]
+fn quest_unpacking_rejects_progress_bit_98() {
+    StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(98)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 360234)]
+fn quest_unpacking_rejects_progress_bit_128() {
+    StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(128)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: reserved bits set')]
+#[available_gas(l2_gas: 390737)]
+fn quest_unpacking_rejects_record_bit_194() {
+    StorePacking::<QuestRecord, felt252>::unpack(to_felt(pow2(194)));
+}
+
+#[test]
+#[available_gas(l2_gas: 724049)]
+fn quest_unpacking_progress_reads_bit_97_alone() {
+    let p = StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(97)));
+    assert!(p == progress(0, 0, 0, false, true));
+    let p = StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(96)));
+    assert!(p == progress(0, 0, 0, true, false));
+}
+
+#[test]
+#[available_gas(l2_gas: 4914966)]
+fn quest_packing_accepts_the_bounds() {
+    check_definition(definition(0, 0, 0, 0, 3, 7, false, true, false, 0));
+    check_page(page(7, ids(1, 2, 3, 4, 5, 6, 7)));
 }

@@ -169,7 +169,7 @@ fn quest_claim_twice_reverts() {
 // counters
 
 #[test]
-#[available_gas(l2_gas: 29505)]
+#[available_gas(l2_gas: 29295)]
 fn quest_record_counters_past_u32() {
     let r = record(0xffffffff, 0xffffffff, false, false, 0);
     let r = record_complete(r);

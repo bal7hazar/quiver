@@ -1,6 +1,7 @@
 //! Types of `quiver_quest::logic` (ARC-01 §3.2) and their packing into one felt (§3.3).
 
 use starknet::storage_access::StorePacking;
+use crate::constants::{MAX_CONDITIONS, MAX_TASKS, QUESTS_PER_PAGE};
 use super::bits::{
     NZ_2, NZ_2_32, NZ_2_64, NZ_4, NZ_8, TWO_POW_128, TWO_POW_129, TWO_POW_130, TWO_POW_160,
     TWO_POW_192, TWO_POW_194, TWO_POW_197, TWO_POW_198, TWO_POW_199, TWO_POW_200, TWO_POW_224,
@@ -123,9 +124,22 @@ pub struct TaskProgress {
 
 // Packing. Every field is put at its offset by a multiplication on felts and read back by a
 // division with remainder on a `u128` limb; no field straddles bit 128.
+//
+// A field narrower than its Cairo type (`task_count`, `condition_count`, a page's `len`) is
+// checked against its bound before packing, so that it never spills into its neighbour: the
+// layout of §3.3 holds only these values. Unpacking rejects a felt with a bit set above the
+// encoding, or a page `len` above 7: a stored felt the package did not write is a corruption.
+// Neither panic is an error of the API (§3.5): the component never packs or reads such a value.
+
+const FIELD_OUT_OF_RANGE: felt252 = 'Packing: field out of range';
+const RESERVED_BITS_SET: felt252 = 'Packing: reserved bits set';
 
 pub impl QuestDefinitionPacking of StorePacking<QuestDefinition, felt252> {
     fn pack(value: QuestDefinition) -> felt252 {
+        assert(
+            value.task_count <= MAX_TASKS && value.condition_count <= MAX_CONDITIONS,
+            FIELD_OUT_OF_RANGE,
+        );
         let schedule = value.schedule;
         schedule.start.into()
             + schedule.end.into() * TWO_POW_64
@@ -161,7 +175,8 @@ pub impl QuestDefinitionPacking of StorePacking<QuestDefinition, felt252> {
             needs_accept: needs_accept != 0,
             defined: defined != 0,
             retired: retired != 0,
-            live_dependents: live_dependents.try_into().unwrap(),
+            // bits [200, 216); anything above is reserved
+            live_dependents: live_dependents.try_into().expect(RESERVED_BITS_SET),
         }
     }
 }
@@ -185,7 +200,11 @@ pub impl QuestTasksPacking of StorePacking<QuestTasks, felt252> {
         QuestTasks {
             t0: QuestTask { task_id: id0.try_into().unwrap(), total: total0.try_into().unwrap() },
             t1: QuestTask { task_id: id1.try_into().unwrap(), total: total1.try_into().unwrap() },
-            t2: QuestTask { task_id: id2.try_into().unwrap(), total: total2.try_into().unwrap() },
+            // bits [160, 192); anything above is reserved
+            t2: QuestTask {
+                task_id: id2.try_into().unwrap(),
+                total: total2.try_into().expect(RESERVED_BITS_SET),
+            },
         }
     }
 }
@@ -229,19 +248,23 @@ pub impl QuestConditionsPacking of StorePacking<QuestConditions, felt252> {
 
     fn unpack(value: felt252) -> QuestConditions {
         let (low, high) = split(value);
-        let (ids, _) = unpack_ids(low, high);
+        let (ids, rest) = unpack_ids(low, high);
+        assert(rest == 0, RESERVED_BITS_SET);
         ids
     }
 }
 
 pub impl QuestIdPagePacking of StorePacking<QuestIdPage, felt252> {
     fn pack(value: QuestIdPage) -> felt252 {
+        assert(value.len <= QUESTS_PER_PAGE, FIELD_OUT_OF_RANGE);
         pack_ids(value.ids) + value.len.into() * TWO_POW_224
     }
 
     fn unpack(value: felt252) -> QuestIdPage {
         let (low, high) = split(value);
         let (ids, len) = unpack_ids(low, high);
+        // bits [224, 227) hold 0..=7: a len of 8 (2^227) or any higher bit is rejected
+        assert(len <= QUESTS_PER_PAGE.into(), RESERVED_BITS_SET);
         QuestIdPage { len: len.try_into().unwrap(), ids }
     }
 }
@@ -256,12 +279,14 @@ pub impl QuestProgressPacking of StorePacking<QuestProgress, felt252> {
     }
 
     fn unpack(value: felt252) -> QuestProgress {
-        // 98 bits: one limb, no split
-        let low: u128 = value.try_into().unwrap();
+        // 98 bits: one limb, no split; a felt of 128 bits or more is rejected here
+        let low: u128 = value.try_into().expect(RESERVED_BITS_SET);
         let (low, c0) = DivRem::div_rem(low, NZ_2_32);
         let (low, c1) = DivRem::div_rem(low, NZ_2_32);
         let (low, c2) = DivRem::div_rem(low, NZ_2_32);
         let (claimed, completed) = DivRem::div_rem(low, NZ_2);
+        // bit 97 alone is `claimed`; bits [98, 128) are reserved
+        assert(claimed <= 1, RESERVED_BITS_SET);
         QuestProgress {
             c0: c0.try_into().unwrap(),
             c1: c1.try_into().unwrap(),
@@ -291,7 +316,8 @@ pub impl QuestRecordPacking of StorePacking<QuestRecord, felt252> {
             claims: claims.try_into().unwrap(),
             unlocked: unlocked != 0,
             active: active != 0,
-            accepted_interval: accepted_interval.try_into().unwrap(),
+            // bits [130, 194); anything above is reserved
+            accepted_interval: accepted_interval.try_into().expect(RESERVED_BITS_SET),
         }
     }
 }

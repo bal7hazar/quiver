@@ -50,7 +50,27 @@ fn sixteen_with_duplicates() -> Span<TaskProgress> {
     opaque(out.span())
 }
 
+/// Tasks 1..=15, then `last`; every count positive. With `last = 15` the fast path of
+/// `batch_merge` meets its repeat only at entry 16; with `last = 129` (= 1 mod 128) it meets a
+/// collision of distinct ids only at entry 16. Both then run the plain merge in full.
+fn fifteen_then(last: u32) -> Span<TaskProgress> {
+    let mut out = array![];
+    let mut i: u32 = 1;
+    while i < MAX_ENTRIES {
+        out.append(entry(i, i));
+        i += 1;
+    }
+    out.append(entry(last, 1));
+    opaque(out.span())
+}
+
 // Baselines: the setup of the benchmarks below, without the call
+
+#[test]
+#[available_gas(l2_gas: 55031)]
+fn bench_baseline_fifteen_then_one() {
+    assert!(fifteen_then(16).len() == MAX_ENTRIES);
+}
 
 #[test]
 #[available_gas(l2_gas: 14826)]
@@ -135,6 +155,20 @@ fn bench_batch_merge_sixteen_distinct() {
 #[available_gas(l2_gas: 573218)]
 fn bench_batch_merge_sixteen_with_duplicates() {
     assert!(batch_merge(sixteen_with_duplicates()).len() == 8);
+}
+
+#[test]
+#[available_gas(l2_gas: 786569)]
+fn bench_batch_merge_late_duplicate() {
+    // [1..15, 15]: the worst case with a repeated task
+    assert!(batch_merge(fifteen_then(15)).len() == 15);
+}
+
+#[test]
+#[available_gas(l2_gas: 790675)]
+fn bench_batch_merge_late_modulo_collision() {
+    // [1..15, 129]: all distinct, the mask collides at the last entry
+    assert!(batch_merge(fifteen_then(129)).len() == MAX_ENTRIES);
 }
 
 #[test]
@@ -251,7 +285,7 @@ fn bench_page_pop_full() {
 // packing: pack then unpack, every field at its maximum
 
 #[test]
-#[available_gas(l2_gas: 44846)]
+#[available_gas(l2_gas: 45623)]
 fn bench_pack_unpack_definition() {
     let d = opaque(
         QuestDefinition {
@@ -269,7 +303,7 @@ fn bench_pack_unpack_definition() {
 }
 
 #[test]
-#[available_gas(l2_gas: 33170)]
+#[available_gas(l2_gas: 32960)]
 fn bench_pack_unpack_tasks() {
     let t = opaque(tasks(task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX)));
     let packed = StorePacking::<QuestTasks, felt252>::pack(t);
@@ -286,7 +320,7 @@ fn bench_pack_unpack_conditions() {
 }
 
 #[test]
-#[available_gas(l2_gas: 38525)]
+#[available_gas(l2_gas: 39512)]
 fn bench_pack_unpack_page() {
     let m = U32_MAX;
     let p = opaque(page(7, ids(m, m, m, m, m, m, m)));
@@ -295,7 +329,7 @@ fn bench_pack_unpack_page() {
 }
 
 #[test]
-#[available_gas(l2_gas: 30093)]
+#[available_gas(l2_gas: 30587)]
 fn bench_pack_unpack_progress() {
     let p: QuestProgress = opaque(progress(U32_MAX, U32_MAX, U32_MAX, true, true));
     let packed = StorePacking::<QuestProgress, felt252>::pack(p);
@@ -303,7 +337,7 @@ fn bench_pack_unpack_progress() {
 }
 
 #[test]
-#[available_gas(l2_gas: 30681)]
+#[available_gas(l2_gas: 30471)]
 fn bench_pack_unpack_record() {
     let r: QuestRecord = opaque(record(U64_MAX, U64_MAX, true, true, U64_MAX));
     let packed = StorePacking::<QuestRecord, felt252>::pack(r);
