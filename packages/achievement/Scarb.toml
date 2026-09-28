@@ -1,0 +1,19 @@
+[package]
+name = "quiver_achievement"
+version = "0.1.0"
+edition.workspace = true
+cairo-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Achievements for Starknet games: tasks, tiers, claim. No Dojo."
+
+[dependencies]
+starknet.workspace = true
+
+[dev-dependencies]
+snforge_std.workspace = true
+
+[lib]
+
+[scripts]
+test = "snforge test"

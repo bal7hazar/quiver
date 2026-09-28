@@ -1,0 +1,159 @@
+# CI of the Cairo packages (ARC-02), beside `tooling`. On a pull request only the packages the
+# change affects, and the packages that depend on them, are formatted, built and tested; on main,
+# every day and on demand, every package; on a release tag, release.yml calls this workflow (the
+# tag itself does not trigger it, so the checks run once). The logic is .github/ci/affected.py.
+# The job named `cairo` is the one check to require: it succeeds when every package job does, or
+# when none was needed. No secret, no pull_request_target, read-only token, actions pinned by SHA.
+name: cairo
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+  workflow_call: # release.yml runs the same jobs, all packages, on a release tag
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels the superseded run; runs on main and tags are never cancelled.
+concurrency:
+  group: cairo-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # A pull request controls .tool-versions and the manifests: every value is validated by
+  # affected.py (exact versions, packages/<name> directories) before any step uses it.
+  affected:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      any: ${{ steps.matrix.outputs.any }}
+      scarb: ${{ steps.versions.outputs.scarb }}
+      snforge: ${{ steps.versions.outputs.snforge }}
+    steps:
+      # The full history: the merge base with the base branch is needed to list the changed files.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - id: versions
+        run: python3 .github/ci/affected.py versions
+
+      - uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd # v1.6.2
+        with:
+          scarb-version: ${{ steps.versions.outputs.scarb }}
+          cache: false
+
+      - name: unit tests of the CI logic and of the gas tool
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s .github/ci -p 'test_affected.py'
+          python3 -m unittest scripts/test_gas.py
+
+      # Defence in depth: on a pull request the script that narrows the run is the base branch's
+      # copy (a change under .github/ci/ then runs every package, so a pull request that edits the
+      # script cannot narrow its own run). Fail closed: when the base has no such script, or
+      # `git show` fails, EVERY package runs (the pull request's copy in its non-pull-request
+      # mode, which does not look at the changed files). The unit tests above use the pull
+      # request's copy. A pull request can also edit this workflow: the full run on main after
+      # the merge is the backstop.
+      - id: matrix
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          script=.github/ci/affected.py
+          if [ "$EVENT" = pull_request ]; then
+            if git show "origin/$BASE:$script" > "$RUNNER_TEMP/affected.py"; then
+              echo "using the base branch's $script"
+              python3 "$RUNNER_TEMP/affected.py" matrix
+            else
+              echo "the base branch has no $script (or git show failed): running every package"
+              env -u GITHUB_EVENT_NAME python3 "$script" matrix
+            fi
+          else
+            python3 "$script" matrix
+          fi
+
+  package:
+    needs: affected
+    if: needs.affected.outputs.any == 'true'
+    name: package (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.affected.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Registry and the workspace's target folder are cached, keyed by the root Scarb.lock.
+      - uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd # v1.6.2
+        with:
+          scarb-version: ${{ needs.affected.outputs.scarb }}
+          scarb-lock: Scarb.lock
+
+      # snforge and universal-sierra-compiler from their release archives, SHA-256 pinned and
+      # verified before extraction: foundry-rs/setup-snfoundry would call a mutable action tag.
+      - name: snforge
+        working-directory: .
+        env:
+          SNFORGE: ${{ needs.affected.outputs.snforge }}
+        run: bash .github/ci/install-snforge.sh
+
+      - name: toolchain is the one of .tool-versions
+        env:
+          SCARB: ${{ needs.affected.outputs.scarb }}
+          SNFORGE: ${{ needs.affected.outputs.snforge }}
+        run: |
+          set -euo pipefail
+          scarb --version
+          snforge --version
+          scarb --version | grep -q "^scarb $SCARB " || { echo "scarb is not $SCARB" >&2; exit 1; }
+          snforge --version | grep -qx "snforge $SNFORGE" || { echo "snforge is not $SNFORGE" >&2; exit 1; }
+
+      - name: format
+        run: scarb fmt --check
+
+      - name: build
+        run: scarb build
+
+      - name: test
+        run: snforge test
+
+      # Budgets within [measured, ceil(1.05 x measured)], and GAS.md equal to the measures.
+      - name: gas
+        working-directory: .
+        env:
+          DIR: ${{ matrix.dir }}
+        run: python3 scripts/gas.py "$DIR" --check
+
+  # The stable name for a required check.
+  cairo:
+    needs: [affected, package]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: every package job succeeded, or none was needed
+        env:
+          AFFECTED: ${{ needs.affected.result }}
+          PACKAGE: ${{ needs.package.result }}
+          ANY: ${{ needs.affected.outputs.any }}
+        run: |
+          set -euo pipefail
+          echo "affected=$AFFECTED package=$PACKAGE any=$ANY"
+          [ "$AFFECTED" = success ] || { echo "affected did not succeed" >&2; exit 1; }
+          if [ "$ANY" = true ]; then
+            [ "$PACKAGE" = success ] || { echo "a package job did not succeed" >&2; exit 1; }
+          else
+            [ "$PACKAGE" = skipped ] || { echo "unexpected package result" >&2; exit 1; }
+          fi

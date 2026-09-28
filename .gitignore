@@ -7,3 +7,5 @@
 # Build outputs and caches.
 target/
 .snfoundry_cache/
+__pycache__/
+*.py[cod]
