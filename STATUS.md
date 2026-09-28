@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 23:08 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 23:52 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -28,8 +28,13 @@ L2 gas per transaction, the worst case uses 64 %. **The project manager ruled th
 package allows must stay under 20M L2 gas, with caps refused at definition time, quests per task
 cut first, and the game's own use benchmarked. **Fix loop 1** (the audit's findings) is done
 (22:29 to 22:40 UTC: a quest retired by a hook is skipped; re-entry, the dependents ceiling and
-the slow merge path tested; 310 tests within budget, CI green). **Fix loop 2** (the cost cap)
-runs since 22:44 UTC, then the `[GPT-6-Astra]` re-audit.
+the slow merge path tested; 310 tests within budget, CI green). **Fix loop 2** (the cost cap,
+22:44 to 23:42 UTC) measured `progress_many` on a grid of 111 points (model within 0.02 %),
+removed about 3 % of waste, measured the game's own use at **10.1M**, and **stopped as its brief
+said**: a completed quest costs about 1.17M, most of it its two changed storage slots, so even one
+quest per task and no prerequisite measures 20.6M at 16 tasks. **Asked of the project manager:**
+[PENDING-quest-cost-cap](docs/decisions/PENDING-quest-cost-cap.md) (recommendation: progress walks
+the player's short list of accepted quests, H = 4, about 5.6M worst case, as a new lot ARC-03c).
 
 **Launcher** ([#8](https://github.com/bal7hazar/quiver/pull/8), CI green, `[GPT-6-Sol]` audit
 waiting for a slot): the budget of 3 counted by the launcher across the three tracks, failing
@@ -59,7 +64,7 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 2 (cost cap) since 22:44 UTC |
+| ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Exited 0 after fix loop 2; waits for the cost-cap decision |
 | PR-8 audit | setsid (codex) | `gpt-6-sol` | audit | Queued after ARC-03b (cap 1) |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
