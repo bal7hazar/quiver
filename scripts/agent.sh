@@ -209,6 +209,10 @@ fi
 [ "$cli" = claude ] || [ "$profile" = audit ] || die "codex audits only: profile must be audit"
 load_profile "$profile"
 
+# Variables of the user-level settings that no agent may see (names from the game's
+# OPERATIONS §7): emptied on every claude launch and resume.
+secrets_off='{"env":{"SCARB_REGISTRY_AUTH_TOKEN":"","STARKNET_NETWORK":"","STARKNET_RPC_URL":"","STARKNET_ACCOUNT_ADDRESS":"","STARKNET_PRIVATE_KEY":""}}'
+
 # Every launch prompt carries the foreground rule (OPERATIONS §3), whatever the brief says.
 if [ "$cli" = claude ]; then end="Your turn ends when REPORT.md is written."
 else end="You cannot write files: your final message is your report."; fi
@@ -235,6 +239,12 @@ case "$cli:$mode" in
   *) die "cli must be claude or codex" ;;
 esac
 if [ "$cli" = claude ]; then
+  # Secrets out of agents (as the game's launcher, bal7hazar/grimworld#38): the machine's
+  # user-level Claude settings define the Scarb registry token and the Sepolia account's
+  # variables for every claude process; --settings takes precedence over them, so every agent
+  # runs with them empty. The profiles deny the typed forms; a program an agent runs could still
+  # read the settings file (the owner's to close). Codex runs in a whitelisted environment.
+  cmd+=(--settings "$secrets_off")
   cmd+=(--permission-mode acceptEdits --allowedTools "${allow[@]}")
   [ "${#deny[@]}" -eq 0 ] || cmd+=(--disallowedTools "${deny[@]}")
   cmd+=(--max-turns 400 --output-format text)

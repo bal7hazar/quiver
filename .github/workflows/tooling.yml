@@ -41,6 +41,17 @@ jobs:
           done
           grep -q -- '^# \[Opus 5.5\] smoke resume (implement)' \
             <<< "$(scripts/agent.sh --dry-run smoke claude opus resume "x" implement)"
+          # Every claude launch, new or resumed, whatever the profile, empties the registry token and
+          # the Sepolia account's variables.
+          for profile in research audit implement; do
+            for mode in new resume; do
+              out=$(scripts/agent.sh --dry-run smoke claude opus "$mode" "x" "$profile")
+              for var in SCARB_REGISTRY_AUTH_TOKEN STARKNET_NETWORK STARKNET_RPC_URL STARKNET_ACCOUNT_ADDRESS STARKNET_PRIVATE_KEY; do
+                grep -qF -- "\\\"$var\\\":\\\"\\\"" <<< "$out" || { echo "$var not emptied: $profile $mode" >&2; exit 1; }
+              done
+              grep -qF -- ' --settings ' <<< "$out"
+            done
+          done
           # Every profile denies publishing a package and reading the user-level settings, which
           # hold the registry token (D-128).
           for profile in research audit implement; do
@@ -48,7 +59,7 @@ jobs:
             deny=${out#*--disallowedTools}
             [ "$deny" != "$out" ] || { echo "no deny rules: $profile" >&2; exit 1; }
             grep -qF -- 'Bash\(scarb\ publish\*\)' <<< "$deny"
-            grep -qF -- 'Read\(~/.claude/settings.json\)' <<< "$deny"
+            grep -qF -- 'Read\(~/.claude/\*\*\)' <<< "$deny"
             grep -qF -- 'Bash\(printenv\*\)' <<< "$deny"
           done
           for model in gpt-6-astra gpt-6-sol gpt-6-luna; do
