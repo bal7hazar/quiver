@@ -450,8 +450,13 @@ pub mod QuestComponent {
             if batch_first_position(batch, @quest_tasks) != Option::Some(position) {
                 return;
             }
-            // 2. A; skip outside the schedule
+            // 2. A; skip a quest retired since the pages were read (a hook of an earlier quest
+            // of this call may retire it: page removal alone does not stop this call), then
+            // outside the schedule
             let definition = self.Quest_definitions.read(quest_id);
+            if definition.retired {
+                return;
+            }
             let interval_id = match schedule_interval_id(@definition.schedule, time) {
                 Option::Some(interval_id) => interval_id,
                 Option::None => { return; },
