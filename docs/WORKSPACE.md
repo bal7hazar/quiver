@@ -98,6 +98,11 @@ of the sources has no measured result (an `#[ignore]`d or filtered test included
 snforge's summary reports a test ignored or filtered out: every test runs and has a budget.
 Commit `GAS.md` with the change.
 
+Limit of the tool (ARC-03a): it derives each test's name from its file, as snforge names tests
+when every file of `tests/` is its own module. A `tests/lib.cairo` that declares the modules
+renames the test crate, and every test would then read as unmeasured: do not add one, or
+extend `scripts/gas.py` first.
+
 ## 6. Release, up to the archive
 
 1. Move the changelog's `Unreleased` entries under `## [x.y.z] - date`, set the manifest's version,
