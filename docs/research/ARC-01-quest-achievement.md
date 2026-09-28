@@ -20,16 +20,22 @@ Nothing was built or run. A citation `quest/src/component.cairo:224` means
   call, and a recurring prerequisite underflows a one-off dependent's lock counter. Reading
   also found **ten further findings**, D-5 to D-14 (§2). Point 5 is about `social` and is out of scope.
 - The proposed native API (§3) keeps the concepts (tasks with a target, windows, intervals,
-  AND prerequisites, completion, claim, hooks, a mode per call). It changes four things:
+  AND prerequisites, completion, claim, hooks, a mode per call). It changes these things:
   - **Prerequisites are evaluated lazily.** A dependent is unlocked when each prerequisite
     has been completed at least once. Nothing is pushed to dependents when a prerequisite
     completes. This removes three of the four ADR-0004 defects by construction.
-  - **Identifiers are `u32` and every record is packed** into one storage slot.
-  - There is an **optional accept step**.
+  - **Identifiers are `u32` and every record is packed** into one storage slot. Interval ids
+    are `u64`, so they cannot overflow.
+  - There is an **optional accept step**. An acceptance holds for the interval in which it
+    was made and **expires at rollover**.
+  - **Batches are bounded and aggregated.** `progress_many` takes at most 8 entries and
+    writes each affected record once per call.
+  - **Retirement frees association slots**, so the cap of 28 quests per task counts live
+    quests, not every quest ever defined.
   - **Access control is built in**: a registry of reporters, plus two authorization hooks.
 - Both names, `quiver_quest` and `quiver_achievement`, are **free on scarbs.xyz** today
   (§6.5).
-- Seventeen open questions for A-G1 are listed in §7, each with a recommendation.
+- Nineteen open questions for A-G1 are listed in §7, each with a recommendation.
 
 ---
 
@@ -343,35 +349,62 @@ dependent's interval **current at the time** of the prerequisite's completion
 |---|---|---|---|
 | `quest_recurring_dependent_stays_unlocked` | A one-off; D daily with `[A]`; A completed on day 0 | On day 1 and day 5, `progress(P, T_D, total, Storage)` | D completes on each day |
 
-### D-6 — A quest defined after its prerequisite was completed is locked for ever: **confirmed** (new)
+### D-6 — A quest defined after its prerequisite was completed ignores that completion: **confirmed** (new), locked for ever only when the prerequisite is one-off
 
 The lock counter is initialised at `conditions.len()` when the dependent's completion is
-first read (`store.cairo:57`). Completions of the prerequisite that happened **before** the
-dependent was created never decrement it. This matters for the game, whose quests are added
-as regions open.
+first read (`store.cairo:57`). The dependent enters the prerequisite's reverse index only
+when the dependent is created (`quest/src/component.cairo:178-183`). From then on, **every**
+completion of the prerequisite decrements it (`:262-272`). Completions that happened
+**before** the dependent was created are never counted. The outcome depends on the
+prerequisite's recurrence:
+
+| Prerequisite | Outcome for a dependent defined after the player completed it |
+|---|---|
+| **One-off** | It cannot be completed again, so the dependent is **locked for ever** for that player |
+| **Recurring** | Its next completion, in a later interval, decrements the dependent's completion **for the dependent's interval current at that time**. The dependent unlocks after a wait of at least one interval of the prerequisite. D-4 and D-5 still apply afterwards |
+
+This matters for the game, whose quests are added as regions open. Native rule: a
+completion counts whenever it happened (§3.2).
 
 | Test | Given | When | Then |
 |---|---|---|---|
-| `quest_prerequisite_completed_before_definition` | A completed by P | B defined with `[A]`, then `progress(P, T_B, 1, Storage)` | B counts 1 |
+| `quest_prerequisite_completed_before_definition` | A one-off, completed by P | B defined with `[A]`, then `progress(P, T_B, 1, Storage)` | B counts 1 |
+| `quest_recurring_prerequisite_completed_before_definition` | A daily, completed by P on day 0 | On day 0, B defined with `[A]`, then `progress(P, T_B, 1, Storage)` | B counts 1 on day 0 (Dojo would wait for A's completion on day 1) |
 
 ### D-7 — Conditions are not validated: **confirmed** (new)
 
 `DefinitionTrait::new` checks the id, the tasks, the window and the interval, but not the
 conditions (`definition.cairo:19-43`). `create` inserts them unchecked
-(`component.cairo:179-183`). The consequences:
+(`component.cairo:179-183`). The consequences depend on the prerequisite's recurrence and on
+the order of definitions:
 
-- A **self-condition** locks the quest for ever. The module's own unit tests build one:
-  `CONDITIONS()` is `[QUEST_ID]` (`definition.cairo:154-156`).
-- A **duplicate** condition `[A, A]` sets `lock_count = 2`, but `QuestCondition.insert`
-  deduplicates (`condition.cairo:25-29`), so A's completion decrements once: **locked for
-  ever**.
-- An **unknown** quest id also locks the dependent for ever.
+- **Self-condition** (`[Q]` on Q): locked for ever, **whatever the recurrence**. Q must
+  complete to unlock itself, and a locked quest accepts no progress (`component.cairo:225`).
+  The module's own unit tests build one: `CONDITIONS()` is `[QUEST_ID]`
+  (`definition.cairo:154-156`).
+- **Duplicate condition** `[A, A]`. The lock counter starts at 2, but `QuestCondition.insert`
+  deduplicates (`condition.cairo:25-29`), so each completion of A decrements the dependent
+  once.
+  - If A is **one-off**, the dependent is **locked for ever**.
+  - If A is **recurring** and the dependent is one-off, the dependent's interval-0 counter
+    reaches 0 at A's second completion, in a later interval. A's third completion then
+    underflows it (D-4).
+  - If both are recurring, both decrements must land in the **same** interval of the
+    dependent, which needs A's interval to be shorter than the dependent's.
+- **A condition naming a quest not yet defined.** The reverse index entry for that id is
+  written anyway (`component.cairo:179-183`). If a quest with that id is **defined later**
+  and completed, the dependent is decremented and can unlock. Only an id that is **never
+  defined** locks the dependent for ever.
+
+Native: self and duplicate conditions are rejected. Requiring every condition to be
+**already defined** is a design choice, not a Dojo defect: it rules out cycles without a
+graph search (below).
 
 | Test | Given | When | Then |
 |---|---|---|---|
 | `quest_define_rejects_self_condition` | — | `define(Q, …, conditions: [Q])` | Reverts `'Quest: invalid condition'` |
 | `quest_define_rejects_duplicate_condition` | A defined | `define(B, …, [A, A])` | Reverts `'Quest: invalid condition'` |
-| `quest_define_rejects_unknown_condition` | — | `define(B, …, [99])` | Reverts `'Quest: invalid condition'` |
+| `quest_define_rejects_undefined_condition` | Quest 99 not defined | `define(B, …, [99])` | Reverts `'Quest: invalid condition'` (native choice: conditions must be already defined) |
 | `quest_define_rejects_too_many_conditions` | 8 quests defined | `define(B, …, [8 ids])` | Reverts `'Quest: too many conditions'` |
 
 A cycle needs a quest that refers to one defined after it. Requiring conditions to be
@@ -479,11 +512,36 @@ These are defects of reading and documentation. None needs a test.
 | `quest_claim_twice_reverts` | Q completed and claimed | Claim again | Reverts `'Quest: already claimed'` |
 | `quest_claim_uncompleted_reverts` | Q not completed | Claim | Reverts `'Quest: not completed'` |
 | `quest_accept_required` | Q with `needs_accept` | Progress before `accept` | Not counted; counted after `accept` |
-| `quest_completion_releases_acceptance` | Q with `needs_accept`, accepted | Completes | `record.active == false` |
+| `quest_completion_releases_acceptance` | Q with `needs_accept`, accepted | Completes | `record.active == false`; `quest_is_accepted == false` |
+| `quest_acceptance_expires_at_rollover` | Daily Q with `needs_accept` (`start = 0`); P accepts on day 0 and does not finish | On day 1, `progress(P, T, 1, Storage)` | Not counted; `quest_is_accepted(P, Q) == false`; `accept(P, Q)` on day 1 succeeds and later progress counts |
+| `quest_accept_twice_same_interval_reverts` | Daily Q, accepted on day 0 | `accept(P, Q)` again on day 0 | Reverts `'Quest: already accepted'` |
+| `quest_accept_after_completion_reverts` | One-off Q with `needs_accept`, completed by P | `accept(P, Q)` | Reverts `'Quest: already completed'` |
+| `quest_accept_after_daily_completion` | Daily Q with `needs_accept`, completed by P on day 0 | `accept(P, Q)` on day 0, then on day 1 | Day 0 reverts `'Quest: already completed'`; day 1 succeeds |
+| `quest_abandon_expired_reverts` | Daily Q accepted on day 0 | `abandon(P, Q)` on day 1 | Reverts `'Quest: not accepted'` |
+| `quest_batch_two_tasks_one_quest_one_write` | Q with tasks T1 (total 5), T2 (total 5) | `progress_many(P, [(T1, 5), (T2, 5)], Storage)` | Q's P written once (one storage write for Q's progress, checked by gas budget and by a storage-write count in the mock); Q completed; one `QuestCompleted`; `on_quest_complete` once |
+| `quest_batch_duplicate_entries_merged` | Q with T (total 10) | `progress_many(P, [(T, 4), (T, 4)], Storage)` | Count 8; P written once |
+| `quest_batch_event_mode_one_event_per_task` | — | `progress_many(P, [(T1, 1), (T1, 2), (T2, 0), (T3, 1)], Event)` | Two events: `(T1, 3)` and `(T3, 1)`; nothing for `T2` |
+| `quest_batch_above_bound_reverts` | — | `progress_many` with `MAX_ENTRIES + 1` entries | Reverts `'Quest: too many entries'` |
+| `quest_batch_bound_accepted` | `MAX_ENTRIES` distinct tasks, each on `MAX_QUESTS_PER_TASK` quests | One `progress_many` | Succeeds within the worst-case budget of §5 |
 | `quest_task_shared_by_max_quests` | `MAX_QUESTS_PER_TASK` quests on T | One progress | All count; gas within the worst-case budget |
-| `quest_define_rejects_association_overflow` | `MAX_QUESTS_PER_TASK` quests on T | Define one more on T | Reverts `'Quest: task full'` |
+| `quest_define_rejects_association_overflow` | `MAX_QUESTS_PER_TASK` live quests on T | Define one more on T | Reverts `'Quest: task full'` |
+| `quest_retire_frees_slot` | `MAX_QUESTS_PER_TASK` quests on T; Q3 retired | Define one more on T | Succeeds; the pages hold 28 ids, not Q3 |
+| `quest_retired_not_progressed` | Q retired | `progress(P, T, 1, Storage)` | Q's progress unchanged; no read of Q's A (checked by gas) |
+| `quest_retired_completed_still_claimable` | Q completed by P, then retired | `claim(P, Q, 0)` | Succeeds |
+| `quest_retired_accept_reverts` | Q retired | `accept(P, Q)` | Reverts `'Quest: retired'` |
+| `quest_retire_twice_reverts` | Q retired | `retire(Q)` | Reverts `'Quest: retired'` |
+| `quest_redefine_retired_reverts` | Q retired | `define(Q, …)` | Reverts `'Quest: already defined'` |
+| `quest_interval_id_is_u64` | Q with `start = 0`, `interval = duration = 1` | Progress at time `2^40` | Interval id `2^40`, no overflow |
+| `quest_is_unlocked_evaluates_uncached` | A one-off, completed by P; B with `[A]`, no progress on B yet | `quest_is_unlocked(P, B)` | `true`, and `quest_record(P, B).unlocked` is still `false` (a view writes nothing) |
+| `quest_empty_slot_reads_undefined` | Nothing defined | `quest_definition(5)` | Reverts `'Quest: does not exist'` |
+| `quest_packing_round_trip` | Every packed type, with each field at 0 and at its maximum | Pack then unpack | Identity; `defined` and `retired` bits at their positions |
 | `achievement_tiers_share_task` | A1 (T, 10), A2 (T, 50), A3 (T, 100) | `progress(P, T, 60)` | A1 and A2 completed, A3 at 60 |
 | `achievement_tier_kept` | A1 completed | Any later progress | A1 stays completed |
+| `achievement_batch_two_tasks_one_write` | A with tasks T1, T2 | `progress_many(P, [(T1, x), (T2, y)], Storage)` | A's P written once |
+| `achievement_batch_above_bound_reverts` | — | `MAX_ENTRIES + 1` entries | Reverts `'Achievement: too many entries'` |
+| `achievement_retire_frees_slot` | 28 achievements on T; one retired | Define one more on T | Succeeds |
+| `achievement_retired_completed_kept` | A completed, then retired | `achievement_progress(P, A)`; `claim(P, A)` | Still completed; claim succeeds |
+| `achievement_empty_slot_reads_undefined` | Nothing defined | `achievement_definition(5)` | Reverts `'Achievement: does not exist'` |
 
 ---
 
@@ -496,9 +554,10 @@ These are defects of reading and documentation. None needs a test.
 | Two layers per package | `logic`: types and pure functions, state in and state out, no storage, tested without a deployment. `component`: storage, events, hooks and access control around `logic` |
 | No Dojo, no `graffiti` | `starknet` (Cairo 2.19) only; `snforge_std` as a dev-dependency |
 | Identifiers | `player_id: felt252` (A-3: the game passes an adventurer id or an account). `quest_id`, `achievement_id`, `task_id`: **`u32`** (docs/CAIRO.md §4 "u32 identifiers"; they make packing possible, §5). Id `0` is invalid (the empty-slot sentinel). Open question Q-1 |
-| Time | `u64` seconds from `starknet::get_block_timestamp()`. Interval ids are `u32` |
+| Time | `u64` seconds from `starknet::get_block_timestamp()`. Interval ids are **`u64`**. `(time - start) / interval <= time < 2^64`, so an id never overflows, whatever the schedule. A `u32` id would overflow after 2^32 intervals: 136 years at `interval = 1`, which a valid schedule allows. Widening costs nothing measurable: ids are storage keys (hashed) or event data (one felt either way), and the record has room for 64 bits (§3.3) |
 | Counts | `u32` per call and per task, **saturating at the task's total** |
-| Bounds | `MAX_TASKS = 3` per quest or achievement; `MAX_CONDITIONS = 7` per quest; `MAX_QUESTS_PER_TASK = 28` (4 pages of 7). Every loop is bounded by one of these; the bounds are in each package's README |
+| Bounds | `MAX_TASKS = 3` per quest or achievement; `MAX_CONDITIONS = 7` per quest; `MAX_QUESTS_PER_TASK = 28` **live** quests (4 pages of 7; retirement frees a slot); `MAX_ENTRIES = 8` entries per `progress_many` call. Every loop is bounded by one of these; the bounds are in each package's README |
+| One write per record per call | A progress call, single or batched, reads and writes each affected `QuestProgress`, `QuestRecord` or `AchievementProgress` **at most once** (docs/CAIRO.md §5). The consumer calls `progress_many` at most once per player per transaction; the package cannot see across calls, and the README says so |
 | Mode per call | `enum Mode { Storage, Event }` on `progress`. Definitions are always stored (Q-7) |
 | Never revert for a quest-level reason | Progress skips a quest that is inactive, locked, not accepted or already complete. It reverts only on access control or malformed input |
 | Checks, effects, hooks | State is written before a hook is called, so that a hook sees the new state and a re-entrant call sees it too |
@@ -511,7 +570,8 @@ These are defects of reading and documentation. None needs a test.
 pub const MAX_TASKS: u8 = 3;
 pub const MAX_CONDITIONS: u8 = 7;
 pub const QUESTS_PER_PAGE: u8 = 7;
-pub const MAX_PAGES: u8 = 4;               // MAX_QUESTS_PER_TASK = 28
+pub const MAX_PAGES: u8 = 4;               // MAX_QUESTS_PER_TASK = 28 live quests
+pub const MAX_ENTRIES: u32 = 8;            // entries per progress_many call
 
 #[derive(Drop, Copy, Serde, PartialEq, Debug, starknet::Store)]
 pub enum Mode { #[default] Storage, Event }
@@ -530,6 +590,8 @@ pub struct QuestDefinition {           // storage slot A
     pub task_count: u8,                // 1..=MAX_TASKS
     pub condition_count: u8,           // 0..=MAX_CONDITIONS
     pub needs_accept: bool,
+    pub defined: bool,                 // presence bit: true once define() wrote the slot
+    pub retired: bool,                 // set by retire(); the quest is off every page
 }
 
 pub struct QuestTasks {                // storage slot B; unused entries are zero
@@ -540,8 +602,8 @@ pub struct QuestConditions {           // storage slot C; unused entries are zer
     pub q0: u32, pub q1: u32, pub q2: u32, pub q3: u32, pub q4: u32, pub q5: u32, pub q6: u32,
 }
 
-pub struct QuestIdPage {               // association page: quests using a task
-    pub len: u8,                       // 0..=7
+pub struct QuestIdPage {               // association page: live quests using a task
+    pub len: u8,                       // 0..=7; pages are kept contiguous (see retire)
     pub ids: QuestConditions,          // same 7 × u32 shape
 }
 
@@ -555,8 +617,13 @@ pub struct QuestRecord {               // per (player, quest), across intervals
     pub completions: u32,              // completions in all intervals
     pub claims: u32,                   // claims in all intervals
     pub unlocked: bool,                // prerequisites seen met (cache)
-    pub active: bool,                  // accepted and not yet completed or abandoned
+    pub active: bool,                  // accepted, and not completed or abandoned since
+    pub accepted_interval: u64,        // interval id in which it was accepted
 }
+// An acceptance holds only in the interval in which it was made:
+//   accepted(record, iid) = record.active && record.accepted_interval == iid.
+// A one-off quest always has iid 0, so its acceptance never expires. A recurring quest's
+// acceptance expires at rollover without any write: the next interval's id differs.
 
 pub struct TaskProgress { pub task_id: u32, pub count: u32 }
 ```
@@ -572,9 +639,9 @@ pub fn schedule_validate(schedule: @QuestSchedule);
 pub fn schedule_is_active(schedule: @QuestSchedule, time: u64) -> bool;
     // start <= time && (end == 0 || time < end)
     //   && (interval == 0 || (time - start) % interval < duration)
-pub fn schedule_interval_id(schedule: @QuestSchedule, time: u64) -> Option<u32>;
+pub fn schedule_interval_id(schedule: @QuestSchedule, time: u64) -> Option<u64>;
     // None when inactive (never panics); Some(0) for one-off;
-    // Some((time - start) / interval) otherwise
+    // Some((time - start) / interval) otherwise; cannot overflow (§3.1)
 
 // definition
 pub fn definition_new(
@@ -594,20 +661,35 @@ pub fn tasks_index_of(tasks: @QuestTasks, task_count: u8, task_id: u32) -> Optio
 pub fn tasks_span(tasks: @QuestTasks, task_count: u8) -> Span<QuestTask>;
 pub fn conditions_span(conditions: @QuestConditions, count: u8) -> Span<u32>;
 
+// batch
+pub fn batch_merge(entries: Span<TaskProgress>) -> Span<TaskProgress>;
+    // panics 'Quest: too many entries' when entries.len() > MAX_ENTRIES;
+    // drops count == 0, sums duplicate task ids (saturating at 0xffffffff),
+    // keeps the order of first occurrence; at most MAX_ENTRIES² comparisons
+pub fn batch_count_of(batch: Span<TaskProgress>, task_id: u32) -> u32;          // 0 if absent
+pub fn batch_first_position(batch: Span<TaskProgress>, tasks: @QuestTasks, task_count: u8) -> Option<u32>;
+    // the smallest position in `batch` of any of the quest's tasks; the component processes
+    // a quest only at that position, so each quest is handled once per call
+
 // progress
 pub fn progress_add(
-    progress: QuestProgress, tasks: @QuestTasks, task_count: u8, index: u8, count: u32,
+    progress: QuestProgress, tasks: @QuestTasks, task_count: u8, batch: Span<TaskProgress>,
 ) -> (QuestProgress, bool /* changed */, bool /* completed by this call */);
-    // saturating: c[index] = min(c[index] + count, total[index]), computed without overflow;
-    // completed by this call when every c[j] == total[j] for j < task_count
+    // for each task j < task_count: c[j] = min(c[j] + batch_count_of(batch, task_j), total[j]),
+    // computed without overflow (saturating); completed by this call when every c[j] == total[j]
     // and progress.completed was false; sets progress.completed
 pub fn progress_is_complete(progress: @QuestProgress, tasks: @QuestTasks, task_count: u8) -> bool;
 
 // record
 pub fn prerequisites_met(records: Span<QuestRecord>) -> bool;   // every completions > 0
+pub fn record_is_accepted(record: @QuestRecord, interval_id: u64) -> bool;
+    // record.active && record.accepted_interval == interval_id
 pub fn record_complete(record: QuestRecord) -> QuestRecord;     // completions + 1, active = false
-pub fn record_accept(record: QuestRecord) -> QuestRecord;       // panics 'Quest: already active'
-pub fn record_abandon(record: QuestRecord) -> QuestRecord;      // panics 'Quest: not active'
+pub fn record_accept(record: QuestRecord, interval_id: u64) -> QuestRecord;
+    // panics 'Quest: already accepted' if record_is_accepted(record, interval_id);
+    // else active = true, accepted_interval = interval_id (replaces an expired acceptance)
+pub fn record_abandon(record: QuestRecord, interval_id: u64) -> QuestRecord;
+    // panics 'Quest: not accepted' unless record_is_accepted(record, interval_id); active = false
 
 // claim
 pub fn claim(progress: QuestProgress, record: QuestRecord)
@@ -617,6 +699,9 @@ pub fn claim(progress: QuestProgress, record: QuestRecord)
 // pages
 pub fn page_push(page: QuestIdPage, quest_id: u32) -> QuestIdPage;   // panics when len == 7
 pub fn page_span(page: @QuestIdPage) -> Span<u32>;
+pub fn page_position(page: @QuestIdPage, quest_id: u32) -> Option<u8>;
+pub fn page_set(page: QuestIdPage, position: u8, quest_id: u32) -> QuestIdPage;
+pub fn page_pop(page: QuestIdPage) -> (QuestIdPage, u32);           // removes the last id; panics when len == 0
 ```
 
 Packing is done with `impl … of starknet::storage_access::StorePacking<T, felt252>` for
@@ -633,6 +718,10 @@ Packing is done with `impl … of starknet::storage_access::StorePacking<T, felt
 | Counts | `u128`, unbounded, `+=` | `u32`, saturating at the total | D-9; packs three per slot |
 | Inactive quest at progress | Skipped, but the unlock of an inactive dependent reverts | Skipped; never reverts | D-3 |
 | `duration > interval` | Accepted | Rejected | D-12 |
+| Acceptance | None (no accept step) | Optional per quest; holds in the interval in which it was made; refused when that interval is already completed | Design/06 and design/14: a daily contract is drawn and held for that day |
+| Several tasks in one call | One call per task; each writes its advancement | `progress_many`: merged, bounded, each record written once | docs/CAIRO.md §5 |
+| End of life | None: associations only grow | `retire` removes the quest from its tasks' pages | A cap on live quests, not on quests ever defined; expired quests cost nothing on progress |
+| Interval id | `u64` | `u64` | Kept wide: no overflow (§3.1) |
 
 ### 3.3 `quiver_quest` — component storage
 
@@ -646,7 +735,7 @@ pub struct Storage {
     Quest_tasks: Map<u32, QuestTasks>,                       // slot B, key quest_id
     Quest_conditions: Map<u32, QuestConditions>,             // slot C, key quest_id
     Quest_task_pages: Map<(u32, u8), QuestIdPage>,           // key (task_id, page)
-    Quest_progress: Map<(felt252, u32, u32), QuestProgress>, // key (player_id, quest_id, interval_id)
+    Quest_progress: Map<(felt252, u32, u64), QuestProgress>, // key (player_id, quest_id, interval_id)
     Quest_records: Map<(felt252, u32), QuestRecord>,         // key (player_id, quest_id)
     Quest_reporters: Map<ContractAddress, bool>,
 }
@@ -654,17 +743,30 @@ pub struct Storage {
 
 | Slot | Bits (from 0) | Width and reason |
 |---|---|---|
-| **A** `QuestDefinition` | `start` [0, 64) · `end` [64, 128) · `duration` [128, 160) · `interval` [160, 192) · `task_count` [192, 194) · `condition_count` [194, 197) · `needs_accept` [197] · `defined` [198] | Times stay `u64` as Starknet gives them; `duration` and `interval` fit `u32` (136 years); counts fit 2 and 3 bits under the bounds; `defined` tells an existing quest from the zero value, since all other fields may be 0. **199 bits** |
+| **A** `QuestDefinition` | `start` [0, 64) · `end` [64, 128) · `duration` [128, 160) · `interval` [160, 192) · `task_count` [192, 194) · `condition_count` [194, 197) · `needs_accept` [197] · `defined` [198] · `retired` [199] | Times stay `u64` as Starknet gives them; `duration` and `interval` fit `u32` (136 years); counts fit 2 and 3 bits under the bounds; `defined` tells an existing quest from the zero value, since all other fields may be 0. **200 bits** |
 | **B** `QuestTasks` | `t{i}.task_id` [64i, 64i + 32) · `t{i}.total` [64i + 32, 64i + 64), i = 0..3 | Three tasks of two `u32`. **192 bits**. A fourth task at `u32` would need 256 bits > 251: hence `MAX_TASKS = 3` (Q-2) |
 | **C** `QuestConditions` | `q{i}` [32i, 32i + 32), i = 0..7 | Seven `u32` ids. **224 bits**. Read only while `record.unlocked` is false |
-| Page `QuestIdPage` | `ids.q{i}` [32i, 32i + 32), i = 0..7 · `len` [224, 227) | Seven quest ids per page. **227 bits**. Pages 0..3 are read in order until a page with `len < 7` |
+| Page `QuestIdPage` | `ids.q{i}` [32i, 32i + 32), i = 0..7 · `len` [224, 227) | Seven quest ids per page. **227 bits**. Pages are **contiguous**: every page before the last non-full one is full, which `define` (append to the first non-full page) and `retire` (fill the hole with the last id) keep true. Pages 0..3 are read in order until a page with `len < 7`, or until the fourth page |
 | `QuestProgress` | `c0` [0, 32) · `c1` [32, 64) · `c2` [64, 96) · `completed` [96] · `claimed` [97] | All counts of one quest in one interval, so one read and one write per quest per call. **98 bits**. The completion time is not stored: it is in the block of `QuestCompleted` |
-| `QuestRecord` | `completions` [0, 32) · `claims` [32, 64) · `unlocked` [64] · `active` [65] | **66 bits** |
+| `QuestRecord` | `completions` [0, 32) · `claims` [32, 64) · `unlocked` [64] · `active` [65] · `accepted_interval` [66, 130) | The accepted interval is a full `u64`, like interval ids. **130 bits** |
 | `Quest_reporters` | `bool` | One slot per reporter |
 
 Packing is done with arithmetic (multiplying and dividing by powers of two from a constant
 table), as docs/CAIRO.md §3 says. No `u256` is needed: every packed value is below 2^251 and
 fits a `felt252`, with one `u128` split at most.
+
+**Presence bits.** `define` always writes A with `defined = 1`, that is, it adds `2^198` to the
+packed value. Unpacking reads bit 198 as `defined` and bit 199 as `retired`, with the same
+division and remainder as the other fields. A slot never written reads as the felt `0`, which
+unpacks to every field zero and `defined == false`. The component treats `defined == false`
+as "no such quest":
+- `definition` and `quest_definition` revert `'Quest: does not exist'`;
+- `accept` reverts `'Quest: does not exist'`;
+- `define` refuses a condition whose A is not defined (`'Quest: invalid condition'`), and
+  refuses to overwrite a defined A (`'Quest: already defined'`, retired or not).
+
+No other packed type needs a presence bit: a zero `QuestProgress`, `QuestRecord` or page is a
+valid initial state.
 
 ### 3.4 `quiver_quest` — events
 
@@ -679,6 +781,7 @@ pub enum Event {
     QuestProgressed: QuestProgressed,
     QuestCompleted: QuestCompleted,
     QuestClaimed: QuestClaimed,
+    QuestRetired: QuestRetired,
     QuestReporterSet: QuestReporterSet,
 }
 
@@ -691,7 +794,7 @@ pub struct QuestDefined {
     pub needs_accept: bool,
 }
 #[derive(Drop, starknet::Event)]
-pub struct QuestProgressed {           // Mode::Event only
+pub struct QuestProgressed {           // Mode::Event only; one per merged, non-zero entry
     #[key] pub player_id: felt252,
     #[key] pub task_id: u32,
     pub count: u32,
@@ -700,13 +803,17 @@ pub struct QuestProgressed {           // Mode::Event only
 pub struct QuestCompleted {            // Mode::Storage, once per completion
     #[key] pub player_id: felt252,
     #[key] pub quest_id: u32,
-    pub interval_id: u32,
+    pub interval_id: u64,
 }
 #[derive(Drop, starknet::Event)]
 pub struct QuestClaimed {
     #[key] pub player_id: felt252,
     #[key] pub quest_id: u32,
-    pub interval_id: u32,
+    pub interval_id: u64,
+}
+#[derive(Drop, starknet::Event)]
+pub struct QuestRetired {
+    #[key] pub quest_id: u32,
 }
 #[derive(Drop, starknet::Event)]
 pub struct QuestReporterSet {
@@ -715,7 +822,8 @@ pub struct QuestReporterSet {
 }
 ```
 
-Accept and abandon emit nothing. The player's own quests are read by view calls
+Accept and abandon emit nothing, and the expiry of an acceptance at rollover is not an event
+(there is no transaction at rollover). The player's own quests are read by view calls
 (ADR-0007 § Events are an interface); open question Q-6 covers events in storage mode.
 
 ### 3.5 `quiver_quest` — entrypoints and hooks
@@ -735,12 +843,12 @@ pub trait QuestHooksTrait<TContractState> {
     /// After a completion is written. `completions` includes this one (1 for the first).
     fn on_quest_complete(
         ref self: ComponentState<TContractState>,
-        player_id: felt252, quest_id: u32, interval_id: u32, completions: u32,
+        player_id: felt252, quest_id: u32, interval_id: u64, completions: u32,
     );
     /// After a claim is written. `claim_index` is 0 for the first claim of this quest by this player.
     fn on_quest_claim(
         ref self: ComponentState<TContractState>,
-        player_id: felt252, quest_id: u32, interval_id: u32, claim_index: u32,
+        player_id: felt252, quest_id: u32, interval_id: u64, claim_index: u32,
     );
 }
 ```
@@ -762,58 +870,117 @@ pub impl InternalImpl<
         quest_id: u32, schedule: QuestSchedule, tasks: Span<QuestTask>,
         conditions: Span<u32>, needs_accept: bool,
     );  // validates (§3.2) + each condition defined + not already defined + room in each task's pages;
-        // writes A, B, C (if conditions), one page per task; emits QuestDefined
+        // writes A (defined = 1), B, C (if conditions), one page per task; emits QuestDefined
+    fn retire(ref self: ComponentState<TContractState>, quest_id: u32);
+        // panics 'Quest: does not exist', 'Quest: retired'; removes the quest from each of its
+        // tasks' pages (below), sets A.retired, emits QuestRetired
     fn set_reporter(ref self: ComponentState<TContractState>, reporter: ContractAddress, allowed: bool);
     fn progress(
         ref self: ComponentState<TContractState>,
         player_id: felt252, task_id: u32, count: u32, mode: Mode,
-    );  // count == 0 or unknown task: no effect; Event: emits QuestProgressed only
+    );  // exactly progress_many(player_id, [TaskProgress { task_id, count }], mode)
     fn progress_many(
         ref self: ComponentState<TContractState>,
         player_id: felt252, entries: Span<TaskProgress>, mode: Mode,
-    );  // the same, for the results interface; bounded by entries.len(), which the consumer bounds
+    );  // panics 'Quest: too many entries' above MAX_ENTRIES; algorithm below
     fn accept(ref self: ComponentState<TContractState>, player_id: felt252, quest_id: u32);
-        // panics 'Quest: does not exist', 'Quest: no accept step', 'Quest: not active' (schedule),
-        // 'Quest: locked', 'Quest: already active'
+        // algorithm below; panics 'Quest: does not exist', 'Quest: retired', 'Quest: no accept step',
+        // 'Quest: not active' (outside the schedule), 'Quest: locked', 'Quest: already accepted',
+        // 'Quest: already completed'
     fn abandon(ref self: ComponentState<TContractState>, player_id: felt252, quest_id: u32);
-        // panics 'Quest: not active'; the counts of the interval are kept
+        // panics 'Quest: not active' (outside the schedule), 'Quest: not accepted' (no acceptance in
+        // the current interval); sets active = false; the counts of the interval are kept
     fn claim(
         ref self: ComponentState<TContractState>,
-        player_id: felt252, quest_id: u32, interval_id: u32,
+        player_id: felt252, quest_id: u32, interval_id: u64,
     ) -> u32;   // returns claim_index; writes progress and record, emits QuestClaimed,
-                // then calls on_quest_claim
+                // then calls on_quest_claim; allowed on a retired quest
     fn assert_reporter(self: @ComponentState<TContractState>, caller: ContractAddress);
         // panics 'Quest: not reporter'
-    // Reads (also used by QuestViewImpl)
+    // Reads (also used by QuestViewImpl); none writes
     fn definition(self: @ComponentState<TContractState>, quest_id: u32)
         -> (QuestDefinition, Span<QuestTask>, Span<u32>);   // panics 'Quest: does not exist'
-    fn progress_of(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32, interval_id: u32)
+    fn progress_of(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32, interval_id: u64)
         -> QuestProgress;
     fn record_of(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32) -> QuestRecord;
-    fn current_interval(self: @ComponentState<TContractState>, quest_id: u32) -> Option<u32>;
+    fn current_interval(self: @ComponentState<TContractState>, quest_id: u32) -> Option<u64>;
     fn is_unlocked(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32) -> bool;
+        // panics 'Quest: does not exist'; true if condition_count == 0 or record.unlocked;
+        // otherwise reads C and each prerequisite's record and returns prerequisites_met.
+        // It does not write the cache bit (a view); the next progress or accept does
+    fn is_accepted(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32) -> bool;
+        // record_is_accepted(record, current interval); false outside the schedule
 }
 ```
 
-**Progress in storage mode, step by step** (the specification ARC-03 implements):
+**`progress_many` in storage mode, step by step** (the specification ARC-03 implements;
+`progress` is the one-entry case):
 
-1. If `count == 0`, return. Set `time = get_block_timestamp()`.
-2. Read pages `(task_id, 0..)` while `len == 7` (at most 4). This gives the quest ids.
-3. For each quest `q`, in page order:
-   1. Read A. If `schedule_interval_id(time)` is `None`, skip.
-   2. If `needs_accept` or `condition_count > 0`, read the record `R(player, q)`:
-      - If `needs_accept && !R.active`, skip.
-      - If `condition_count > 0 && !R.unlocked`: read C, and read `R(player, p)` for each
-        prerequisite `p`. If `prerequisites_met` is false, skip. Otherwise set
-        `R.unlocked = true` and mark R to be written.
-   3. Read `P(player, q, iid)`. If it is completed, skip.
-   4. Read B and find the task's index. Apply `progress_add`. If nothing changed and R is
-      not marked, skip.
-   5. If the quest is completed by this call: read R if not yet read, apply
-      `R = record_complete(R)`, and mark R.
-   6. Write P, and write R if it is marked.
-   7. If the quest was completed: emit `QuestCompleted`, then call
-      `on_quest_complete(player, q, iid, R.completions)`.
+1. `batch = batch_merge(entries)`. This reverts above `MAX_ENTRIES`, drops zero counts and
+   merges duplicate tasks. If `batch` is empty, return: nothing is read or emitted. Set
+   `time = get_block_timestamp()`.
+2. For each entry `e` of `batch`, at position `i`:
+   1. Read the pages of `e.task_id` in order, while `len == 7`, at most 4 pages. This gives
+      the live quest ids on the task.
+   2. For each quest `q` on those pages:
+      1. Read B. If `batch_first_position(batch, B, task_count) != Some(i)`, skip: `q` was
+         already handled at an earlier entry. This is how a quest with two batched tasks is
+         handled once.
+      2. Read A. If `schedule_interval_id(time)` is `None`, skip.
+      3. If `needs_accept` or `condition_count > 0`, read the record `R(player, q)`:
+         - if `needs_accept && !record_is_accepted(R, iid)`, skip;
+         - if `condition_count > 0 && !R.unlocked`: read C and `R(player, p)` for each
+           prerequisite `p`. If `prerequisites_met` is false, skip. Otherwise set
+           `R.unlocked = true` and mark R to be written.
+      4. Read `P(player, q, iid)`. If it is completed, skip.
+      5. Apply `progress_add(P, B, task_count, batch)`. This adds **every** batched count of
+         `q`'s tasks at once. If nothing changed and R is not marked, skip.
+      6. If `q` is completed by this call: read R if not yet read,
+         `R = record_complete(R)`, and mark R.
+      7. **Write P once**, and write R once if it is marked.
+      8. If `q` was completed: emit `QuestCompleted`, then call
+         `on_quest_complete(player, q, iid, R.completions)`.
+
+A quest reached through several entries is skipped at every entry but the first one of its
+tasks, before its A is read. So each P and each R is read and written at most once per call.
+B may be read once per batched task of the quest, which is at most 3 reads and no write.
+Hooks run after the quest's own writes, in batch order; a later quest in the same call is
+processed after an earlier quest's hook has run.
+
+**`progress_many` in event mode**: `batch = batch_merge(entries)`, then one
+`QuestProgressed { player_id, task_id, count }` per entry of `batch`. There is no read and no
+write. An empty batch (every count zero) emits nothing.
+
+**`accept`, step by step:**
+
+1. Read A. Revert `'Quest: does not exist'` if it is not defined, `'Quest: retired'` if it is
+   retired, `'Quest: no accept step'` unless `needs_accept`.
+2. `iid = schedule_interval_id(now)`. Revert `'Quest: not active'` if it is `None`.
+3. Read R. If `condition_count > 0 && !R.unlocked`, evaluate the prerequisites (read C and
+   the K records). Revert `'Quest: locked'` if they are not met, else set `R.unlocked`.
+4. Revert `'Quest: already accepted'` if `record_is_accepted(R, iid)`.
+5. Read `P(player, q, iid)`. Revert `'Quest: already completed'` if it is completed. For a
+   one-off quest this refuses any second acceptance once it is done. For a daily quest it
+   refuses today's, and tomorrow's is allowed.
+6. `R = record_accept(R, iid)`. This replaces an acceptance that expired in an earlier
+   interval. Write R.
+
+**`retire`, step by step.** Pages must stay contiguous: every page before the last non-full
+page is full.
+
+1. Read A. Revert `'Quest: does not exist'` or `'Quest: retired'`. Read B.
+2. For each of the quest's tasks, at most 3:
+   1. Read the task's pages, at most 4, and find the quest's page and position (`hole`).
+   2. Find the last non-empty page (`last`), `page_pop` its last id, and, unless that id is
+      the quest itself, `page_set` it at `hole`.
+   3. Write the page of `hole` and the page of `last`: one write if they are the same page.
+3. Set `A.retired = 1` and write A. Emit `QuestRetired`.
+
+Player data is left in place. Completed intervals stay claimable. `accept` refuses a retired
+quest, and progress never reaches it, because it is on no page. A retired prerequisite stays
+met for players who completed it. Other players can never meet it, so the admin retires or
+never defines its dependents. The package does not check this: that would need the reverse
+index that §3.9 drops. The README says so.
 
 **External ABI.** This is optional: the consumer embeds `QuestImpl`, `QuestViewImpl`, both,
 or neither.
@@ -823,6 +990,7 @@ or neither.
 pub trait IQuest<TState> {
     fn define(ref self: TState, quest_id: u32, schedule: QuestSchedule, tasks: Span<QuestTask>,
               conditions: Span<u32>, needs_accept: bool);            // authorize_admin(caller)
+    fn retire(ref self: TState, quest_id: u32);                      // authorize_admin(caller)
     fn set_reporter(ref self: TState, reporter: ContractAddress, allowed: bool); // authorize_admin(caller)
     fn progress(ref self: TState, player_id: felt252, task_id: u32, count: u32, mode: Mode);
                                                                      // caller is a registered reporter
@@ -830,16 +998,17 @@ pub trait IQuest<TState> {
                                                                      // caller is a registered reporter
     fn accept(ref self: TState, player_id: felt252, quest_id: u32);  // authorize_player(caller, player_id)
     fn abandon(ref self: TState, player_id: felt252, quest_id: u32); // authorize_player
-    fn claim(ref self: TState, player_id: felt252, quest_id: u32, interval_id: u32) -> u32; // authorize_player
+    fn claim(ref self: TState, player_id: felt252, quest_id: u32, interval_id: u64) -> u32; // authorize_player
 }
 
 #[starknet::interface]
 pub trait IQuestView<TState> {
     fn quest_definition(self: @TState, quest_id: u32) -> (QuestDefinition, Span<QuestTask>, Span<u32>);
-    fn quest_progress(self: @TState, player_id: felt252, quest_id: u32, interval_id: u32) -> QuestProgress;
+    fn quest_progress(self: @TState, player_id: felt252, quest_id: u32, interval_id: u64) -> QuestProgress;
     fn quest_record(self: @TState, player_id: felt252, quest_id: u32) -> QuestRecord;
-    fn quest_current_interval(self: @TState, quest_id: u32) -> Option<u32>;
-    fn quest_is_unlocked(self: @TState, player_id: felt252, quest_id: u32) -> bool;
+    fn quest_current_interval(self: @TState, quest_id: u32) -> Option<u64>;
+    fn quest_is_unlocked(self: @TState, player_id: felt252, quest_id: u32) -> bool;   // as is_unlocked
+    fn quest_is_accepted(self: @TState, player_id: felt252, quest_id: u32) -> bool;   // as is_accepted
     fn quest_is_reporter(self: @TState, reporter: ContractAddress) -> bool;
 }
 ```
@@ -847,16 +1016,18 @@ pub trait IQuestView<TState> {
 Error strings are short-string constants in `quiver_quest::errors`: `'Quest: invalid id'`,
 `'Quest: invalid tasks'`, `'Quest: invalid window'`, `'Quest: invalid interval'`,
 `'Quest: invalid condition'`, `'Quest: too many conditions'`, `'Quest: already defined'`,
-`'Quest: does not exist'`, `'Quest: task full'`, `'Quest: no accept step'`,
-`'Quest: not active'`, `'Quest: locked'`, `'Quest: already active'`,
-`'Quest: not completed'`, `'Quest: already claimed'`, `'Quest: not reporter'`,
-`'Quest: not admin'`, `'Quest: not authorized'`. They are API, like events (COMMON §4).
+`'Quest: does not exist'`, `'Quest: retired'`, `'Quest: task full'`,
+`'Quest: too many entries'`, `'Quest: no accept step'`, `'Quest: not active'`,
+`'Quest: locked'`, `'Quest: already accepted'`, `'Quest: already completed'`,
+`'Quest: not accepted'`, `'Quest: not completed'`, `'Quest: already claimed'`,
+`'Quest: not reporter'`, `'Quest: not admin'`, `'Quest: not authorized'`. They are API, like
+events (COMMON §4).
 
 ### 3.6 Access control
 
 | Action | Who, when the consumer embeds `QuestImpl` | Enforced by the component | Left to the consumer |
 |---|---|---|---|
-| Define a quest | A caller for whom `authorize_admin` is true | Calls the hook and reverts `'Quest: not admin'` | Who the admin is (Ownable, AccessControl, a registry role: Q-08 of the game) |
+| Define or retire a quest | A caller for whom `authorize_admin` is true | Calls the hook and reverts `'Quest: not admin'` | Who the admin is (Ownable, AccessControl, a registry role: Q-08 of the game) |
 | Register or revoke a reporter | Same | Same | Same |
 | Report progress | **Only a registered reporter** (A-5) | `Quest_reporters[caller]` or reverts `'Quest: not reporter'` | Which contracts to register |
 | Accept, abandon | A caller for whom `authorize_player(caller, player_id)` is true | Calls the hook, reverts `'Quest: not authorized'` | Ownership of `player_id` (adventurer or account) |
@@ -876,7 +1047,7 @@ exposes it.
 | | `Mode::Storage` | `Mode::Event` |
 |---|---|---|
 | Reads, writes | As in §3.5 | **None** |
-| Events | `QuestCompleted` on completion only | `QuestProgressed { player_id, task_id, count }` once per call |
+| Events | `QuestCompleted` on completion only | `QuestProgressed { player_id, task_id, count }`, one per distinct task with a non-zero count after merging; none when every count is zero |
 | Hooks | `on_quest_complete` | None |
 | Windows, intervals, prerequisites, acceptance | Enforced | **Not enforced**: the indexer must apply them from `QuestDefined` |
 | Completion, claim, views | Yes | No: `quest_progress` stays zero; a claim reverts `'Quest: not completed'` |
@@ -920,12 +1091,12 @@ mod Persistent {
             false
         }
         fn on_quest_complete(ref self: QuestComponent::ComponentState<ContractState>,
-            player_id: felt252, quest_id: u32, interval_id: u32, completions: u32) {
+            player_id: felt252, quest_id: u32, interval_id: u64, completions: u32) {
             let mut game = self.get_contract_mut();
-            // free one of the 3 active slots of the adventurer (design/06)
+            // e.g. record the completion for the Warden title (design/13)
         }
         fn on_quest_claim(ref self: QuestComponent::ComponentState<ContractState>,
-            player_id: felt252, quest_id: u32, interval_id: u32, claim_index: u32) {
+            player_id: felt252, quest_id: u32, interval_id: u64, claim_index: u32) {
             let mut game = self.get_contract_mut();
             // grant xp, gold, items; merit diminished by claim_index (design/06 § Rules)
         }
@@ -939,12 +1110,16 @@ mod Persistent {
 
     #[external(v0)]
     fn accept_quest(ref self: ContractState, adventurer_id: felt252, quest_id: u32) {
-        // game checks: caller owns adventurer; rank; in a hub; fewer than 3 active; skills on accept
+        // game checks: caller owns adventurer; rank; in a hub; a contract must be in today's draw.
+        // "At most 3 active": the game keeps the adventurer's accepted quest ids (at most 3) and
+        // drops each one for which self.quest.is_accepted(adventurer_id, id) is false (completed,
+        // abandoned or expired at rollover), then refuses if 3 remain. Bounded: 3 reads.
         self.quest.accept(adventurer_id, quest_id);
+        // then: add quest_id to the adventurer's list; grant the skills given on acceptance
     }
 
     #[external(v0)]
-    fn claim_quest(ref self: ContractState, adventurer_id: felt252, quest_id: u32, interval_id: u32) {
+    fn claim_quest(ref self: ContractState, adventurer_id: felt252, quest_id: u32, interval_id: u64) {
         // game checks: caller owns adventurer; at a guild board
         self.quest.claim(adventurer_id, quest_id, interval_id);
     }
@@ -965,7 +1140,7 @@ mod Persistent {
 | `time` in events | The block's timestamp is available to the indexer |
 | Completion `timestamp` in storage | Only shown, so it is in the block of `QuestCompleted`. A boolean suffices for the rules |
 | `are_completed(…, one interval_id)` | Misleading across intervals (D-14). `quest_progress` per quest replaces it |
-| `update` and `nullify` on models (`quest/src/models/definition.cairo:45-69`, `completion.cairo:68-71`, `advancement.cairo:69-73`) | Never called by the components. Redefinition is refused (Q-9) |
+| `update` and `nullify` on models (`quest/src/models/definition.cairo:45-69`, `completion.cairo:68-71`, `advancement.cairo:69-73`) | Never called by the components. Redefinition is refused; `retire` is the only change after definition (Q-9, Q-14) |
 | `felt252` short-string ids for quests, tasks and achievements | `u32` (Q-1) |
 | Unbounded tasks, conditions and associations | Bounds (§3.1), stated and tested |
 
@@ -978,7 +1153,8 @@ The same shape as quest, without intervals, prerequisites or acceptance. `Mode` 
 ```cairo
 pub const MAX_TASKS: u8 = 3;
 pub const ACHIEVEMENTS_PER_PAGE: u8 = 7;
-pub const MAX_PAGES: u8 = 4;               // MAX_ACHIEVEMENTS_PER_TASK = 28
+pub const MAX_PAGES: u8 = 4;               // MAX_ACHIEVEMENTS_PER_TASK = 28 live achievements
+pub const MAX_ENTRIES: u32 = 8;            // entries per progress_many call
 
 pub enum Mode { #[default] Storage, Event }
 pub struct AchievementWindow { pub start: u64, pub end: u64 }    // 0 = open on that side
@@ -986,6 +1162,8 @@ pub struct AchievementTask { pub task_id: u32, pub total: u32 }
 pub struct AchievementDefinition {          // slot A: window, count and the first task inline
     pub window: AchievementWindow,
     pub task_count: u8,                     // 1..=MAX_TASKS
+    pub defined: bool,                      // presence bit
+    pub retired: bool,                      // set by retire(); off every page
     pub t0: AchievementTask,
 }
 pub struct AchievementExtraTasks { pub t1: AchievementTask, pub t2: AchievementTask }  // slot B
@@ -1002,13 +1180,21 @@ pub fn definition_new(achievement_id: u32, window: AchievementWindow, tasks: Spa
     -> (AchievementDefinition, AchievementExtraTasks);
     // 'Achievement: invalid id', 'Achievement: invalid tasks' (empty, > 3, id 0, total 0, repeated)
 pub fn task_index_of(definition: @AchievementDefinition, extra: @AchievementExtraTasks, task_id: u32) -> Option<u8>;
+pub fn batch_merge(entries: Span<TaskProgress>) -> Span<TaskProgress>;
+    // 'Achievement: too many entries' above MAX_ENTRIES; drops zeros, merges duplicates (saturating)
+pub fn batch_count_of(batch: Span<TaskProgress>, task_id: u32) -> u32;
+pub fn batch_first_position(batch: Span<TaskProgress>, definition: @AchievementDefinition,
+                            extra: @AchievementExtraTasks) -> Option<u32>;
 pub fn progress_add(progress: AchievementProgress, definition: @AchievementDefinition,
-                    extra: @AchievementExtraTasks, index: u8, count: u32)
+                    extra: @AchievementExtraTasks, batch: Span<TaskProgress>)
     -> (AchievementProgress, bool /* changed */, bool /* completed by this call */);   // saturating
 pub fn claim(progress: AchievementProgress) -> AchievementProgress;
     // 'Achievement: not completed', 'Achievement: already claimed'
 pub fn page_push(page: AchievementIdPage, achievement_id: u32) -> AchievementIdPage;
 pub fn page_span(page: @AchievementIdPage) -> Span<u32>;
+pub fn page_position(page: @AchievementIdPage, achievement_id: u32) -> Option<u8>;
+pub fn page_set(page: AchievementIdPage, position: u8, achievement_id: u32) -> AchievementIdPage;
+pub fn page_pop(page: AchievementIdPage) -> (AchievementIdPage, u32);
 ```
 
 ### 3.11 `quiver_achievement` — component
@@ -1028,22 +1214,67 @@ pub struct Storage {
 
 | Slot | Bits | Width and reason |
 |---|---|---|
-| A `AchievementDefinition` | `start` [0, 64) · `end` [64, 128) · `task_count` [128, 130) · `defined` [130] · `t0.task_id` [131, 163) · `t0.total` [163, 195) | **195 bits**. The first task is inline, so a single-task achievement (every tier of a title) costs one definition read |
+| A `AchievementDefinition` | `start` [0, 64) · `end` [64, 128) · `task_count` [128, 130) · `defined` [130] · `retired` [131] · `t0.task_id` [132, 164) · `t0.total` [164, 196) | **196 bits**. The first task is inline, so a single-task achievement (every tier of a title) costs one definition read |
 | B `AchievementExtraTasks` | `t1` [0, 64) · `t2` [64, 128) | 128 bits, read only when `task_count > 1` |
-| Page | 7 × `u32` [0, 224) · `len` [224, 227) | As for quests |
+| Page | 7 × `u32` [0, 224) · `len` [224, 227) | As for quests, contiguous |
 | `AchievementProgress` | `c0..c2` [0, 96) · `completed` [96] · `claimed` [97] | 98 bits. Completion is permanent: **a tier once reached is kept** (T-3) |
+
+**Presence bits**, as for quests. `define` writes A with `defined = 1` (`+ 2^130`), and
+unpacking reads bit 130 as `defined` and bit 131 as `retired`. A slot never written reads as
+`0`, which gives `defined == false`: `definition` and `achievement_definition` revert
+`'Achievement: does not exist'`, and `define` refuses to overwrite a defined A
+(`'Achievement: already defined'`).
 
 **Events:**
 
 ```cairo
+#[event]
+#[derive(Drop, starknet::Event)]
 pub enum Event {
-    AchievementDefined: AchievementDefined,       // #[key] achievement_id: u32, window, tasks: Span<AchievementTask>, points: u16
-    AchievementProgressed: AchievementProgressed, // Mode::Event: #[key] player_id: felt252, #[key] task_id: u32, count: u32
-    AchievementCompleted: AchievementCompleted,   // Mode::Storage: #[key] player_id, #[key] achievement_id: u32
-    AchievementClaimed: AchievementClaimed,       // #[key] player_id, #[key] achievement_id: u32
-    AchievementReporterSet: AchievementReporterSet, // #[key] reporter: ContractAddress, allowed: bool
+    AchievementDefined: AchievementDefined,
+    AchievementProgressed: AchievementProgressed,
+    AchievementCompleted: AchievementCompleted,
+    AchievementClaimed: AchievementClaimed,
+    AchievementRetired: AchievementRetired,
+    AchievementReporterSet: AchievementReporterSet,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct AchievementDefined {
+    #[key] pub achievement_id: u32,
+    pub window: AchievementWindow,
+    pub tasks: Span<AchievementTask>,
+    pub points: u16,
+}
+#[derive(Drop, starknet::Event)]
+pub struct AchievementProgressed {     // Mode::Event only; one per merged, non-zero entry
+    #[key] pub player_id: felt252,
+    #[key] pub task_id: u32,
+    pub count: u32,
+}
+#[derive(Drop, starknet::Event)]
+pub struct AchievementCompleted {      // Mode::Storage, once per completion
+    #[key] pub player_id: felt252,
+    #[key] pub achievement_id: u32,
+}
+#[derive(Drop, starknet::Event)]
+pub struct AchievementClaimed {
+    #[key] pub player_id: felt252,
+    #[key] pub achievement_id: u32,
+}
+#[derive(Drop, starknet::Event)]
+pub struct AchievementRetired {
+    #[key] pub achievement_id: u32,
+}
+#[derive(Drop, starknet::Event)]
+pub struct AchievementReporterSet {
+    #[key] pub reporter: ContractAddress,
+    pub allowed: bool,
 }
 ```
+
+`AchievementWindow` and `AchievementTask` derive `Drop, Copy, Serde, PartialEq, Debug`, as
+the quest types do. That is what the events need.
 
 `points: u16` is emitted, not stored: it is shown and never read by a rule. There is no cap
 of 100: that was a limit of Cartridge's controller (`achievement/src/events/creation.cairo:8`,
@@ -1066,24 +1297,44 @@ pub trait AchievementHooksTrait<TContractState> {
 fn define(ref self: ComponentState<TContractState>, achievement_id: u32, window: AchievementWindow,
           tasks: Span<AchievementTask>, points: u16);
     // validates + not already defined ('Achievement: already defined') + room on each task
-    // ('Achievement: task full'); writes A, B if needed, one page per task; emits AchievementDefined
+    // ('Achievement: task full'); writes A (defined = 1), B if needed, one page per task;
+    // emits AchievementDefined
+fn retire(ref self: ComponentState<TContractState>, achievement_id: u32);
+    // 'Achievement: does not exist', 'Achievement: retired'; as quest retire (§3.5); completed
+    // progress stays completed and claimable
 fn set_reporter(ref self: ComponentState<TContractState>, reporter: ContractAddress, allowed: bool);
 fn progress(ref self: ComponentState<TContractState>, player_id: felt252, task_id: u32, count: u32, mode: Mode);
+    // exactly progress_many with one entry
 fn progress_many(ref self: ComponentState<TContractState>, player_id: felt252, entries: Span<TaskProgress>, mode: Mode);
+    // 'Achievement: too many entries' above MAX_ENTRIES
 fn claim(ref self: ComponentState<TContractState>, player_id: felt252, achievement_id: u32);
 fn assert_reporter(self: @ComponentState<TContractState>, caller: ContractAddress);   // 'Achievement: not reporter'
 fn definition(self: @ComponentState<TContractState>, achievement_id: u32) -> (AchievementWindow, Span<AchievementTask>);
+    // 'Achievement: does not exist'
 fn progress_of(self: @ComponentState<TContractState>, player_id: felt252, achievement_id: u32) -> AchievementProgress;
 ```
 
-In storage mode, progress works as for quests. For each achievement on the task's pages:
+`progress_many` in storage mode works as for quests (§3.5), without intervals, records or
+acceptance:
 
-1. Read A; skip the achievement if its window is inactive.
-2. Read P; skip it if it is completed.
-3. Read B only if the task is not `t0`.
-4. Apply `progress_add`; skip if nothing changed.
-5. Write P.
-6. On completion: emit `AchievementCompleted`, then call `on_achievement_complete`.
+1. `batch = batch_merge(entries)`. If it is empty, return.
+2. For each entry at position `i`, read the task's pages. For each achievement on them:
+   1. Read A, and B if `task_count > 1`. Skip unless `batch_first_position == Some(i)`.
+   2. Skip if the window is inactive.
+   3. Read P; skip if it is completed.
+   4. Apply `progress_add(P, A, B, batch)`; skip if nothing changed.
+   5. **Write P once.**
+   6. On completion: emit `AchievementCompleted`, then call `on_achievement_complete`.
+
+In event mode it emits one `AchievementProgressed` per merged, non-zero entry, and nothing
+else.
+
+Errors, in `quiver_achievement::errors`: `'Achievement: invalid id'`,
+`'Achievement: invalid tasks'`, `'Achievement: invalid window'`,
+`'Achievement: already defined'`, `'Achievement: does not exist'`, `'Achievement: retired'`,
+`'Achievement: task full'`, `'Achievement: too many entries'`, `'Achievement: not completed'`,
+`'Achievement: already claimed'`, `'Achievement: not reporter'`, `'Achievement: not admin'`,
+`'Achievement: not authorized'`.
 
 **External ABI**, optional as for quests:
 
@@ -1092,6 +1343,7 @@ In storage mode, progress works as for quests. For each achievement on the task'
 pub trait IAchievement<TState> {
     fn define(ref self: TState, achievement_id: u32, window: AchievementWindow,
               tasks: Span<AchievementTask>, points: u16);                    // authorize_admin
+    fn retire(ref self: TState, achievement_id: u32);                        // authorize_admin
     fn set_reporter(ref self: TState, reporter: ContractAddress, allowed: bool); // authorize_admin
     fn progress(ref self: TState, player_id: felt252, task_id: u32, count: u32, mode: Mode);  // reporter
     fn progress_many(ref self: TState, player_id: felt252, entries: Span<TaskProgress>, mode: Mode); // reporter
@@ -1107,8 +1359,8 @@ pub trait IAchievementView<TState> {
 
 Access control, modes and "not kept" are as for quests (§3.6, §3.7, §3.9). For Grim World,
 titles run in **event mode** (ADR-0007, D-63 revised). The game's results path calls
-`progress_many(adventurer_id or account, …, Mode::Event)`, which costs one event per task
-and no storage. The indexer evaluates the tiers from `AchievementDefined`.
+`progress_many(adventurer_id or account, …, Mode::Event)`, which costs one event per distinct
+non-zero task and no storage. The indexer evaluates the tiers from `AchievementDefined`.
 
 A consumer sketch is the same as §3.8, with `AchievementComponent` and the four hooks. For
 event-mode titles, both `on_achievement_*` hooks are empty and `authorize_*` return false.
@@ -1123,9 +1375,9 @@ event-mode titles, both `on_achievement_*` hooks are empty and `authorize_*` ret
 | A-2 | Prerequisites (AND) | **Covered, adapted** | `conditions: Span<u32>`, AND, at most 7, already defined. Met when each prerequisite was completed at least once, evaluated lazily (§3.2), without the defects D-2 to D-7 (Q-3) |
 | A-3 | Progress keyed by a `felt252` the game chooses | **Covered** | `player_id: felt252` on every call; the component never interprets it |
 | A-4 | A claim hook the game implements | **Covered, adapted** | `on_quest_claim(player_id, quest_id, interval_id, claim_index)`; the game grants the rewards |
-| A-5 | Progress reported by the causing contract, never the client; callable from the ephemeral contract's results interface | **Covered** | External: only registered reporters. Internal: `progress_many`, called by the persistent contract's results entrypoint after its own check (§3.6, §3.8) |
+| A-5 | Progress reported by the causing contract, never the client; callable from the ephemeral contract's results interface | **Covered** | External: only registered reporters. Internal: `progress_many`, called by the persistent contract's results entrypoint after its own check (§3.6, §3.8). A results list with more than `MAX_ENTRIES` entries reverts. The game then makes a second call, which is still correct but may write a record twice in the transaction, or the bound is raised (Q-19) |
 | A-6 | Storage or event mode, per call | **Covered, adapted** | `mode: Mode` on `progress` and `progress_many`. Definitions are always stored (Q-7) |
-| A-7 | Achievements with tiers sharing one task | **Covered** | One achievement per tier, same `task_id`, up to 28 per task. Test `achievement_tiers_share_task` |
+| A-7 | Achievements with tiers sharing one task | **Covered** | One achievement per tier, same `task_id`, up to 28 live achievements per task (retirement frees a slot, Q-14). Test `achievement_tiers_share_task` |
 | A-8 | No Dojo; Cairo 2.19; `snforge_std` dev-dependency | **Covered** | §1.10, §6 |
 | A-9 | The edge cases are tests | **Covered** | §2: D-1 to D-4 confirmed, each with named tests; D-5 to D-13 added |
 
@@ -1133,9 +1385,9 @@ event-mode titles, both `on_achievement_*` hooks are empty and `authorize_*` ret
 
 | Game rule | Where | How |
 |---|---|---|
-| **3 active quests** (design/06 § Quest board); **one contract held at a time** (design/14) | Shared | Is there an accept step? **Yes, optional per quest** (`needs_accept`). Progress then counts only for an accepted quest, which a design where one kill feeds several quests needs. The **limit** (3, or 1 contract) is the game's: its `accept_quest` counts, and `on_quest_complete` frees a slot. Skills given on acceptance (design/14) are the game's action in the same entrypoint (Q-4) |
+| **3 active quests** (design/06 § Quest board); **one contract held at a time** (design/14) | Shared | Is there an accept step? **Yes, optional per quest** (`needs_accept`). Progress then counts only for a quest accepted **in the current interval**, which a design where one kill feeds several quests needs. An acceptance ends at completion, at abandon, or at rollover for a recurring quest (Q-18). A completed interval cannot be accepted again. The **limit** (3, or 1 contract) is the game's. Its `accept_quest` keeps the adventurer's accepted quest ids, at most 3, prunes those for which `quest_is_accepted` is false, and refuses when 3 remain: 3 reads, no hook needed. Expiry at rollover has no transaction, hence no hook. Skills given on acceptance (design/14) are the game's action in the same entrypoint (Q-4) |
 | **Diminishing merit on repeat** (design/06 § Rules) | Game, with data from the package | Does the claim hook get a completion count? **Yes**: `claim_index` (earlier claims of that quest by that player) in `on_quest_claim`, and `completions` in `on_quest_complete`. The curve and floor are the game's |
-| **Daily board draw** (3 contracts per hub per day, design/14) | Game | The package gives the day as `quest_current_interval`. Drawing from the list and offering 3 per hub are the game's, in the persistent domain; `accept_quest` refuses a contract not drawn today |
+| **Daily board draw** (3 contracts per hub per day, design/14) | Game | The package gives the day as `quest_current_interval`. Drawing from the list and offering 3 per hub are the game's, in the persistent domain; `accept_quest` refuses a contract not drawn today. Because an acceptance expires at rollover, a contract accepted yesterday and left unfinished counts nothing today unless it is accepted again, which the draw check then governs |
 | **"Distinct" counters** (design/13 T-2) | Game | Design/13 keeps them as bitmaps keyed by registry ids. The game reports `count = 1` to the task only when a bit is newly set. The package counts increments and cannot know distinctness |
 | **Tiers kept once reached** (T-3) | Package | A completion is never undone in storage mode. In event mode the indexer keeps the best tier. A track that resets (Unbroken) is the game's to express: it reports only the increments above the best value reached |
 | Repeatable board quests with no interval (design/06 `repeatable`) | Not in the proposal | A-1 asks for one-shot and daily only (Q-12) |
@@ -1151,36 +1403,57 @@ ARC-04 measure them, and each becomes a test budget (docs/CAIRO.md §2).
 
 Notation:
 
-- **N**: quests (or achievements) on the task.
+- **N**: **live** quests (or achievements) on the task; retired ones are off the pages and
+  cost nothing.
 - **K**: prerequisites of a quest.
 - **T**: tasks of a quest (≤ 3).
-- **Pg**: association pages read, `⌈N / 7⌉` (at most 4).
+- **Pg**: association pages read for one task: `min(⌊N / 7⌋ + 1, 4)`. Reading stops at the
+  first page with `len < 7`, so N = 0 reads 1 page, N = 6 reads 1, N = 7 reads 2, and
+  N = 28 reads 4 (the page bound).
+- **E**: distinct tasks with a non-zero count in a batch, after merging (≤ `MAX_ENTRIES` = 8).
+
+A call whose counts are all zero reads, writes and emits **nothing**, in either mode.
 
 ### 5.1 `quiver_quest`, per call
 
 | Case | Storage reads | Storage writes | Events | Hooks |
 |---|---|---|---|---|
-| Event mode, any case | 0 | 0 | 1 | 0 |
-| Storage, one one-off quest, one task, no prerequisite, not completing | 1 page + A + P + B = **4** | **1** (P) | 0 | 0 |
+| Event mode, `progress` | 0 | 0 | 1 (0 if `count == 0`) | 0 |
+| Event mode, `progress_many` | 0 | 0 | **E** (one per merged, non-zero entry) | 0 |
+| Storage, one one-off quest, one task, no prerequisite, not completing | Pg (1) + B + A + P = **4** | **1** (P) | 0 | 0 |
 | Same, completing | 4 + R = **5** | **2** (P, R) | 1 | 1 |
-| Storage, quest with K prerequisites, first progress after they are met | Pg + A + R + C + K + P + B = **5 + K** | 2 (P, R with `unlocked`) | 0 | 0 |
-| Same, later calls (`unlocked` cached) | Pg + A + R + P + B = **5** | 1 | 0 | 0 |
-| Storage, a locked quest (prerequisites not met) | Pg + A + R + C + K = **4 + K** | 0 | 0 | 0 |
+| Storage, quest needing acceptance, accepted, not completing | Pg + B + A + R + P = **5** | 1 | 0 | 0 |
+| Storage, quest with K prerequisites, first progress after they are met | Pg + B + A + R + C + K + P = **5 + K** | 2 (P, R with `unlocked`) | 0 | 0 |
+| Same, later calls (`unlocked` cached) | Pg + B + A + R + P = **5** | 1 | 0 | 0 |
+| Storage, a locked quest (prerequisites not met) | Pg + B + A + R + C + K = **4 + K** | 0 | 0 | 0 |
 | Daily interval | The same as the one-off rows: the interval id is arithmetic; the first call of a day writes a new P key | = | = | = |
-| **Worst case**: task shared by N = 28 quests, each needing acceptance, with K = 7 unmet-then-met prerequisites, all completing in this call | Pg + N × (A + R + C + K + P + B) = 4 + 28 × 12 = **340** | N × 2 = **56** | 28 | 28 |
+| **Worst case, `progress`**: one task shared by N = 28 quests, each needing acceptance, with K = 7 unmet-then-met prerequisites, all completing in this call | Pg + N × (B + A + R + C + K + P) = 4 + 28 × 12 = **340** | N × 2 = **56** | 28 | 28 |
+| `progress_many`, two tasks of one quest (Q has T1, T2; nothing else on them) | 2 pages + B twice + A + P (+ R on completion) = **6** (7) | **1** (P), 2 on completion | 0, or 1 on completion | 0 or 1 |
+| **Worst case, `progress_many`**: E = 8 distinct tasks, each with N = 28 live quests, all 224 quests distinct, each needing acceptance, with K = 7 prerequisites met in this call, all completing | Pages 8 × 4 = 32; B once per (task, quest) pair, 224; per quest A + R + C + K + P = 11, 224 × 11 = 2 464. **2 720** | Each quest's P and R once: **448** | 224 | 224 |
+| Same, when quests share batched tasks (each quest has 3 of the 8 tasks) | Fewer quests, each read B up to 3 times: bounded by the row above | ≤ 2 per quest | ≤ 1 per quest | ≤ 1 per quest |
 | Claim | P + R = **2** | **2** | 1 | 1 |
-| Accept or abandon | A + R (+ C + K if not yet unlocked) = **2 to 10** | 1 | 0 | 0 |
-| Define (once) | Each condition's A (K), each task's pages | A, B, C, one page per task | 1 | 0 |
+| Accept | A + R + P (+ C + K while not unlocked) = **3 to 11** | 1 (R) | 0 | 0 |
+| Abandon | A + R = **2** | 1 (R) | 0 | 0 |
+| Retire (admin) | A + B + per task (≤ 3) its pages (≤ 4): **≤ 14** | Per task 1 or 2 pages, + A: **≤ 7** | 1 | 0 |
+| Define (once) | Each condition's A (K), each task's pages (≤ 4) | A, B, C, one page per task | 1 | 0 |
+
+The worst case of `progress_many` is the product of the bounds, not a case of the game's
+design, where an expedition reports a few tasks and each task feeds a few live quests. It is
+the case the benchmark of ARC-03 measures (docs/CAIRO.md §2), and the reason for
+`MAX_ENTRIES` (Q-19).
 
 ### 5.2 `quiver_achievement`, per call
 
 | Case | Reads | Writes | Events |
 |---|---|---|---|
-| Event mode (Grim World's titles) | 0 | 0 | 1 |
-| Storage, one single-task achievement, not completing | 1 page + A + P = **3** | **1** | 0 |
+| Event mode (Grim World's titles), `progress` | 0 | 0 | 1 (0 if `count == 0`) |
+| Event mode, `progress_many` | 0 | 0 | **E** |
+| Storage, one single-task achievement, not completing | Pg (1) + A + P = **3** | **1** | 0 |
 | Storage, a title of 3 tiers on one task | 1 + 3 × 2 = **7** | **3** | 0, or 1 per tier reached |
-| Worst case: 28 achievements of 3 tasks on the task, all completing | 4 + 28 × 3 = **88** | **28** | 28 |
+| Worst case, `progress`: 28 achievements of 3 tasks on the task, all completing | 4 + 28 × (A + B + P) = **88** | **28** | 28 |
+| Worst case, `progress_many`: E = 8 tasks × 28 live achievements, 224 distinct, 3 tasks each, all completing | 32 pages + 224 × (A + B) + 224 P = **704** | **224** (each P once) | 224 |
 | Claim | P | 1 | 1 |
+| Retire (admin) | A + B + per task its pages: **≤ 14** | **≤ 7** | 1 |
 
 ### 5.3 Against the Dojo packages
 
@@ -1192,7 +1465,7 @@ estimates. ADR-0007 adds a permission check and a record event per model write.
 
 | Per associated quest, storage mode, one task, not completing | Dojo | Native (estimate) |
 |---|---|---|
-| Model or slot reads | Definition (4 `u64` + a `Span<Task>` with descriptions + conditions: **≈ 11 felts** for one task with a short description), completion (**3 felts**), advancement (**2 felts**) | A, P, B: **3 slots** (+ 1 page per 7 quests) |
+| Model or slot reads | Definition (4 `u64` + a `Span<Task>` with descriptions + conditions: **≈ 11 felts** for one task with a short description), completion (**3 felts**), advancement (**2 felts**) | A, P, B: **3 slots** (+ Pg page reads per task, shared by all its quests) |
 | Writes | Advancement (**2 felts**), with a permission check and a record event from the world | P: **1 slot** |
 | Events | `QuestProgression` every call | 0 |
 | On completion | + T advancement reads, + completion read and write (3 felts), + per dependent: definition, completion read and write, an unlock event | + R read and write, 1 event |
@@ -1205,8 +1478,8 @@ estimates. ADR-0007 adds a permission check and a record event per model write.
 | Progress call on a 3-task quest | Rewrites 2 felts, plus 3 on completion | Rewrites 1 slot |
 | Definition read on every progress call | ≈ 11 felts for one task, more with descriptions | 2 slots (A, B), and 1 for a single-task achievement |
 
-Across N quests on a task, the Dojo association costs about `N + 1` felts; the native pages
-cost `⌈N / 7⌉` slots.
+Across N quests on a task, the Dojo association costs about `N + 1` felts, and it only grows.
+The native pages cost `Pg = min(⌊N / 7⌋ + 1, 4)` slots, for N live quests.
 
 **Largest remaining cost.** Prerequisites read K records until the cache bit is set. After
 that, a dependent costs one read more than a quest without prerequisites.
@@ -1235,7 +1508,10 @@ quiver/
 └── .github/workflows/{tooling.yml, cairo.yml, release.yml}
 ```
 
-**Root `Scarb.toml`.** ARC-02 writes it; this is the proposal:
+**Root `Scarb.toml`.** ARC-02 writes it; this is the proposal. The member manifests inherit
+fields with `edition.workspace = true` and the like. The orchestrator verified on
+2026-09-28, with Scarb 2.19.4, that `scarb metadata` resolves such a member to the
+workspace's `edition = "2024_07"`.
 
 ```toml
 [workspace]
@@ -1332,6 +1608,9 @@ Checked on **2026-09-28**, read-only, against scarbs.xyz's package index:
 | `quiver_achievement` | 404 Not Found | 404 | **Free** |
 | `origami_hexmap` (control) | 200, version 1.8.0 | 200 | The same query finds a known package |
 
+The orchestrator confirmed the check independently on **2026-09-28 at 19:47 UTC**: both index
+entries returned 404, and `origami_hexmap` returned 200.
+
 A name can be taken by anyone until first publication. Q-15 covers this.
 
 ---
@@ -1348,12 +1627,14 @@ A name can be taken by anyone until first publication. Q-15 covers this.
 | Q-6 | Events in storage mode | (a) `Completed` and `Claimed` only; (b) also `Progressed` on every call, as in Dojo | **(a)**. The player's own counts are views; other players' counts are not shown anywhere in the game's design |
 | Q-7 | Mode on definitions | (a) Always stored and emitted; (b) a mode on `define` too | **(a)**. It happens once per quest; storing lets event-mode progress switch to storage later |
 | Q-8 | Presentation (names, descriptions, icons, groups, hidden, rewards) | (a) Not in the package: the consumer's registry or events; `points` kept in `AchievementDefined`; (b) an opaque `metadata: ByteArray` in the definition events | **(a)**. It keeps the events small and frozen; (b) is cheap to add later as a minor version |
-| Q-9 | Changing a quest after definition | (a) Refused in 0.1; a later minor version may add `set_end` to retire one; (b) full update | **(a)**. An update to tasks invalidates stored progress |
+| Q-9 | Changing a quest after definition | (a) Refused in 0.1, except `retire` (Q-14); (b) full update | **(a)**. An update to tasks invalidates stored progress |
 | Q-10 | Ship the external ABI (`QuestImpl`, `IAchievement`) with its access control | (a) Yes, optional to embed, beside the internal layer; (b) internal only | **(a)**. The package owns access control (COMMON §4) for consumers that expose it; Grim World uses the internal layer from its results entrypoint |
 | Q-11 | Claim of past intervals | (a) Allowed without limit, as Dojo; (b) only the current and previous interval | **(a)**. The game can refuse in `on_quest_claim` |
 | Q-12 | Repeatable quests with no interval ("repeatable (board)", design/06) | (a) Not in 0.1; (b) a flag keying progress by run number (`record.claims`) instead of interval | **(a)**, unless the game confirms the need: A-1 asks for one-shot and daily only. **A question for the game's designer** |
 | Q-13 | A shared package (`quiver_core`) for `Mode`, `TaskProgress`, pages and packing helpers | (a) No: each package is self-contained; (b) yes | **(a)** for 0.1; revisit when a third package needs them |
-| Q-14 | Quests or achievements per task | (a) 28 (4 pages); (b) 56 (8 pages) | **(a)**. A kill task shared by more than 28 live quests is not in design/14 |
+| Q-14 | How quests or achievements leave a task, given 4 pages of 7 per task. Without removal, 28 is a **lifetime** cap, and an ended quest still costs a definition read on every progress call to its task | (a) **Retirement**, as specified in §3.5 and §3.11: an admin `retire` removes the id from its tasks' pages (filling the hole with the last id, so pages stay contiguous) and sets a `retired` bit. Cost: ≤ 14 reads and ≤ 7 writes, once per retirement. Rules: player data kept; completed intervals and achievements stay claimable; accept refused; ids never reused; dependents of a retired prerequisite are the admin's to retire. The cap becomes **28 live** per task, and ended quests cost nothing on progress; (b) **task ids chosen by the consumer to spread load**, e.g. versioned or per region (`kill_runt_r1`, `kill_runt_r2`): no package change, but it leaves the cap a lifetime cap per id, and expired quests still read on progress until the consumer moves to a new id; (c) **accept a lifetime cap**, 28, or 56 with 8 pages (2 more page reads in the worst case) | **(a)**, with (b) always open to the consumer. The game adds quests region by region, and a common task such as a kill of a caste will outlive 28 quests over the game's life. The rest of §3 and §5 assumes (a); under (b) or (c), drop `retire`, the `retired` bit, `QuestRetired` and `AchievementRetired` |
 | Q-15 | Names | `quiver_quest`, `quiver_achievement` (free, §6.5) | **Confirm**, and publish 0.1.0 of `quiver_quest` when ARC-03 is accepted, so that the name is held |
 | Q-16 | First version | 0.1.0 until Grim World integrates (GLD-02), then 1.0.0 | **0.1.0** |
 | Q-17 | Daily alignment on 00:00 UTC | (a) Document that `start` must be a multiple of 86 400, and test it; (b) the package enforces it when `interval` is a multiple of 86 400 | **(a)**. (b) would forbid legitimate local-time schedules for other consumers |
+| Q-18 | How long does an acceptance hold for a recurring quest? | (a) **Until rollover**: it holds in the interval in which it was made, and an unfinished daily contract must be accepted again the next day, through that day's draw (§3.2, §3.5); (b) until completion or abandon, across intervals: the contract carries over, and the game alone must stop a held contract from bypassing the next day's draw; (c) a per-quest flag choosing (a) or (b) | **(a)**. Design/14 offers contracts per day and holds one at a time, and (a) makes the package enforce it without a write at rollover. For one-off quests the choices coincide: their interval is always 0. **To confirm with the game's designer**: design/14 does not say whether a held contract survives the day |
+| Q-19 | Entries per `progress_many` call | (a) `MAX_ENTRIES = 8`; (b) 16; (c) no package bound, left to the consumer | **(a)**. It bounds the worst case at ≈ 2 720 reads and 448 writes (§5.1, estimates). An expedition's results name a few tasks (kills by caste, a gate reached, a boss); a longer list reverts, and the game makes a second call. (b) doubles the worst case; (c) breaks the bounded-execution rule (COMMON §4) |
