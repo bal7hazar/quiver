@@ -15,7 +15,7 @@ package skeletons, CI by affected package, the gas tool, a release check that ne
 `quiver_quest`, 166 tests within budget; `[GPT-6-Astra]` audit FAIL (packing could let a narrow
 field spill into its neighbour, reserved bits unchecked), then PASS WITH FINDINGS after one fix
 loop. **Next: ARC-03b**, the component ([brief](docs/briefs/ARC-03b-quest-component.md)), on Opus
-5.5 with a `[GPT-6-Astra]` audit, **running** since 21:58 UTC. Publications follow
+5.5 with a `[GPT-6-Astra]` audit, **running** since 21:56 UTC. Publications follow
 D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 `PENDING-publish-*` file and publishes after a go naming package, version and commit.
 
@@ -32,7 +32,7 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | `quiver-ARC-03b-215800` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Running |
+| ARC-03b quest component | `quiver-ARC-03b-215611` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Running |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
 to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
