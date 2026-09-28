@@ -1,7 +1,7 @@
 use quiver_quest::errors;
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn quest_error_strings_are_the_accepted_ones() {
     assert!(errors::INVALID_ID == 'Quest: invalid id');
     assert!(errors::INVALID_TASKS == 'Quest: invalid tasks');

@@ -34,7 +34,8 @@ pub struct QuestTask {
 }
 
 /// Storage slot A. Layout (bits from 0): `start` [0, 64) · `end` [64, 128) · `duration`
-/// [128, 160) · `interval` [160, 192) · `task_count` [192, 194) · `condition_count` [194, 197) ·
+/// [128, 160) · `interval` [160, 192) · `task_count` [192, 194) · `condition_count` [194, 197)
+/// ·
 /// `needs_accept` [197] · `defined` [198] · `retired` [199] · `live_dependents` [200, 216).
 #[derive(Drop, Copy, Serde, PartialEq, Debug)]
 pub struct QuestDefinition {

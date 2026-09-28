@@ -16,7 +16,6 @@ pub mod schedule;
 pub mod types;
 
 pub use batch::{batch_count_of, batch_first_position, batch_merge};
-pub use crate::constants::{MAX_CONDITIONS, MAX_ENTRIES, MAX_PAGES, MAX_TASKS, QUESTS_PER_PAGE};
 pub use definition::{conditions_span, definition_new, tasks_index_of, tasks_span};
 pub use pages::{page_pop, page_position, page_push, page_set, page_span};
 pub use progress::{progress_add, progress_is_complete};
@@ -29,3 +28,4 @@ pub use types::{
     QuestIdPage, QuestIdPagePacking, QuestProgress, QuestProgressPacking, QuestRecord,
     QuestRecordPacking, QuestSchedule, QuestTask, QuestTasks, QuestTasksPacking, TaskProgress,
 };
+pub use crate::constants::{MAX_CONDITIONS, MAX_ENTRIES, MAX_PAGES, MAX_TASKS, QUESTS_PER_PAGE};

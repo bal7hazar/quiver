@@ -19,6 +19,8 @@ fn saturating_count(count: u32, add: u32, total: u32) -> u32 {
 /// Returns `(progress, changed, completed by this call)`. Completed by this call when every
 /// `c[j] == total[j]` and `progress.completed` was false; `progress.completed` is then set.
 /// Unrolled over the 3 slots; each lookup visits at most `MAX_ENTRIES` entries of a merged batch.
+/// (One pass over the batch for the 3 slots was measured more costly: its loop carries more
+/// state than three tight scans.)
 pub fn progress_add(
     progress: QuestProgress, tasks: @QuestTasks, task_count: u8, batch: Span<TaskProgress>,
 ) -> (QuestProgress, bool, bool) {

@@ -8,7 +8,7 @@ use super::helpers::{U64_MAX, no_progress, no_record, progress, record};
 // prerequisites_met
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 42189)]
 fn prerequisites_met_when_each_completed_once() {
     assert!(prerequisites_met(array![].span()));
     assert!(prerequisites_met(array![record(1, 0, false, false, 0)].span()));
@@ -21,7 +21,7 @@ fn prerequisites_met_when_each_completed_once() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 29841)]
 fn quest_prerequisites_all_required_logic() {
     assert!(!prerequisites_met(array![no_record()].span()));
     assert!(!prerequisites_met(array![record(1, 0, false, false, 0), no_record()].span()));
@@ -32,7 +32,7 @@ fn quest_prerequisites_all_required_logic() {
 // acceptance
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16737)]
 fn record_is_accepted_in_its_interval_only() {
     let r = record(0, 0, false, true, 5);
     assert!(record_is_accepted(@r, 5));
@@ -43,7 +43,7 @@ fn record_is_accepted_in_its_interval_only() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn record_accept_sets_active_and_interval() {
     let r = record_accept(record(3, 2, true, false, 0), 7);
     assert!(r == record(3, 2, true, true, 7));
@@ -51,7 +51,7 @@ fn record_accept_sets_active_and_interval() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn quest_acceptance_expires_at_rollover_logic() {
     let r = record_accept(no_record(), 0);
     assert!(record_is_accepted(@r, 0));
@@ -64,14 +64,14 @@ fn quest_acceptance_expires_at_rollover_logic() {
 
 #[test]
 #[should_panic(expected: 'Quest: already accepted')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn quest_accept_twice_same_interval_reverts() {
     let r = record_accept(no_record(), 0);
     record_accept(r, 0);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn record_abandon_clears_active() {
     let r = record_abandon(record(1, 1, true, true, 4), 4);
     assert!(r == record(1, 1, true, false, 4));
@@ -80,7 +80,7 @@ fn record_abandon_clears_active() {
 
 #[test]
 #[should_panic(expected: 'Quest: not accepted')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn quest_abandon_expired_reverts() {
     let r = record_accept(no_record(), 0);
     record_abandon(r, 1);
@@ -88,7 +88,7 @@ fn quest_abandon_expired_reverts() {
 
 #[test]
 #[should_panic(expected: 'Quest: not accepted')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn record_abandon_not_accepted_reverts() {
     record_abandon(no_record(), 0);
 }
@@ -96,7 +96,7 @@ fn record_abandon_not_accepted_reverts() {
 // completion
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn quest_completion_releases_acceptance() {
     let r = record_complete(record_accept(no_record(), 2));
     assert!(r == record(1, 0, false, false, 2));
@@ -104,7 +104,7 @@ fn quest_completion_releases_acceptance() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn quest_recurring_completes_each_interval_logic() {
     let r = record_complete(record_complete(record_complete(no_record())));
     assert!(r.completions == 3);
@@ -112,7 +112,7 @@ fn quest_recurring_completes_each_interval_logic() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn record_complete_keeps_unlocked_and_claims() {
     let r = record_complete(record(4, 3, true, true, 9));
     assert!(r == record(5, 3, true, false, 9));
@@ -121,7 +121,7 @@ fn record_complete_keeps_unlocked_and_claims() {
 // claim
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn claim_marks_claimed_and_counts() {
     let (p, r, index) = claim(progress(5, 0, 0, true, false), record(1, 0, true, false, 0));
     assert!(p == progress(5, 0, 0, true, true));
@@ -130,7 +130,7 @@ fn claim_marks_claimed_and_counts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn quest_claim_index_counts_claims() {
     // completed on days 0 and 1; claim day 1 then day 0
     let day0 = progress(1, 0, 0, true, false);
@@ -145,14 +145,14 @@ fn quest_claim_index_counts_claims() {
 
 #[test]
 #[should_panic(expected: 'Quest: not completed')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn quest_claim_uncompleted_reverts() {
     claim(no_progress(), no_record());
 }
 
 #[test]
 #[should_panic(expected: 'Quest: not completed')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn quest_claim_uncompleted_reverts_before_claimed() {
     // not completed is checked first
     claim(progress(0, 0, 0, false, true), no_record());
@@ -160,7 +160,7 @@ fn quest_claim_uncompleted_reverts_before_claimed() {
 
 #[test]
 #[should_panic(expected: 'Quest: already claimed')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn quest_claim_twice_reverts() {
     let (p, r, _) = claim(progress(1, 0, 0, true, false), record(1, 0, false, false, 0));
     claim(p, r);
@@ -169,7 +169,7 @@ fn quest_claim_twice_reverts() {
 // counters
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 29505)]
 fn quest_record_counters_past_u32() {
     let r = record(0xffffffff, 0xffffffff, false, false, 0);
     let r = record_complete(r);
@@ -182,7 +182,7 @@ fn quest_record_counters_past_u32() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn quest_record_counters_saturate() {
     let r = record(U64_MAX, U64_MAX, true, true, U64_MAX);
     let r = record_complete(r);

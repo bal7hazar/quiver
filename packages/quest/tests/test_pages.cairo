@@ -1,5 +1,6 @@
 use quiver_quest::logic::{
-    MAX_PAGES, QUESTS_PER_PAGE, QuestIdPage, page_pop, page_position, page_push, page_set, page_span,
+    MAX_PAGES, QUESTS_PER_PAGE, QuestIdPage, page_pop, page_position, page_push, page_set,
+    page_span,
 };
 use super::helpers::{ids, no_ids, page};
 
@@ -14,7 +15,7 @@ fn full(first: u32) -> QuestIdPage {
 // page_push, page_span
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 91466)]
 fn page_push_appends_until_full() {
     let mut p = empty();
     let mut id: u32 = 1;
@@ -27,7 +28,7 @@ fn page_push_appends_until_full() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 33495)]
 fn page_span_has_len_entries() {
     assert!(page_span(@empty()) == array![].span());
     assert!(page_span(@page_push(empty(), 5)) == array![5].span());
@@ -36,7 +37,7 @@ fn page_span_has_len_entries() {
 
 #[test]
 #[should_panic(expected: 'Quest: task full')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn page_push_full_panics() {
     page_push(full(1), 99);
 }
@@ -44,7 +45,7 @@ fn page_push_full_panics() {
 // page_position, page_set, page_pop
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn page_position_among_len_ids() {
     let p = full(1);
     assert!(page_position(@p, 1) == Some(0));
@@ -58,7 +59,7 @@ fn page_position_among_len_ids() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn page_set_replaces_one_id() {
     let p = full(1);
     assert!(page_set(p, 0, 50) == page(7, ids(50, 2, 3, 4, 5, 6, 7)));
@@ -69,13 +70,13 @@ fn page_set_replaces_one_id() {
 
 #[test]
 #[should_panic(expected: 'Index out of bounds')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn page_set_beyond_len_panics() {
     page_set(page(2, ids(1, 2, 0, 0, 0, 0, 0)), 2, 9);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 14406)]
 fn page_pop_removes_the_last_id() {
     let (p, id) = page_pop(full(1));
     assert!(id == 7);
@@ -87,7 +88,7 @@ fn page_pop_removes_the_last_id() {
 
 #[test]
 #[should_panic(expected: 'Index out of bounds')]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 16296)]
 fn page_pop_empty_panics() {
     page_pop(empty());
 }
@@ -189,7 +190,7 @@ fn all_ids(pages: Span<QuestIdPage>) -> Array<u32> {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 851477)]
 fn pages_removal_keeps_pages_contiguous() {
     // 17 ids: pages of 7, 7, 3, 0. Remove from the first page, the last page, the last id.
     let pages = pages_with(17);
@@ -211,7 +212,7 @@ fn pages_removal_keeps_pages_contiguous() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 595014)]
 fn quest_retire_frees_slot_pages() {
     // 28 live quests on a task; quest 3 retired; one more fits and 3 is gone
     let pages = pages_with(28);
@@ -236,7 +237,7 @@ fn quest_retire_frees_slot_pages() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 180852)]
 fn pages_removal_of_the_only_id() {
     let pages = pages_remove(pages_with(1).span(), 1);
     assert_contiguous(pages.span());

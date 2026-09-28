@@ -192,7 +192,7 @@ fn definition(
 // QuestDefinition (slot A)
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 2656101)]
 fn quest_packing_round_trip_definition_zero() {
     let zero = definition(0, 0, 0, 0, 0, 0, false, false, false, 0);
     check_definition(zero);
@@ -200,7 +200,7 @@ fn quest_packing_round_trip_definition_zero() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 29061942)]
 fn quest_packing_round_trip_definition_max() {
     check_definition(
         definition(U64_MAX, U64_MAX, U32_MAX, U32_MAX, 3, 7, true, true, true, 0xffff),
@@ -219,7 +219,7 @@ fn quest_packing_round_trip_definition_max() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 7936688)]
 fn quest_packing_round_trip_definition_mixed() {
     check_definition(
         definition(
@@ -231,25 +231,21 @@ fn quest_packing_round_trip_definition_mixed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 1195163)]
 fn quest_packing_presence_bits_at_their_positions() {
     let defined = definition(0, 0, 0, 0, 0, 0, false, true, false, 0);
-    assert!(
-        StorePacking::<QuestDefinition, felt252>::pack(defined) == to_felt(pow2(198)),
-    );
+    assert!(StorePacking::<QuestDefinition, felt252>::pack(defined) == to_felt(pow2(198)));
     let retired = definition(0, 0, 0, 0, 0, 0, false, false, true, 0);
-    assert!(
-        StorePacking::<QuestDefinition, felt252>::pack(retired) == to_felt(pow2(199)),
-    );
-    let packed = StorePacking::<QuestDefinition, felt252>::pack(
-        definition(U64_MAX, U64_MAX, U32_MAX, U32_MAX, 3, 7, true, true, false, 0xffff),
-    );
+    assert!(StorePacking::<QuestDefinition, felt252>::pack(retired) == to_felt(pow2(199)));
+    let packed = StorePacking::<
+        QuestDefinition, felt252,
+    >::pack(definition(U64_MAX, U64_MAX, U32_MAX, U32_MAX, 3, 7, true, true, false, 0xffff));
     assert!(get(packed, 198, 1) == 1);
     assert!(get(packed, 199, 1) == 0);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 40089)]
 fn quest_empty_slot_reads_undefined() {
     let empty = StorePacking::<QuestDefinition, felt252>::unpack(0);
     assert!(!empty.defined);
@@ -260,7 +256,7 @@ fn quest_empty_slot_reads_undefined() {
 // QuestTasks (slot B)
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 15893273)]
 fn quest_packing_round_trip_tasks() {
     check_tasks(tasks(task(0, 0), task(0, 0), task(0, 0)));
     check_tasks(tasks(task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX)));
@@ -271,13 +267,15 @@ fn quest_packing_round_trip_tasks() {
     check_tasks(tasks(task(0, 0), task(0, 0), task(U32_MAX, 0)));
     check_tasks(tasks(task(0, 0), task(0, 0), task(0, U32_MAX)));
     check_tasks(tasks(task(0x12345678, 10), task(0x9abcdef0, 1), task(7, 0x80000000)));
-    assert!(StorePacking::<QuestTasks, felt252>::pack(tasks(task(0, 0), task(0, 0), task(0, 0))) == 0);
+    assert!(
+        StorePacking::<QuestTasks, felt252>::pack(tasks(task(0, 0), task(0, 0), task(0, 0))) == 0,
+    );
 }
 
 // QuestConditions (slot C)
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 20231967)]
 fn quest_packing_round_trip_conditions() {
     check_conditions(ids(0, 0, 0, 0, 0, 0, 0));
     let m = U32_MAX;
@@ -295,7 +293,7 @@ fn quest_packing_round_trip_conditions() {
 // QuestIdPage
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 13562682)]
 fn quest_packing_round_trip_page() {
     check_page(page(0, ids(0, 0, 0, 0, 0, 0, 0)));
     let m = U32_MAX;
@@ -309,7 +307,7 @@ fn quest_packing_round_trip_page() {
 // QuestProgress
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 12500240)]
 fn quest_packing_round_trip_progress() {
     check_progress(progress(0, 0, 0, false, false));
     check_progress(progress(U32_MAX, U32_MAX, U32_MAX, true, true));
@@ -325,7 +323,7 @@ fn quest_packing_round_trip_progress() {
 // QuestRecord
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 13596597)]
 fn quest_packing_round_trip_record() {
     check_record(record(0, 0, false, false, 0));
     check_record(record(U64_MAX, U64_MAX, true, true, U64_MAX));

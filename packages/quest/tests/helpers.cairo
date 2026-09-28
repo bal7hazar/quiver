@@ -67,6 +67,12 @@ pub fn no_record() -> QuestRecord {
     record(0, 0, false, false, 0)
 }
 
+/// `value`, hidden from the compiler: a benchmark's input is not folded into a constant.
+#[inline(never)]
+pub fn opaque<T, +Drop<T>>(value: T) -> T {
+    value
+}
+
 /// `n` entries naming tasks `first`, `first + 1`, ..., each with count `count`.
 pub fn distinct_entries(first: u32, n: u32, count: u32) -> Span<TaskProgress> {
     let mut out = array![];
