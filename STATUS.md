@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 20:30 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 20:19 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -10,7 +10,7 @@ the recommended answers to Q-1 to Q-20
 contract is lost at rollover (A-11), at most 16 distinct tasks per call, enforced by the game
 (A-10), no repeatable quest without an interval in 0.1, titles on `quiver_achievement` in event
 mode (ARC-04 is on the game's path). **Next: ARC-02** on Sonnet 5.5
-([brief](docs/briefs/ARC-02-workspace.md)), launched when a Grim World slot is free; then
+([brief](docs/briefs/ARC-02-workspace.md)), **running** since 20:18 UTC; then
 ARC-03 on Opus 5.5 with a `[GPT-6-Astra]` audit. Publication is not granted: asked when
 ARC-03 is accepted.
 
@@ -23,7 +23,11 @@ ARC-03 is accepted.
 
 ## Agents
 
-None running. ARC-02 is ready to launch. ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
+| Task | Unit | Model asked / ran | Profile | State |
+|---|---|---|---|---|
+| ARC-02 workspace and CI | `quiver-ARC-02-201834` | `claude-sonnet-5-5` / `claude-sonnet-5-5` | implement | Running |
+
+ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
 to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
 
 ## Budget
@@ -36,4 +40,3 @@ the game has nothing ready.
 
 | | |
 |---|---|
-| ARC-02 | Ready; waits for fewer than 3 Grim World agents across the three tracks |
