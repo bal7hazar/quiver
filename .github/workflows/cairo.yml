@@ -55,10 +55,12 @@ jobs:
           python3 -m unittest scripts/test_gas.py
 
       # Defence in depth: on a pull request the script that narrows the run is the base branch's
-      # copy when the base has one (a change under .github/ci/ then runs every package, so a pull
-      # request that edits the script cannot narrow its own run). The unit tests above use the
-      # pull request's copy. A pull request can also edit this workflow: the full run on main
-      # after the merge is the backstop.
+      # copy (a change under .github/ci/ then runs every package, so a pull request that edits the
+      # script cannot narrow its own run). Fail closed: when the base has no such script, or
+      # `git show` fails, EVERY package runs (the pull request's copy in its non-pull-request
+      # mode, which does not look at the changed files). The unit tests above use the pull
+      # request's copy. A pull request can also edit this workflow: the full run on main after
+      # the merge is the backstop.
       - id: matrix
         env:
           EVENT: ${{ github.event_name }}
@@ -66,11 +68,17 @@ jobs:
         run: |
           set -euo pipefail
           script=.github/ci/affected.py
-          if [ "$EVENT" = pull_request ] && git show "origin/$BASE:$script" > "$RUNNER_TEMP/affected.py"; then
-            echo "using the base branch's $script"
-            script="$RUNNER_TEMP/affected.py"
+          if [ "$EVENT" = pull_request ]; then
+            if git show "origin/$BASE:$script" > "$RUNNER_TEMP/affected.py"; then
+              echo "using the base branch's $script"
+              python3 "$RUNNER_TEMP/affected.py" matrix
+            else
+              echo "the base branch has no $script (or git show failed): running every package"
+              env -u GITHUB_EVENT_NAME python3 "$script" matrix
+            fi
+          else
+            python3 "$script" matrix
           fi
-          python3 "$script" matrix
 
   package:
     needs: affected

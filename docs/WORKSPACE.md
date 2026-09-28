@@ -75,9 +75,15 @@ or when none was needed: it is the check to require. Third-party actions are pin
 SHA and the token is read-only.
 
 The pull request controls `affected.py`, so on a pull request the `affected` job runs the **base
-branch's** copy of it when the base has one; a change under `.github/ci/` then runs every package,
-and a pull request that edits the script cannot narrow its own run. A pull request can also edit
-the workflow itself: **the full run on `main` after the merge is the backstop.**
+branch's** copy of it; a change under `.github/ci/` then runs every package, and a pull request that
+edits the script cannot narrow its own run. It fails closed: when the base branch has no such
+script (or `git show` fails), the job says so and **every package runs**. A pull request can also
+edit the workflow itself: **the full run on `main` after the merge is the backstop.**
+
+The CI of a pull request is **not a security boundary against the pull request's author**: the
+author can edit the workflow. `main` is not protected (the game's D-121), so anyone who can push a
+branch can push to `main`. What holds is the orchestrator's review of every change under `.github/`
+and `scripts/`, and the full run on `main` after the merge.
 
 ## 5. Gas
 
