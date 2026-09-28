@@ -44,7 +44,11 @@ fn deploy() -> Reentrant {
 }
 
 fn define(r: Reentrant, quest_id: u32, task_id: u32, needs_accept: bool) {
-    r.quest.define(quest_id, one_off(), array![task(task_id, 1)].span(), array![].span(), needs_accept);
+    r
+        .quest
+        .define(
+            quest_id, one_off(), array![task(task_id, 1)].span(), array![].span(), needs_accept,
+        );
 }
 
 fn on_complete(on_quest: u32, action: felt252, quest_id: u32, task_id: u32) -> Reentry {
@@ -96,7 +100,7 @@ fn hook_calls(r: Reentrant) -> Array<HookCall> {
 /// the second, which the call read from the task's pages before.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 13893869)]
 fn quest_retired_by_hook_not_progressed() {
     let r = deploy();
     define(r, 1, T, false);
@@ -120,7 +124,7 @@ fn quest_retired_by_hook_not_progressed() {
 /// Progress from `on_quest_complete` on the same quest, same interval: no second completion, no
 /// second hook call.
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 11377078)]
 fn quest_reentrant_progress_same_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, false);
@@ -128,9 +132,11 @@ fn quest_reentrant_progress_same_quest_completes_once() {
     let mut spy = spy_events();
     r.quest.progress(PLAYER, T, 1, Mode::Storage);
     assert!(
-        r.view.quest_progress(PLAYER, 1, 0) == QuestProgress {
-            c0: 1, c1: 0, c2: 0, completed: true, claimed: false,
-        },
+        r
+            .view
+            .quest_progress(
+                PLAYER, 1, 0,
+            ) == QuestProgress { c0: 1, c1: 0, c2: 0, completed: true, claimed: false },
     );
     assert!(r.view.quest_record(PLAYER, 1).completions == 1);
     assert!(completed_events(ref spy, r.address, 1) == 1);
@@ -140,7 +146,7 @@ fn quest_reentrant_progress_same_quest_completes_once() {
 /// Progress from the first quest's hook on the same task completes the second quest inside the
 /// hook; the outer call then reaches the second quest, finds it completed, and skips it.
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 18216432)]
 fn quest_reentrant_progress_later_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, false);
@@ -161,7 +167,7 @@ fn quest_reentrant_progress_later_quest_completes_once() {
 /// reverts the outer claim; nothing is claimed twice.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 12015073)]
 fn quest_reentrant_claim_same_quest_refused() {
     let r = deploy();
     define(r, 1, T, false);
@@ -170,7 +176,12 @@ fn quest_reentrant_claim_same_quest_refused() {
         .mock
         .set_reentry(
             Reentry {
-                hook: 'claim', on_quest: 1, action: 'claim', quest_id: 1, task_id: 0, count: 0,
+                hook: 'claim',
+                on_quest: 1,
+                action: 'claim',
+                quest_id: 1,
+                task_id: 0,
+                count: 0,
                 interval_id: 0,
             },
         );
@@ -187,7 +198,7 @@ fn quest_reentrant_claim_same_quest_refused() {
 /// which reverts the outer progress.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 8184830)]
 fn quest_reentrant_accept_after_completion_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -196,9 +207,13 @@ fn quest_reentrant_accept_after_completion_refused() {
     assert_error(r.safe.progress(PLAYER, T, 1, Mode::Storage), errors::ALREADY_COMPLETED);
     assert!(r.view.quest_progress(PLAYER, 1, 0) == no_progress());
     assert!(
-        r.view.quest_record(PLAYER, 1) == QuestRecord {
-            completions: 0, claims: 0, unlocked: false, active: true, accepted_interval: 0,
-        },
+        r
+            .view
+            .quest_record(
+                PLAYER, 1,
+            ) == QuestRecord {
+                completions: 0, claims: 0, unlocked: false, active: true, accepted_interval: 0,
+            },
     );
     // snforge's spy keeps the events emitted before the revert; a receipt would not. The
     // reverted state is what is checked here.
@@ -274,28 +289,28 @@ fn assert_outer_unchanged(reentry: Reentry) -> Reentrant {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 62668242)]
 fn quest_reentrant_progress_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'progress', 0, 8));
     assert!(r.view.quest_progress(PLAYER, 3, 0).completed);
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 61182938)]
 fn quest_reentrant_claim_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'claim', 4, 0));
     assert!(r.view.quest_progress(PLAYER, 4, 0).claimed);
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 58422393)]
 fn quest_reentrant_accept_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'accept', 5, 0));
     assert!(r.view.quest_is_accepted(PLAYER, 5));
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 57755822)]
 fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'retire', 6, 0));
     let (definition, _, _) = r.view.quest_definition(6);

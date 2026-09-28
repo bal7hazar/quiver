@@ -127,14 +127,14 @@ fn progress_worst_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 106505062)]
+#[available_gas(l2_gas: 106505797)]
 fn baseline_progress_worst() {
     let bench = progress_worst_setup();
     assert!(bench.view.quest_record(PLAYER, 1).completions == 0);
 }
 
 #[test]
-#[available_gas(l2_gas: 151935418)]
+#[available_gas(l2_gas: 151939093)]
 fn bench_progress_worst() {
     let bench = progress_worst_setup();
     bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
@@ -157,19 +157,97 @@ fn progress_many_worst_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 1355778955)]
+#[available_gas(l2_gas: 1355779690)]
 fn baseline_batch_bound_accepted() {
     let bench = progress_many_worst_setup();
     assert!(bench.view.quest_record(PLAYER, 448).completions == 0);
 }
 
 #[test]
-#[available_gas(l2_gas: 2095328653)]
+#[available_gas(l2_gas: 2095376428)]
 fn quest_batch_bound_accepted() {
     let bench = progress_many_worst_setup();
     bench.quest.progress_many(PLAYER, distinct_entries(1, MAX_ENTRIES, 1), Mode::Storage);
     assert!(bench.view.quest_record(PLAYER, 1).completions == 1);
     assert!(bench.view.quest_record(PLAYER, 448).completions == 1);
+}
+
+// progress_many through the slow merge (fix loop 1, point 4). Ids 1..=16 take `batch_merge`'s
+// fast path; these inputs meet a collision only at the 16th entry, so the fast pass runs 15
+// entries and then the plain merge runs in full (ARC-03a's worst case of `batch_merge`):
+// - late collision [1..=15, 129] (129 = 1 mod 128): 16 distinct tasks, the same 448-quest
+//   storage witness as above, with task 129 in place of task 16;
+// - late duplicate [1..=15, 15]: 15 distinct tasks, so 420 quests.
+
+/// Tasks 1..=15, then `last`, each with count 1.
+fn fifteen_then(last: u32) -> Span<TaskProgress> {
+    let mut entries = array![];
+    let mut task_id: u32 = 1;
+    while task_id < MAX_ENTRIES {
+        entries.append(entry(task_id, 1));
+        task_id += 1;
+    }
+    entries.append(entry(last, 1));
+    entries.span()
+}
+
+/// 28 quests with 7 prerequisites on each task 1..=15, and on `last` unless it repeats one.
+fn late_setup(last: u32) -> Bench {
+    let bench = deploy();
+    let conditions = completed_prerequisites(bench);
+    let mut task_id: u32 = 1;
+    while task_id < MAX_ENTRIES {
+        shared_task(bench, task_id, (task_id - 1) * MAX_QUESTS_PER_TASK + 1, conditions);
+        task_id += 1;
+    }
+    if last >= MAX_ENTRIES {
+        shared_task(bench, last, (MAX_ENTRIES - 1) * MAX_QUESTS_PER_TASK + 1, conditions);
+    }
+    bench
+}
+
+#[test]
+#[available_gas(l2_gas: 2756474)]
+fn bench_progress_many_event_mode_late_collision() {
+    let bench = deploy();
+    bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Event);
+}
+
+#[test]
+#[available_gas(l2_gas: 2695763)]
+fn bench_progress_many_event_mode_late_duplicate() {
+    let bench = deploy();
+    bench.quest.progress_many(PLAYER, fifteen_then(15), Mode::Event);
+}
+
+#[test]
+#[available_gas(l2_gas: 1355761693)]
+fn baseline_progress_many_late_collision() {
+    let bench = late_setup(129);
+    assert!(bench.view.quest_record(PLAYER, 448).completions == 0);
+}
+
+#[test]
+#[available_gas(l2_gas: 2095806694)]
+fn bench_progress_many_worst_late_collision() {
+    let bench = late_setup(129);
+    bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
+    assert!(bench.view.quest_record(PLAYER, 448).completions == 1);
+}
+
+#[test]
+#[available_gas(l2_gas: 1272497775)]
+fn baseline_progress_many_late_duplicate() {
+    let bench = late_setup(15);
+    assert!(bench.view.quest_record(PLAYER, 420).completions == 0);
+}
+
+#[test]
+#[available_gas(l2_gas: 1965415584)]
+fn bench_progress_many_worst_late_duplicate() {
+    let bench = late_setup(15);
+    bench.quest.progress_many(PLAYER, fifteen_then(15), Mode::Storage);
+    assert!(bench.view.quest_record(PLAYER, 420).completions == 1);
 }
 
 // accept, and the views that evaluate prerequisites: quest D with an accept step, 3 tasks and 7
@@ -185,27 +263,27 @@ fn prerequisites_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 27475930)]
+#[available_gas(l2_gas: 27476665)]
 fn baseline_prerequisites() {
     prerequisites_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 28600659)]
+#[available_gas(l2_gas: 28601394)]
 fn bench_accept_worst() {
     let bench = prerequisites_setup();
     bench.quest.accept(PLAYER, D);
 }
 
 #[test]
-#[available_gas(l2_gas: 28042206)]
+#[available_gas(l2_gas: 28042941)]
 fn bench_view_is_unlocked_worst() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_is_unlocked(PLAYER, D));
 }
 
 #[test]
-#[available_gas(l2_gas: 27799414)]
+#[available_gas(l2_gas: 27800149)]
 fn bench_view_definition_worst() {
     let bench = prerequisites_setup();
     let (_, tasks, conditions) = bench.view.quest_definition(D);
@@ -213,21 +291,21 @@ fn bench_view_definition_worst() {
 }
 
 #[test]
-#[available_gas(l2_gas: 27686928)]
+#[available_gas(l2_gas: 27687663)]
 fn bench_view_is_accepted() {
     let bench = prerequisites_setup();
     assert!(!bench.view.quest_is_accepted(PLAYER, D));
 }
 
 #[test]
-#[available_gas(l2_gas: 27646671)]
+#[available_gas(l2_gas: 27647406)]
 fn bench_view_current_interval() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_current_interval(D) == Option::Some(0));
 }
 
 #[test]
-#[available_gas(l2_gas: 27785953)]
+#[available_gas(l2_gas: 27786688)]
 fn bench_view_progress_and_record() {
     let bench = prerequisites_setup();
     assert!(!bench.view.quest_progress(PLAYER, D, 0).completed);
@@ -235,7 +313,7 @@ fn bench_view_progress_and_record() {
 }
 
 #[test]
-#[available_gas(l2_gas: 27606855)]
+#[available_gas(l2_gas: 27607590)]
 fn bench_view_is_reporter() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_is_reporter(test_address()));
@@ -251,13 +329,13 @@ fn accepted_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 28600659)]
+#[available_gas(l2_gas: 28601394)]
 fn baseline_accepted() {
     accepted_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 29560743)]
+#[available_gas(l2_gas: 29561583)]
 fn bench_progress_accepted() {
     let bench = accepted_setup();
     bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
@@ -266,7 +344,7 @@ fn bench_progress_accepted() {
 // abandon. §5.1: A + R = 2 reads, 1 write
 
 #[test]
-#[available_gas(l2_gas: 28883067)]
+#[available_gas(l2_gas: 28883802)]
 fn bench_abandon() {
     let bench = accepted_setup();
     bench.quest.abandon(PLAYER, D);
@@ -288,14 +366,14 @@ fn baseline_plain() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3559318)]
+#[available_gas(l2_gas: 3559423)]
 fn bench_progress_plain() {
     let bench = plain_setup();
     bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
 }
 
 #[test]
-#[available_gas(l2_gas: 4135075)]
+#[available_gas(l2_gas: 4135180)]
 fn bench_progress_plain_completing() {
     let bench = plain_setup();
     bench.quest.progress(PLAYER, 1, 2, Mode::Storage);
@@ -308,13 +386,13 @@ fn completed_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 4135075)]
+#[available_gas(l2_gas: 4135180)]
 fn baseline_completed() {
     completed_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 4522840)]
+#[available_gas(l2_gas: 4522945)]
 fn bench_claim() {
     let bench = completed_setup();
     assert!(bench.quest.claim(PLAYER, D, 0) == 0);
@@ -337,13 +415,13 @@ fn retire_worst_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 151657131)]
+#[available_gas(l2_gas: 151657866)]
 fn baseline_retire_worst() {
     retire_worst_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 153910200)]
+#[available_gas(l2_gas: 153910935)]
 fn bench_retire_worst() {
     let bench = retire_worst_setup();
     bench.quest.retire(D);
@@ -363,13 +441,13 @@ fn define_worst_setup() -> (Bench, Span<u32>) {
 }
 
 #[test]
-#[available_gas(l2_gas: 148080243)]
+#[available_gas(l2_gas: 148080978)]
 fn baseline_define_worst() {
     define_worst_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 151659147)]
+#[available_gas(l2_gas: 151659882)]
 fn bench_define_worst() {
     let (bench, conditions) = define_worst_setup();
     bench

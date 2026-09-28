@@ -15,7 +15,7 @@ const T_B: u32 = 12;
 const T_C: u32 = 13;
 
 #[test]
-#[available_gas(l2_gas: 16093006)]
+#[available_gas(l2_gas: 16093216)]
 fn quest_prerequisites_all_required() {
     let q = deploy();
     define_simple(q, A, one_off(), T_A, 1);
@@ -32,7 +32,7 @@ fn quest_prerequisites_all_required() {
 }
 
 #[test]
-#[available_gas(l2_gas: 21593983)]
+#[available_gas(l2_gas: 21594298)]
 fn quest_prerequisites_unlock_after_last() {
     let q = deploy();
     define_simple(q, A, one_off(), T_A, 1);
@@ -48,7 +48,7 @@ fn quest_prerequisites_unlock_after_last() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13004530)]
+#[available_gas(l2_gas: 13004635)]
 fn quest_inactive_dependent_does_not_revert() {
     let q = deploy();
     let t0: u64 = 1000;
@@ -65,7 +65,7 @@ fn quest_inactive_dependent_does_not_revert() {
 }
 
 #[test]
-#[available_gas(l2_gas: 15039390)]
+#[available_gas(l2_gas: 15039705)]
 fn quest_dependent_unlocks_when_window_opens() {
     let q = deploy();
     let t0: u64 = 1000;
@@ -100,7 +100,7 @@ fn weekly_prerequisite_and_one_off_dependent() -> super::setup::Quest {
 }
 
 #[test]
-#[available_gas(l2_gas: 22612420)]
+#[available_gas(l2_gas: 22612735)]
 fn quest_recurring_prerequisite_completes_every_interval() {
     let q = weekly_prerequisite_and_one_off_dependent();
     report(q, PLAYER, T_A, 1, Mode::Storage);
@@ -114,7 +114,7 @@ fn quest_recurring_prerequisite_completes_every_interval() {
 }
 
 #[test]
-#[available_gas(l2_gas: 22496658)]
+#[available_gas(l2_gas: 22496973)]
 fn quest_recurring_prerequisite_after_dependent_completed() {
     let q = weekly_prerequisite_and_one_off_dependent();
     report(q, PLAYER, T_A, 1, Mode::Storage);
@@ -132,7 +132,7 @@ fn quest_recurring_prerequisite_after_dependent_completed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 23003692)]
+#[available_gas(l2_gas: 23004007)]
 fn quest_recurring_dependent_stays_unlocked() {
     let q = deploy();
     at(q, 0);
@@ -149,7 +149,7 @@ fn quest_recurring_dependent_stays_unlocked() {
 }
 
 #[test]
-#[available_gas(l2_gas: 14226201)]
+#[available_gas(l2_gas: 14226411)]
 fn quest_prerequisite_completed_before_definition() {
     let q = deploy();
     define_simple(q, A, one_off(), T_A, 1);
@@ -160,7 +160,7 @@ fn quest_prerequisite_completed_before_definition() {
 }
 
 #[test]
-#[available_gas(l2_gas: 14304961)]
+#[available_gas(l2_gas: 14305171)]
 fn quest_recurring_prerequisite_completed_before_definition() {
     let q = deploy();
     at(q, 0);
@@ -172,7 +172,7 @@ fn quest_recurring_prerequisite_completed_before_definition() {
 }
 
 #[test]
-#[available_gas(l2_gas: 12829012)]
+#[available_gas(l2_gas: 12829117)]
 fn quest_is_unlocked_evaluates_uncached() {
     let q = deploy();
     define_simple(q, A, one_off(), T_A, 1);
@@ -193,7 +193,7 @@ fn quest_without_conditions_is_unlocked() {
 /// A locked quest counts nothing and caches nothing; once its prerequisite is met, its next
 /// progress counts and caches the unlock.
 #[test]
-#[available_gas(l2_gas: 15330208)]
+#[available_gas(l2_gas: 15330523)]
 fn quest_unlock_cached_by_progress() {
     let q = deploy();
     define_simple(q, A, one_off(), T_A, 1);

@@ -100,7 +100,7 @@ fn quest_progress_many_rejects_unregistered_caller() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7366687)]
+#[available_gas(l2_gas: 7366897)]
 fn quest_progress_accepts_registered_reporter() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -143,7 +143,7 @@ fn quest_reporter_revoked() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15307337)]
+#[available_gas(l2_gas: 15307442)]
 fn quest_claim_requires_player_authorization() {
     let q = completed();
     caller(q, stranger());
@@ -219,7 +219,7 @@ fn quest_internal_layer_not_reachable_from_abi() {
 /// The consumer's own entrypoints reach the internal layer after the consumer's checks.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6262060)]
+#[available_gas(l2_gas: 6262165)]
 fn quest_consumer_calls_the_internal_layer() {
     let (address, consumer, view) = deploy_consumer();
     let safe = IMockConsumerSafeDispatcher { contract_address: address };

@@ -83,7 +83,9 @@ pub mod MockReentrant {
         }
         contract.reentry.write(Reentry { hook: 0, ..reentry });
         if reentry.action == 'progress' {
-            QuestInternalImpl::progress(ref self, player_id, reentry.task_id, reentry.count, Mode::Storage);
+            QuestInternalImpl::progress(
+                ref self, player_id, reentry.task_id, reentry.count, Mode::Storage,
+            );
         } else if reentry.action == 'claim' {
             QuestInternalImpl::claim(ref self, player_id, reentry.quest_id, reentry.interval_id);
         } else if reentry.action == 'accept' {

@@ -111,7 +111,7 @@ fn quest_retire_last_quest_empties_page() {
 }
 
 #[test]
-#[available_gas(l2_gas: 8259601)]
+#[available_gas(l2_gas: 8259706)]
 fn quest_retired_not_progressed() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 5);
@@ -123,7 +123,7 @@ fn quest_retired_not_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13354001)]
+#[available_gas(l2_gas: 13354106)]
 fn quest_retired_completed_still_claimable() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);

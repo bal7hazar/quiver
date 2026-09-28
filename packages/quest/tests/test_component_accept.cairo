@@ -25,7 +25,7 @@ fn daily() -> quiver_quest::logic::QuestSchedule {
 }
 
 #[test]
-#[available_gas(l2_gas: 7851126)]
+#[available_gas(l2_gas: 7851336)]
 fn quest_accept_required() {
     let q = with_accept(one_off(), 10);
     report(q, PLAYER, T, 1, Mode::Storage);
@@ -37,7 +37,7 @@ fn quest_accept_required() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10738367)]
+#[available_gas(l2_gas: 10738472)]
 fn quest_completion_releases_acceptance() {
     let q = with_accept(one_off(), 2);
     accept(q, PLAYER, Q);
@@ -48,7 +48,7 @@ fn quest_completion_releases_acceptance() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9871531)]
+#[available_gas(l2_gas: 9871846)]
 fn quest_acceptance_expires_at_rollover() {
     let q = with_accept(daily(), 10);
     accept(q, PLAYER, Q);
@@ -88,7 +88,7 @@ fn quest_accept_twice_same_interval_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 10858603)]
+#[available_gas(l2_gas: 10858708)]
 fn quest_accept_after_completion_reverts() {
     let q = with_accept(one_off(), 1);
     accept(q, PLAYER, Q);
@@ -100,7 +100,7 @@ fn quest_accept_after_completion_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 11671880)]
+#[available_gas(l2_gas: 11671985)]
 fn quest_accept_after_daily_completion() {
     let q = with_accept(daily(), 1);
     accept(q, PLAYER, Q);
@@ -126,7 +126,7 @@ fn quest_abandon_expired_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9676914)]
+#[available_gas(l2_gas: 9677229)]
 fn quest_abandon_keeps_counts() {
     let q = with_accept(one_off(), 10);
     accept(q, PLAYER, Q);
@@ -176,7 +176,7 @@ fn quest_abandon_refusals() {
 
 /// `accept` evaluates the prerequisites and caches the unlock.
 #[test]
-#[available_gas(l2_gas: 14837185)]
+#[available_gas(l2_gas: 14837395)]
 fn quest_accept_caches_unlock() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
