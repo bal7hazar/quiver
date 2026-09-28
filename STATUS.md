@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 22:37 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 23:58 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -26,8 +26,26 @@ benchmarked); no access-control bypass was found. Against the published ceiling 
 L2 gas per transaction, the worst case uses 64 %. **The project manager ruled that unacceptable**
 ([amendment to A-G1](docs/decisions/2026-09-28-A-G1-amendment-cost-cap.md)): the worst call the
 package allows must stay under 20M L2 gas, with caps refused at definition time, quests per task
-cut first, and the game's own use benchmarked. **Fix loop 1** (the audit's findings) runs since
-22:29 UTC; **fix loop 2** carries the cost cap.
+cut first, and the game's own use benchmarked. **Fix loop 1** (the audit's findings) is done
+(22:29 to 22:40 UTC: a quest retired by a hook is skipped; re-entry, the dependents ceiling and
+the slow merge path tested; 310 tests within budget, CI green). **Fix loop 2** (the cost cap,
+22:44 to 23:42 UTC) measured `progress_many` on a grid of 111 points (model within 0.02 %),
+removed about 3 % of waste, measured the game's own use at **10.1M**, and **stopped as its brief
+said**: a completed quest costs about 1.17M, most of it its two changed storage slots, so even one
+quest per task and no prerequisite measures 20.6M at 16 tasks. **Decided by the project manager,
+D-135** ([decision](docs/decisions/2026-09-28-quest-cost-cap.md)): acceptance mandatory, at most
+H = 4 held quests per player (8 at most), progress walks the held list, prerequisites checked at
+acceptance. **Next: ARC-03c** ([brief](docs/briefs/ARC-03c-quest-held.md)), Opus 5.5, from
+ARC-03b's branch; #7 is superseded and closed when ARC-03c's pull request opens.
+
+**Launcher** ([#8](https://github.com/bal7hazar/quiver/pull/8), CI green, `[GPT-6-Sol]` audit
+waiting for a slot): the budget of 3 counted by the launcher across the three tracks, failing
+closed, and the count and start under the shared lock `~/orchestrator/agent-launch.lock`, ported
+from the game's `scripts/agent.sh` at `e3a2e75` (#48). **Inherited findings**, from the audit of
+the library's port (bal7hazar/hexx-cairo#24), **closed** by the sync with the game's launcher at
+`44586e6` (the count scans /proc for every codex exec; an unreadable, malformed or dangling launch
+record and an unlistable records directory refuse). Until #8 merges, launches go through its
+launcher.
 
 Budget slip, 22:28 UTC: the orchestrator resumed ARC-03b while three Grim World agents ran (two
 codex audits of the game and the library were counted, then overlooked); it stopped the run
@@ -48,7 +66,9 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | `quiver-ARC-03b-222951` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 1 since 22:29 UTC |
+| ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
+| ARC-03c quest held list | — | `claude-opus-5-5` / — | implement | Ready; after the PR-8 audit (cap 1) |
+| PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | Running since 23:44 UTC |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
@@ -56,9 +76,10 @@ to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
 
 ## Budget
 
-D-118 and the game's OPERATIONS §3: after ARC-01 and its audit, this track has no slot of its
-own before the game's Phase 2; it launches only while fewer than 3 Grim World agents run and
-the game has nothing ready.
+The game's OPERATIONS §3 at `377576a`: caps game 2, map library 1, **quiver 1, audits included**,
+total 3; the game comes first: no quiver launch while `~/orchestrator/waiting/game` exists and is
+less than 30 minutes old. ARC-03b (fix loop 2) is this track's one agent; the queued `[GPT-6-Sol]`
+audit of #8 was withdrawn at 23:07 UTC before it launched, and waits for ARC-03b to end.
 
 ## Open
 

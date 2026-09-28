@@ -29,19 +29,21 @@ scarbs.xyz and consumed by the game **by version**.
 | ARC-01 | **Analysis** of `quest` and `achievement` as they are: data model, modes, hooks, intervals, prerequisites, claim, what depends on Dojo; the defects of ADR-0004 points 3 to 5 confirmed or refuted as test cases; the **API of the native packages**; coverage of the game's needs A-1 to A-9; cost per call; the workspace and its CI by affected package. Report `docs/research/ARC-01-quest-achievement.md` | ARC-00 | Opus 5.5, research | GPT-6-Sol | done: [#2](https://github.com/bal7hazar/quiver/pull/2), three fix loops |
 | **Gate A-G1** | **Is the API accepted?** The project manager decides on the recommendation (D-128). Package names confirmed with the registry's availability | ARC-01 | Project manager | — | **accepted** 2026-09-28, D-131: [decision](docs/decisions/2026-09-28-A-G1-api.md) |
 | ARC-02 | Workspace, **CI by affected package**, gas tooling, publication pipeline per package ([brief](docs/briefs/ARC-02-workspace.md)) | A-G1 | Sonnet 5.5 | GPT-6-Luna | done: [#4](https://github.com/bal7hazar/quiver/pull/4), two fix loops |
-| ARC-03 | `quiver_quest`: implementation, test-driven, on the accepted API, in two lots: **ARC-03a** the library ([brief](docs/briefs/ARC-03a-quest-logic.md)), **ARC-03b** the component ([brief](docs/briefs/ARC-03b-quest-component.md)); then publication of 0.1.0 after the project manager's go (D-132) | ARC-02 | Opus 5.5 | GPT-6-Astra (access control, ownership) | ARC-03a done ([#6](https://github.com/bal7hazar/quiver/pull/6)); ARC-03b next |
+| ARC-03 | `quiver_quest`: implementation, test-driven, on the accepted API, in two lots: **ARC-03a** the library ([brief](docs/briefs/ARC-03a-quest-logic.md)), **ARC-03b** the component ([brief](docs/briefs/ARC-03b-quest-component.md), superseded after its measurements), **ARC-03c** progress on the player's held quests, D-135 ([brief](docs/briefs/ARC-03c-quest-held.md)); then publication of 0.1.0 after the project manager's go (D-132) | ARC-02 | Opus 5.5 | GPT-6-Astra (access control, ownership) | ARC-03a done ([#6](https://github.com/bal7hazar/quiver/pull/6)); ARC-03b measured and superseded; ARC-03c next |
 | ARC-04 | `quiver_achievement`: implementation, release; on the game's path (titles in event mode, D-131) | ARC-03 | Opus 5.5 | GPT-6-Astra | todo |
 | ARC-05 | `leaderboard`, `social` | After the game's MVP | — | — | todo |
 
 ## Budget and rules
 
-**One agent at a time** for this track, within the 3 Grim World agents of D-118 shared with the
-game and the map library. Split (game OPERATIONS §3, "Split between the three tracks", at
-`d9b2c3c`): the game and the map library have one slot of their own each; the third is shared.
-On a freed shared slot, a task whose report opens a gate of the owner comes first (ARC-01), then
-the game, the library, quiver. After ARC-01 and its audit, this track has no slot of its own
-before the game's Phase 2: it launches only while fewer than 3 Grim World agents run and the
-game has nothing ready. A codex audit counts as an agent while it runs. Thresholds of the
+**One agent at a time** for this track, **audits included** (the game's OPERATIONS §3 at
+`377576a`: caps game 2, map library 1, quiver 1, total 3), and **the game comes first**: before
+each launch the orchestrator checks `~/orchestrator/waiting/game`; if it exists and is less than 30
+minutes old, it launches nothing and checks again later (by hand until the launcher reference
+enforces it). Thresholds of the
 launcher: no launch above a 5-minute load of 12 or under 8 GB available. Rules: the game's OPERATIONS.md; common rules of briefs:
 [docs/briefs/COMMON.md](docs/briefs/COMMON.md); Cairo rules: [docs/CAIRO.md](docs/CAIRO.md).
 After three fix loops on one lot, the orchestrator escalates to the project manager.
+**Launcher**: `scripts/agent.sh` follows the game's, the reference of the three launchers: the
+commit of the game's `scripts/agent.sh` that its CHANGELOG marks as "launcher reference" after a
+passed audit. The orchestrator reads it at its check-ins and syncs in one pull request naming the
+commit; a sync never delays a task of the track.
