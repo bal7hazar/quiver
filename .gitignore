@@ -1,0 +1,9 @@
+.DS_Store
+# Agent worktrees, their logs, and the report every agent writes at its worktree root.
+.claude/worktrees/
+/REPORT.md
+# Read-only reference material the orchestrator places in a task worktree (clones, game docs).
+/ref/
+# Build outputs and caches.
+target/
+.snfoundry_cache/
