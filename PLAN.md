@@ -35,13 +35,11 @@ scarbs.xyz and consumed by the game **by version**.
 
 ## Budget and rules
 
-**One agent at a time** for this track, within the 3 Grim World agents of D-118 shared with the
-game and the map library. Split (game OPERATIONS §3, "Split between the three tracks", at
-`d9b2c3c`): the game and the map library have one slot of their own each; the third is shared.
-On a freed shared slot, a task whose report opens a gate of the owner comes first (ARC-01), then
-the game, the library, quiver. After ARC-01 and its audit, this track has no slot of its own
-before the game's Phase 2: it launches only while fewer than 3 Grim World agents run and the
-game has nothing ready. A codex audit counts as an agent while it runs. Thresholds of the
+**One agent at a time** for this track, **audits included** (the game's OPERATIONS §3 at
+`377576a`: caps game 2, map library 1, quiver 1, total 3), and **the game comes first**: before
+each launch the orchestrator checks `~/orchestrator/waiting/game`; if it exists and is less than 30
+minutes old, it launches nothing and checks again later (by hand until the launcher reference
+enforces it). Thresholds of the
 launcher: no launch above a 5-minute load of 12 or under 8 GB available. Rules: the game's OPERATIONS.md; common rules of briefs:
 [docs/briefs/COMMON.md](docs/briefs/COMMON.md); Cairo rules: [docs/CAIRO.md](docs/CAIRO.md).
 After three fix loops on one lot, the orchestrator escalates to the project manager.

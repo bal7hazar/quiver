@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 22:55 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 23:08 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -60,7 +60,7 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
 | ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 2 (cost cap) since 22:44 UTC |
-| PR-8 audit | setsid (codex) | `gpt-6-sol` | audit | Waits for a slot |
+| PR-8 audit | setsid (codex) | `gpt-6-sol` | audit | Queued after ARC-03b (cap 1) |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
@@ -68,9 +68,10 @@ to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
 
 ## Budget
 
-D-118 and the game's OPERATIONS §3: after ARC-01 and its audit, this track has no slot of its
-own before the game's Phase 2; it launches only while fewer than 3 Grim World agents run and
-the game has nothing ready.
+The game's OPERATIONS §3 at `377576a`: caps game 2, map library 1, **quiver 1, audits included**,
+total 3; the game comes first: no quiver launch while `~/orchestrator/waiting/game` exists and is
+less than 30 minutes old. ARC-03b (fix loop 2) is this track's one agent; the queued `[GPT-6-Sol]`
+audit of #8 was withdrawn at 23:07 UTC before it launched, and waits for ARC-03b to end.
 
 ## Open
 
