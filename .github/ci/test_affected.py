@@ -3,7 +3,9 @@
 
 import json
 import pathlib
+import subprocess
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -76,6 +78,27 @@ class Affected(unittest.TestCase):
     def test_cycle_terminates(self):
         graph = {"packages/a": {"packages/b"}, "packages/b": {"packages/a"}}
         self.assertEqual(a.affected(["packages/a/x"], graph), set(graph))
+
+
+class Renames(unittest.TestCase):
+    def git(self, cwd, *args):
+        subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+    def test_moving_a_file_out_of_a_package_still_affects_it(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = pathlib.Path(root)
+            (root / "packages/quest").mkdir(parents=True)
+            (root / "docs").mkdir()
+            (root / "packages/quest/notes.md").write_text("some notes\n" * 20)
+            self.git(root, "init", "-q", "-b", "main")
+            self.git(root, "-c", "user.name=t", "-c", "user.email=t@t", "add", "-A")
+            self.git(root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "a")
+            self.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+            self.git(root, "mv", "packages/quest/notes.md", "docs/notes.md")
+            self.git(root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "b")
+            changed = a.changed_files("main", cwd=root)
+            self.assertEqual(sorted(changed), ["docs/notes.md", "packages/quest/notes.md"])
+            self.assertEqual(a.affected(changed, TWO), {"packages/quest"})
 
 
 class Graph(unittest.TestCase):

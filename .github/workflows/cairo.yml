@@ -1,6 +1,7 @@
 # CI of the Cairo packages (ARC-02), beside `tooling`. On a pull request only the packages the
 # change affects, and the packages that depend on them, are formatted, built and tested; on main,
-# on a release tag, every day and on demand, every package. The logic is .github/ci/affected.py.
+# every day and on demand, every package; on a release tag, release.yml calls this workflow (the
+# tag itself does not trigger it, so the checks run once). The logic is .github/ci/affected.py.
 # The job named `cairo` is the one check to require: it succeeds when every package job does, or
 # when none was needed. No secret, no pull_request_target, read-only token, actions pinned by SHA.
 name: cairo
@@ -9,7 +10,6 @@ on:
   pull_request:
   push:
     branches: [main]
-    tags: ["quiver_*-v*"]
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
@@ -19,8 +19,6 @@ permissions:
   contents: read
 
 # A new push to a pull request cancels the superseded run; runs on main and tags are never cancelled.
-# The workflow name is the caller's when release.yml calls this one, so the two runs of a tag
-# do not share a group.
 concurrency:
   group: cairo-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -56,8 +54,23 @@ jobs:
           python3 -m unittest discover -s .github/ci -p 'test_affected.py'
           python3 -m unittest scripts/test_gas.py
 
+      # Defence in depth: on a pull request the script that narrows the run is the base branch's
+      # copy when the base has one (a change under .github/ci/ then runs every package, so a pull
+      # request that edits the script cannot narrow its own run). The unit tests above use the
+      # pull request's copy. A pull request can also edit this workflow: the full run on main
+      # after the merge is the backstop.
       - id: matrix
-        run: python3 .github/ci/affected.py matrix
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          script=.github/ci/affected.py
+          if [ "$EVENT" = pull_request ] && git show "origin/$BASE:$script" > "$RUNNER_TEMP/affected.py"; then
+            echo "using the base branch's $script"
+            script="$RUNNER_TEMP/affected.py"
+          fi
+          python3 "$script" matrix
 
   package:
     needs: affected

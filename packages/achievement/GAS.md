@@ -6,4 +6,4 @@ L2 gas snforge reports for the test; the budget is its `#[available_gas(l2_gas: 
 
 | Test | Measured (l2_gas) | Budget (l2_gas) | Date | Commit |
 |---|---|---|---|---|
-| `test_constants::achievement_bounds_are_the_accepted_ones` | 13720 | 14406 | 2026-09-28 | a2d1851 |
+| `quiver_achievement_integrationtest::test_constants::achievement_bounds_are_the_accepted_ones` | 13720 | 14406 | 2026-09-28 | 13f6efb |

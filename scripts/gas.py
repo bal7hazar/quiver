@@ -23,8 +23,16 @@ TOLERANCE_NUM, TOLERANCE_DEN = 105, 100  # budget <= ceil(1.05 * measured), in i
 
 PASS_RE = re.compile(r"^\[PASS\]\s+(\S+)\s+\(.*?\bl2_gas:\s*~?(\d+)\)", re.M)
 FAIL_RE = re.compile(r"^\[FAIL\]\s+(\S+)", re.M)
-# An attribute list, then the function it decorates: `#[test] #[available_gas(l2_gas: N)] fn name`.
-TEST_FN_RE = re.compile(r"((?:[ \t]*#\[[^\n]*\][ \t]*\n)+)[ \t]*(?:pub\s+)?fn\s+(\w+)")
+SUMMARY_RE = re.compile(
+    r"^Tests:\s*(\d+) passed,\s*(\d+) failed,\s*(\d+) ignored,\s*(\d+) filtered out", re.M
+)
+# The tokens that matter to find a test: an attribute list then `fn name`, `mod name {`, braces.
+TOKEN_RE = re.compile(
+    r"(?P<attrs>(?:[ \t]*#\[[^\n]*\][ \t]*\n)+)[ \t]*(?:pub\s+)?fn\s+(?P<fn>\w+)"
+    r"|(?:pub\s+)?mod\s+(?P<mod>\w+)\s*\{"
+    r"|(?P<open>\{)|(?P<close>\})"
+)
+COMMENT_RE = re.compile(r"//[^\n]*")
 BUDGET_RE = re.compile(r"#\[available_gas\(\s*l2_gas:\s*(\d+)\s*\)\]")
 ROW_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|", re.M)
 
@@ -36,15 +44,47 @@ def parse_snforge_output(text):
     return measured, failed
 
 
-def parse_budgets(source):
-    """Returns {fn name: budget or None} for every `#[test]` function of a Cairo source."""
-    budgets = {}
-    for attrs, name in TEST_FN_RE.findall(source):
-        if "#[test]" not in attrs:
-            continue
-        found = BUDGET_RE.search(attrs)
-        budgets[name] = int(found.group(1)) if found else None
-    return budgets
+def parse_summary(text):
+    """(passed, failed, ignored, filtered out) from snforge's `Tests:` line, or None."""
+    found = SUMMARY_RE.findall(text)
+    return tuple(int(n) for n in found[-1]) if found else None
+
+
+def parse_tests(source, prefix):
+    """{test path: budget or None, ignored} for every `#[test]` function of a Cairo source.
+
+    `prefix` is the module path of the file as snforge names it (`pkg_integrationtest::mod`);
+    inline `mod name { .. }` blocks extend it. The value is (budget or None, is_ignored).
+    """
+    tests = {}
+    stack = []  # for each open brace, the module name it opened, or None
+    for token in TOKEN_RE.finditer(COMMENT_RE.sub("", source)):
+        if token.group("mod"):
+            stack.append(token.group("mod"))
+        elif token.group("open"):
+            stack.append(None)
+        elif token.group("close"):
+            if stack:
+                stack.pop()
+        elif "#[test]" in token.group("attrs"):
+            found = BUDGET_RE.search(token.group("attrs"))
+            path = "::".join([prefix, *[m for m in stack if m], token.group("fn")])
+            tests[path] = (
+                int(found.group(1)) if found else None,
+                "#[ignore" in token.group("attrs"),
+            )
+    return tests
+
+
+def file_prefix(package, package_dir, path):
+    """The module path snforge gives the tests of a source file.
+
+    src/a/b.cairo -> `pkg::a::b` (src/lib.cairo -> `pkg`); tests/a.cairo -> `pkg_integrationtest::a`.
+    """
+    relative = path.relative_to(package_dir)
+    root, *rest = relative.with_suffix("").parts
+    modules = [] if (root == "src" and rest == ["lib"]) else list(rest)
+    return "::".join([package if root == "src" else f"{package}_integrationtest", *modules])
 
 
 def ceil_margin(measured):
@@ -52,20 +92,34 @@ def ceil_margin(measured):
     return -(-measured * TOLERANCE_NUM // TOLERANCE_DEN)
 
 
-def short_name(path):
-    """`pkg_integrationtest::module::test` -> `module::test`."""
-    return path.split("::", 1)[1] if "::" in path else path
-
-
-def budget_of(path, budgets):
-    return budgets.get(path.rsplit("::", 1)[-1])
-
-
-def check(package, measured, budgets, table):
-    """Returns the list of problems (empty when the package passes)."""
+def coverage(package, measured, tests, summary):
+    """Problems of completeness: every test of the sources ran and was measured."""
     problems = []
-    for path in sorted(measured):
-        gas, budget = measured[path], budget_of(path, budgets)
+    if summary is None:
+        problems.append(f"{package}: no `Tests:` summary in snforge's output")
+    elif summary[2] or summary[3]:
+        problems.append(
+            f"{package}: snforge ignored {summary[2]} and filtered out {summary[3]} tests; "
+            "every test must run"
+        )
+    for path in sorted(set(tests) - set(measured)):
+        why = "is #[ignore]d" if tests[path][1] else "has no measured result"
+        problems.append(f"{package}: {path} {why}: every test needs a measured budget")
+    for path in sorted(set(measured) - set(tests)):
+        problems.append(f"{package}: {path} was measured but is not found in the sources")
+    return problems
+
+
+def check(package, measured, tests, table, summary=None):
+    """Returns the list of problems (empty when the package passes).
+
+    `measured` is {test path: l2 gas} from snforge; `tests` is {test path: (budget, ignored)}
+    from the sources; `table` the rows of GAS.md; `summary` snforge's (passed, failed, ignored,
+    filtered out) counts.
+    """
+    problems = coverage(package, measured, tests, summary)
+    for path in sorted(set(measured) & set(tests)):
+        gas, budget = measured[path], tests[path][0]
         if budget is None:
             problems.append(f"{package}: {path} has no #[available_gas(l2_gas: N)] budget")
         elif budget < gas:
@@ -76,16 +130,14 @@ def check(package, measured, budgets, table):
             )
     recorded = {name: (gas, budget) for name, gas, budget in table}
     for path in sorted(measured):
-        name = short_name(path)
-        want = (measured[path], budget_of(path, budgets))
-        if name not in recorded:
-            problems.append(f"{package}: {name} is missing from GAS.md")
-        elif recorded[name] != want:
+        want = (measured[path], tests.get(path, (None, False))[0])
+        if path not in recorded:
+            problems.append(f"{package}: {path} is missing from GAS.md")
+        elif recorded[path] != want:
             problems.append(
-                f"{package}: {name} GAS.md says measured/budget {recorded[name]}, now {want}"
+                f"{package}: {path} GAS.md says measured/budget {recorded[path]}, now {want}"
             )
-    known = {short_name(path) for path in measured}
-    for name in sorted(set(recorded) - known):
+    for name in sorted(set(recorded) - set(measured)):
         problems.append(f"{package}: GAS.md lists {name}, which is no longer measured")
     return problems
 
@@ -95,7 +147,7 @@ def parse_table(markdown):
     return [(name, int(gas), int(budget)) for name, gas, budget in ROW_RE.findall(markdown)]
 
 
-def render(package, measured, budgets, date, commit):
+def render(package, measured, tests, date, commit):
     lines = [
         f"# Gas of `{package}`",
         "",
@@ -108,19 +160,19 @@ def render(package, measured, budgets, date, commit):
     ]
     for path in sorted(measured):
         lines.append(
-            f"| `{short_name(path)}` | {measured[path]} | {budget_of(path, budgets)} "
+            f"| `{path}` | {measured[path]} | {tests[path][0]} "
             f"| {date} | {commit} |"
         )
     return "\n".join(lines) + "\n"
 
 
-def read_budgets(package_dir):
-    budgets = {}
+def read_tests(package, package_dir):
+    tests = {}
     for path in sorted(package_dir.rglob("*.cairo")):
-        if "target" in path.relative_to(package_dir).parts:
-            continue
-        budgets.update(parse_budgets(path.read_text()))
-    return budgets
+        top = path.relative_to(package_dir).parts[0]
+        if top in ("src", "tests"):
+            tests.update(parse_tests(path.read_text(), file_prefix(package, package_dir, path)))
+    return tests
 
 
 def git_commit():
@@ -152,14 +204,20 @@ def main(argv):
         if not failed:
             print(f"{package}: snforge test failed or ran no test", file=sys.stderr)
         return 1
-    budgets = read_budgets(package_dir)
+    tests = read_tests(package, package_dir)
+    summary = parse_summary(output)
     gas_md = package_dir / "GAS.md"
     if flags == ["--write"]:
+        problems = coverage(package, measured, tests, summary)
+        for problem in problems:
+            print(problem, file=sys.stderr)
+        if problems:
+            return 1
         gas_md.write_text(
             render(
                 package,
                 measured,
-                budgets,
+                tests,
                 datetime.datetime.now(datetime.timezone.utc).date().isoformat(),
                 git_commit(),
             )
@@ -167,7 +225,7 @@ def main(argv):
         print(f"{package}: wrote {gas_md} ({len(measured)} tests)")
         return 0
     table = parse_table(gas_md.read_text()) if gas_md.is_file() else []
-    problems = check(package, measured, budgets, table)
+    problems = check(package, measured, tests, table, summary)
     for problem in problems:
         print(problem, file=sys.stderr)
     if problems:

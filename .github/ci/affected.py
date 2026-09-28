@@ -5,8 +5,9 @@
   affected.py matrix     writes `matrix` (JSON, {"include": [{"dir": "packages/x"}]}) and `any`
 
 `matrix` reads `scarb metadata --format-version 1` (the workspace members and their dependencies)
-and the event: on a pull request the files changed since the merge base with the base branch,
-on any other event every package. A file under packages/<dir>/ affects that package; the root
+and the event: on a pull request the files changed since the merge base with the base branch (renames listed as
+a deletion and an addition), on any other event every package (main, the daily schedule, a manual
+run, and a release tag through release.yml, which calls cairo.yml). A file under packages/<dir>/ affects that package; the root
 Scarb.toml and Scarb.lock, .tool-versions, the Cairo workflows, .github/ci/ and scripts/gas.py
 affect all; anything else affects none. Every package that depends, transitively, on an affected
 one runs too. A pull request controls all of these inputs, so each value is validated before it
@@ -116,12 +117,15 @@ def write_output(name, value):
         sys.stdout.write(line)
 
 
-def changed_files(base):
+def changed_files(base, cwd=None, remote="origin"):
+    """Paths changed since the merge base with `remote/base`. `--no-renames` lists a moved file
+    as a deletion at its origin and an addition at its destination, so that moving a file out of
+    packages/<dir>/ still affects that package."""
     if not BRANCH_RE.match(base) or base.startswith("-"):
         raise ValueError(f"not a branch name: {base!r}")
     out = subprocess.run(
-        ["git", "diff", "--name-only", f"origin/{base}...HEAD"],
-        capture_output=True, text=True, check=True,
+        ["git", "diff", "--name-only", "--no-renames", f"{remote}/{base}...HEAD"],
+        capture_output=True, text=True, check=True, cwd=cwd,
     )
     return out.stdout.splitlines()
 

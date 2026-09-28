@@ -46,9 +46,7 @@ jobs:
           DIR: ${{ steps.check.outputs.dir }}
         run: scarb --manifest-path "$DIR/Scarb.toml" package
 
-      # actions/upload-artifact must be pinned by commit SHA like the others: see REPORT.md
-      # (escalation), the SHA could not be resolved from the agent's sandbox.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ github.ref_name }}
           path: target/package/*.tar.zst

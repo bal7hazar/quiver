@@ -57,9 +57,11 @@ Run the tests of the package you touched and of the packages that depend on it.
 | Event | Packages |
 |---|---|
 | Pull request | Those the change affects, and their dependents |
-| Push to `main`, tag `quiver_*-v*`, daily schedule, manual run | All |
+| Push to `main`, daily schedule, manual run | All |
+| Tag `quiver_*-v*` | All, once: `release.yml` calls `cairo.yml`; the tag push does not trigger `cairo.yml` itself |
 
-On a pull request, `.github/ci/affected.py` lists the files changed since the merge base. A file
+On a pull request, `.github/ci/affected.py` lists the files changed since the merge base, with
+renames listed as a deletion and an addition (moving a file out of a package affects it). A file
 under `packages/<dir>/` affects that package; the root `Scarb.toml` and `Scarb.lock`,
 `.tool-versions`, `cairo.yml`, `release.yml`, `.github/ci/**` and `scripts/gas.py` affect all;
 anything else affects none and the Cairo jobs are skipped. Dependents come from
@@ -72,14 +74,22 @@ SHA-256-pinned release archive). The job named **`cairo`** succeeds when every p
 or when none was needed: it is the check to require. Third-party actions are pinned by commit
 SHA and the token is read-only.
 
+The pull request controls `affected.py`, so on a pull request the `affected` job runs the **base
+branch's** copy of it when the base has one; a change under `.github/ci/` then runs every package,
+and a pull request that edits the script cannot narrow its own run. A pull request can also edit
+the workflow itself: **the full run on `main` after the merge is the backstop.**
+
 ## 5. Gas
 
 Every test has `#[available_gas(l2_gas: N)]`, `N = ceil(1.05 × measured)` ([CAIRO.md](CAIRO.md) §2).
 Workflow: write the test, run `scripts/gas.py <dir> --write` (it prints nothing useful until the
 budgets exist: set a high one, run, then set `N` from the measured value), edit `N` in the
 source, run `--write` again, then `--check`. `--write` rewrites the package's `GAS.md` (test,
-measured, budget, date, commit); `--check` fails, naming the test, when a budget is missing, below
-the measure, above `ceil(1.05 × measured)`, or when `GAS.md` disagrees with the measures.
+measured, budget, date, commit; tests are named as snforge names them, by module path);
+`--check` fails, naming the test, when a budget is missing, below the measure, above
+`ceil(1.05 × measured)`, or when `GAS.md` disagrees with the measures. Both fail when a `#[test]`
+of the sources has no measured result (an `#[ignore]`d or filtered test included) or when
+snforge's summary reports a test ignored or filtered out: every test runs and has a budget.
 Commit `GAS.md` with the change.
 
 ## 6. Release, up to the archive
