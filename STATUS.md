@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 21:57 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 22:37 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -15,7 +15,23 @@ package skeletons, CI by affected package, the gas tool, a release check that ne
 `quiver_quest`, 166 tests within budget; `[GPT-6-Astra]` audit FAIL (packing could let a narrow
 field spill into its neighbour, reserved bits unchecked), then PASS WITH FINDINGS after one fix
 loop. **Next: ARC-03b**, the component ([brief](docs/briefs/ARC-03b-quest-component.md)), on Opus
-5.5 with a `[GPT-6-Astra]` audit, launched when a Grim World slot is free. Publications follow
+5.5: done (21:56 to 22:19 UTC), [#7](https://github.com/bal7hazar/quiver/pull/7), 292 tests within
+budget, CI green; the reads and writes of every worst case equal the §5.1 estimates. The worst
+`progress_many` (16 tasks, each shared by 28 live quests with 7 prerequisites first observed)
+measures **about 704 M L2 gas** for the component alone: to compare with the network's
+per-transaction limit before relying on the bound at its maximum. The `[GPT-6-Astra]` audit
+returned **FAIL** (a quest retired by a hook during a progress call could still complete; hook
+re-entry and the `live_dependents` ceiling untested; the late-collision merge path not
+benchmarked); no access-control bypass was found. Against the published ceiling of 1.1 billion
+L2 gas per transaction, the worst case uses 64 %. **The project manager ruled that unacceptable**
+([amendment to A-G1](docs/decisions/2026-09-28-A-G1-amendment-cost-cap.md)): the worst call the
+package allows must stay under 20M L2 gas, with caps refused at definition time, quests per task
+cut first, and the game's own use benchmarked. **Fix loop 1** (the audit's findings) runs since
+22:29 UTC; **fix loop 2** carries the cost cap.
+
+Budget slip, 22:28 UTC: the orchestrator resumed ARC-03b while three Grim World agents ran (two
+codex audits of the game and the library were counted, then overlooked); it stopped the run
+after 15 seconds, before any change, and resumes it when fewer than 3 run. Publications follow
 D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 `PENDING-publish-*` file and publishes after a go naming package, version and commit.
 
@@ -32,7 +48,8 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | — | `claude-opus-5-5` / — | implement | Ready; waits for a slot |
+| ARC-03b quest component | `quiver-ARC-03b-222951` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 1 since 22:29 UTC |
+| ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
 to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
