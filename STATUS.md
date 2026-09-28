@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 22:37 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 22:47 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -26,8 +26,18 @@ benchmarked); no access-control bypass was found. Against the published ceiling 
 L2 gas per transaction, the worst case uses 64 %. **The project manager ruled that unacceptable**
 ([amendment to A-G1](docs/decisions/2026-09-28-A-G1-amendment-cost-cap.md)): the worst call the
 package allows must stay under 20M L2 gas, with caps refused at definition time, quests per task
-cut first, and the game's own use benchmarked. **Fix loop 1** (the audit's findings) runs since
-22:29 UTC; **fix loop 2** carries the cost cap.
+cut first, and the game's own use benchmarked. **Fix loop 1** (the audit's findings) is done
+(22:29 to 22:40 UTC: a quest retired by a hook is skipped; re-entry, the dependents ceiling and
+the slow merge path tested; 310 tests within budget, CI green). **Fix loop 2** (the cost cap)
+waits for a slot, then the `[GPT-6-Astra]` re-audit.
+
+**Launcher** ([#8](https://github.com/bal7hazar/quiver/pull/8), CI green, `[GPT-6-Sol]` audit
+waiting for a slot): the budget of 3 counted by the launcher across the three tracks, failing
+closed, and the count and start under the shared lock `~/orchestrator/agent-launch.lock`, ported
+from the game's `scripts/agent.sh` at `e3a2e75` (#48). **Inherited findings**, from the audit of
+the library's port (bal7hazar/hexx-cairo#24), to fix when the game's launcher does: a codex audit
+started under another command form without a pid file is not counted; an unreadable pid record is
+skipped instead of refusing the launch. Until #8 merges, launches go through its launcher.
 
 Budget slip, 22:28 UTC: the orchestrator resumed ARC-03b while three Grim World agents ran (two
 codex audits of the game and the library were counted, then overlooked); it stopped the run
@@ -48,7 +58,8 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | `quiver-ARC-03b-222951` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 1 since 22:29 UTC |
+| ARC-03b quest component | `quiver-ARC-03b-*` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 1 done; fix loop 2 waits for a slot |
+| PR-8 audit | setsid (codex) | `gpt-6-sol` | audit | Waits for a slot |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
