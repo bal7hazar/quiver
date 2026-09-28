@@ -110,7 +110,12 @@ Commit `GAS.md` with the change.
 
 ## 7. Publishing is not in CI
 
-`release.yml` never runs `scarb publish` and holds no token. Publishing is the owner's act
-(D-128): with the archive checked, the owner runs
-`scarb --manifest-path packages/<dir>/Scarb.toml publish` by hand, on a machine that holds the
-registry token. A published version cannot be replaced.
+`release.yml` never runs `scarb publish` and holds no token. **No sub-agent publishes, ever**
+(the game's D-132, [COMMON.md](briefs/COMMON.md) §2). The orchestrator asks by committing
+`docs/decisions/PENDING-publish-<package>-<version>.md` (package, version, commit, what changed,
+what the consumer must do) and sending its path to the project manager, who checks the commit
+on `main` (every CI check completed and green), the audits, the changelog and version, the gas
+tables, `scarb package` from a clean checkout, the registry and the dependencies. After a go
+that names the package, the version and the commit, the orchestrator's session runs
+`scarb --manifest-path packages/<dir>/Scarb.toml publish` by hand from that commit. A published
+version cannot be replaced.

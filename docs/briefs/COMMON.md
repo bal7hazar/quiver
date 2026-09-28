@@ -49,8 +49,15 @@ out.
   that an interruption loses nothing; you may be resumed with `claude --continue`. A task on
   the `research` profile cannot commit: it writes its files in the worktree, and the
   orchestrator commits them and opens the pull request.
-- **Never publish.** A release on scarbs.xyz cannot be undone; it is the orchestrator's act,
-  after the project manager's go.
+- **Never publish.** No sub-agent publishes, ever (D-132). A release on scarbs.xyz cannot be
+  undone: the orchestrator's session publishes, and only after a go of the project manager
+  that names the package, the version and the commit. The orchestrator asks by committing
+  `docs/decisions/PENDING-publish-<package>-<version>.md` (package, version, commit, what
+  changed, what the consumer must do); the project manager checks by itself that the commit
+  is on `main` with every CI check completed and green, audits closed without `blocker` or
+  `major`, changelog and version in agreement, the gas tables of that commit, `scarb package`
+  from a clean checkout, the name and version free on the registry, and no test dependency
+  declared as a regular one.
 
 ## 3. The machine
 

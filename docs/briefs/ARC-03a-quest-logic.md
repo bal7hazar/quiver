@@ -1,0 +1,116 @@
+# ARC-03a — `quiver_quest::logic`: types, packing and pure functions
+
+## Agent
+Title: `[Opus 5.5] ARC-03a quest logic` · Model: Opus 5.5 (`claude-opus-5-5`) · Profile:
+`implement`
+
+ARC-03 (`quiver_quest`) is split in two so that each pull request can be reviewed in one
+sitting: **ARC-03a** (this brief) writes the library without storage; **ARC-03b** writes the
+Starknet component on top of it. Nothing of the component is in this task.
+
+## Goal
+After this task, `quiver_quest` has its **pure library**, `quiver_quest::logic`: every type,
+every packing into one `felt252`, and every pure function of the accepted API, each covered by
+tests with a gas budget, written test-first. ARC-03b then builds the component on these
+functions without changing them.
+
+## Context
+- **The specification**: [docs/research/ARC-01-quest-achievement.md](../research/ARC-01-quest-achievement.md),
+  accepted at gate A-G1 ([decision](../decisions/2026-09-28-A-G1-api.md), D-131):
+  - §3.1 principles and bounds; §3.2 the library in full (types, functions, their panics,
+    the semantics that differ from Dojo); §3.3 the packed layouts with their bit ranges and
+    the presence bits; the error strings listed in §3.5 (they are API);
+  - §2: the named test cases. This task writes those that a pure function can decide (see
+    Scope); the component's are ARC-03b's;
+  - the game's answers at A-G1: an acceptance expires at rollover with its progress (A-11);
+    at most 16 distinct tasks per call (A-10).
+- **[docs/CAIRO.md](../CAIRO.md), in full**: test-driven; every test has
+  `#[available_gas(l2_gas: N)]` with `N = ceil(1.05 × measured)`; arithmetic, then bitwise,
+  then loops; packing by multiplying and dividing by powers of two from a table of constants;
+  **no `u256`** (a use needs a written reason); an optimised routine is tested against a plain,
+  obviously correct version kept in the tests.
+- The workspace and its tooling (ARC-02): [docs/WORKSPACE.md](../WORKSPACE.md);
+  `scripts/gas.py packages/quest --write` then `--check`; the package's `constants` module.
+- Depends on: ARC-02 merged.
+
+## Scope
+
+**In** (all in `packages/quest/`):
+
+1. `src/logic/` (a module tree, `pub mod logic;` in `lib.cairo`): every type of §3.2 with the
+   derives it gives, including `Mode`, `QuestSchedule`, `QuestTask`, `QuestDefinition` (with
+   `defined`, `retired`, `live_dependents`), `QuestTasks`, `QuestConditions`, `QuestIdPage`,
+   `QuestProgress`, `QuestRecord` (with `accepted_interval`, `u64` counters), `TaskProgress`
+   and the batch type; every pure function of §3.2 with the signature and panics given there
+   (schedule, definition, tasks and conditions, progress, batch, record, accept and abandon,
+   claim, pages, retirement helpers).
+2. `src/errors.cairo`: the error strings of §3.5 as constants, used by the functions.
+3. **Packing**: `StorePacking<T, felt252>` for every packed type, with exactly the bit ranges
+   of §3.3, the presence bits as specified (an empty slot reads as the zero value with
+   `defined == false`), and an assertion or a proof in the tests that every packed value is
+   below 2^251. Arithmetic packing from a constant table of powers of two, not loops of shifts.
+4. **Tests** (`tests/`, snforge), written before the code, each with its gas budget:
+   - a round trip for every packed type, at zero, at the maximum of every field, and on
+     random-looking values; an **oracle**: a plain packing written in the test (it may use
+     `u256` or loops, being a test) must give the same felt;
+   - schedule: `schedule_validate` (every panic of §3.2, including `duration > interval`,
+     half-recurring, `end <= start`), `schedule_is_active`, `schedule_interval_id` (never
+     panics, `u64`, the boundaries of `quest_daily_interval_aligned_on_utc_midnight` and
+     `quest_interval_id_is_u64`);
+   - definition: `definition_new` and every panic (id 0, no task, more than 3 tasks, a task id
+     0, a total 0, a repeated task, more than 7 conditions, a condition 0, self, repeated):
+     the pure parts of `quest_define_rejects_*`;
+   - progress: saturation at the total (`quest_count_saturates_at_total`,
+     `quest_count_max_value`), completion once, the whole-batch application;
+   - batch: `batch_merge` (the bound of 16 entries counted before merging, duplicates merged
+     with saturation, zeros dropped, task id 0 rejected), `batch_first_position` on the zero
+     sentinel, the pure parts of the `quest_batch_*` cases;
+   - records: prerequisites met, completion (counters `u64`, saturating), acceptance tied to
+     its interval (`record_is_accepted`, accept, abandon, and their panics), claim and
+     `claim_index`, the counters past `u32`;
+   - pages: push, span, removal that keeps pages contiguous (the retirement helper).
+5. **Benchmarks**: one per function on its worst case (3 tasks, 7 conditions, a full page,
+   16 batch entries with duplicates), each a test with its budget.
+6. `GAS.md` regenerated by `scripts/gas.py packages/quest --write`; `CHANGELOG.md`
+   `Unreleased`: the library added.
+
+**Out**: the component (`#[starknet::component]`, storage, events, entrypoints, hooks, access
+control, a mock consumer): ARC-03b; `quiver_achievement`; `docs/BUDGETS.md` (ARC-03b); any
+change to the API of the report (a gap or a contradiction in §3 is an **escalation**, not a
+decision); the workspace, CI and gas tooling (report a defect of `scripts/gas.py` as an
+escalation); publishing: no sub-agent publishes, ever (D-132, `docs/briefs/COMMON.md` §2);
+`quiver_quest` 0.1.0 is asked for by the orchestrator after ARC-03b.
+
+**Allowlist**: `packages/quest/src/**`, `packages/quest/tests/**`, `packages/quest/GAS.md`,
+`packages/quest/CHANGELOG.md`, `packages/quest/README.md` (a short "Library" section only).
+Anything else is an escalation.
+
+## Interfaces
+Exactly those of ARC-01 §3.2 and §3.3, module `quiver_quest::logic` (sub-modules as you see
+fit, re-exported from `logic`), errors in `quiver_quest::errors`. If a signature in the report
+cannot be written as given in Cairo 2.19, write the closest form, and say why in the report.
+
+## Acceptance criteria
+- [ ] AC-1 Every type and pure function of §3.2 exists with the signature and panics of the
+      report (deviations named and justified in the report).
+- [ ] AC-2 Every packed type round-trips at zero, at every field's maximum and on mixed
+      values, matches the plain oracle, and stays below 2^251; the layouts are those of §3.3.
+- [ ] AC-3 The pure parts of the named test cases listed in Scope 4 exist under those names
+      (or a name that contains them) and pass.
+- [ ] AC-4 Every test has a budget; `scripts/gas.py packages/quest --check` passes; the
+      benchmarks cover the worst cases of Scope 5.
+- [ ] AC-5 No `u256` outside the tests' oracles; no loop where arithmetic or a mask would do;
+      every loop bounded by a constant of `constants`.
+- [ ] AC-6 The pull request's CI is green (`cairo` summary, `quest` job).
+
+## Verification
+From the worktree root: `scripts/lock.sh scarb --manifest-path packages/quest/Scarb.toml build`,
+`cd packages/quest && snforge test`, `scripts/gas.py packages/quest --check`,
+`scripts/lock.sh scarb --manifest-path packages/quest/Scarb.toml fmt --check`. Then
+`gh pr checks <n> --watch --interval 30` until green.
+
+## Report
+`REPORT.md` (COMMON.md §6) with the gas table of every test and benchmark (measured, budget),
+the list of the named test cases covered, deviations and escalations. Branch
+`feat/ARC-03a-quest-logic`; pull request `[Opus 5.5] ARC-03a quest logic`. Foreground only;
+your turn ends when `REPORT.md` is written.

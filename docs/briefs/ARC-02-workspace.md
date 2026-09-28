@@ -81,7 +81,11 @@ this frame without touching the tooling.
    the workspace is green (the same jobs, all packages); the tag's version equals the
    package manifest's; `CHANGELOG.md` has a section for that version; `scarb package` of that
    package succeeds and its archive is uploaded as a workflow artifact. **It never runs
-   `scarb publish` and holds no token**: publishing is the owner's act (D-128), done by hand.
+   `scarb publish` and holds no token.** Publishing (D-132, `docs/briefs/COMMON.md` §2): no
+   sub-agent publishes, ever; the orchestrator's session publishes by hand, after a go of the
+   project manager naming the package, the version and the commit, asked through
+   `docs/decisions/PENDING-publish-<package>-<version>.md`. The pipeline's checks are the ones
+   the project manager repeats before that go.
 6. **Verify ARC-01 §6.2**: in a scratch folder inside your worktree (not committed), make a
    package depend on another with `{ path = "…", version = "^0.1.0" }` and run `scarb
    package` on it: say in the report what the packaged manifest records for that dependency.
