@@ -12,6 +12,12 @@
 # read-only sandbox (codex audits, it never implements). See OPERATIONS.md §4 of bal7hazar/grimworld
 # (the rules of this repository) and docs/briefs/COMMON.md.
 #
+# Shared parts (the agent budget, the launch lock, the emptied secrets) match the game's
+# scripts/agent.sh at bal7hazar/grimworld e3a2e75 (#48), the reference of the three launchers.
+# Inherited findings, to fix when the game's launcher does (bal7hazar/hexx-cairo#24 audit): a
+# codex audit started under another command form without a pid file is not counted; an
+# unreadable pid record is skipped instead of refusing the launch.
+#
 # usage:
 #   scripts/agent.sh [options] <task> <claude|codex> <model> <new|resume> "<prompt>" [profile] [sid] [effort]
 #   scripts/agent.sh status              one line per known task
