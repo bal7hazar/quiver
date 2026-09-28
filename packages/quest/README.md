@@ -193,32 +193,41 @@ Every loop is bounded:
 | `MAX_ENTRIES` | 16 | Entries of one `progress_many` call, checked first; the merge makes at most 16² comparisons |
 | live dependents | 65 535 | Live quests naming one quest as a condition (`'Quest: too many dependents'`) |
 
-The worst case of one `progress_many` call is 16 tasks × 28 quests, each with 7 prerequisites
-evaluated for the first time: 5 440 storage reads and 896 writes, measured (`quest_batch_bound_accepted`).
+The worst case of one `progress_many` call under these bounds is 16 tasks × 28 quests, each with
+7 prerequisites evaluated for the first time: 5 440 storage reads and 896 writes, measured
+(`quest_batch_bound_accepted`). **These bounds are those of A-G1 and do not meet the cost cap of
+its amendment** (below); smaller caps are pending a decision.
 
 ## Integration budget
 
-A Starknet transaction may use at most **1.1 × 10⁹ L2 gas** ("Max L2 gas per transaction" in the
-chain-information table of
-[docs.starknet.io](https://docs.starknet.io/learn/cheatsheets/chain-info), Mainnet 0.14.2 and
-Sepolia 0.14.3, read on 2026-09-28; 6 × 10⁹ per block). The worst `progress_many` call the package
-allows, measured through a dispatcher with hooks that do nothing
-(`bench_progress_many_worst_late_collision`: 16 entries `[1..=15, 129]`, whose merge takes the
-slow path, 16 × 28 = 448 quests with 7 prerequisites each first observed, all completing), costs
-**704 804 763 L2 gas**, 64 % of the ceiling.
+**The network's limit.** A Starknet transaction may use at most **1.1 × 10⁹ L2 gas** ("Max L2
+gas per transaction", docs.starknet.io, Learn > Cheatsheets > Chain info,
+<https://docs.starknet.io/learn/cheatsheets/chain-info>, read on 2026-09-28; the page gives it for
+Mainnet 0.14.2 and Sepolia 0.14.3, and 6 × 10⁹ per block). The project's own cap is far lower:
+the worst call the package allows must stay **under 20 × 10⁶ L2 gas**
+([A-G1 amendment](../../docs/decisions/2026-09-28-A-G1-amendment-cost-cap.md)). For scale, Grim
+World's worst tick is 5.1 × 10⁶ as a whole transaction.
 
-That leaves about 395 × 10⁶ L2 gas, 36 %, for everything else in the transaction: the
-consumer's own entrypoint and logic, its **448 `on_quest_complete` hooks** in that case (about
-0.88 × 10⁶ each if they had all of it, which one storage write and one event already approach),
-and the account's validation and execution. The figures per entrypoint are in
-[docs/BUDGETS.md](../../docs/BUDGETS.md).
+**The package's worst call.** Measured through a dispatcher, with hooks that do nothing
+([GAS.md](GAS.md#cost-model-of-progress_many-arc-03b-fix-loop-2), cost model):
 
-**Rule for consumers.** The package's bounds (`MAX_ENTRIES` entries, 28 live quests per task, 7
-prerequisites) keep one call below the ceiling, not the consumer's whole transaction. A consumer
-whose transaction could exceed 1.1 × 10⁹ L2 gas at those bounds, counting its hooks and its own
-work, **must enforce a smaller practical bound**: fewer entries per call, fewer live quests per
-task, or fewer prerequisites, sized from its own measured worst case. Grim World caps the tasks
-one expedition reports (A-10); its fan-out per task is set by its content.
+| Case | L2 gas |
+|---|---|
+| Under the bounds of this version (16 entries, 28 quests per task, 7 prerequisites) | 683 167 283 |
+| The smallest configuration that keeps 16 entries: 1 quest per task, no prerequisite | 20 644 413 |
+| Grim World's use: 16 entries, 3 quests per task, 4 held quests completing (3 with an accept step, 1 daily contract), 0 to 2 prerequisites | 10 144 166 |
+
+A completed quest costs about 1.17 × 10⁶ L2 gas, most of it the two storage slots it changes
+(its progress and its record). The caps that bring the worst call under 20 × 10⁶ are **not set in
+this version**: 16 entries per call do not fit under 20 × 10⁶ with any caps, and the choice
+between fewer entries and the other options is escalated (GAS.md lists the measured options).
+
+**The consumer's transaction must fit.** The whole transaction counts: the consumer's own
+entrypoint and logic, the package's calls, the hooks (`on_quest_complete` runs once per completed
+quest, so its cost multiplies with them), and the account's validation and execution. A consumer
+measures its own worst transaction and enforces a smaller practical bound (entries per call,
+quests per task, prerequisites) whenever the package's caps would let it exceed its budget, and
+in any case the network's limit.
 
 **The reporter check in event mode.** The external `progress` and `progress_many` of `QuestImpl`
 read the reporter registry once (one storage read), in `Mode::Event` too, before emitting. Called

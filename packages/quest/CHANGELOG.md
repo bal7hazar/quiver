@@ -17,7 +17,10 @@ The first version: the API accepted at gate A-G1
 
 - **Bounds** (`quiver_quest::constants`): `MAX_TASKS = 3` tasks per quest, `MAX_CONDITIONS = 7`
   prerequisites per quest, `QUESTS_PER_PAGE = 7` and `MAX_PAGES = 4` (28 live quests per task),
-  `MAX_ENTRIES = 16` entries per `progress_many` call.
+  `MAX_ENTRIES = 16` entries per `progress_many` call. **Not final**: the A-G1 amendment of
+  2026-09-28 requires the worst call to stay under 20 M L2 gas, which these bounds do not meet
+  (683 M measured). The caps of 0.1.0 and their definition-time refusals are pending a decision
+  and will be recorded here before the release.
 - **Library** `quiver_quest::logic`, pure, without storage (ARC-01 §3.2): the types `Mode`,
   `QuestSchedule`, `QuestTask`, `QuestDefinition`, `QuestTasks`, `QuestConditions`,
   `QuestIdPage`, `QuestProgress`, `QuestRecord`, `TaskProgress`; their packing into one felt each
@@ -56,7 +59,10 @@ The first version: the API accepted at gate A-G1
     (`IQuestView`);
   - `progress_many` skips a quest retired since its task's pages were read, for instance by a
     hook of an earlier quest in the same call: it counts nothing, completes nothing and calls no
-    hook.
+    hook;
+  - the prerequisites of a quest are read in order and the reading stops at the first one never
+    completed (`progress_many`, `accept`, `quest_is_unlocked`): the same results with fewer
+    reads for a locked quest.
 - **Interfaces** `quiver_quest::interface`: `IQuest` (`define`, `retire`, `set_reporter`,
   `progress`, `progress_many`, `accept`, `abandon`, `claim`) and `IQuestView`
   (`quest_definition`, `quest_progress`, `quest_record`, `quest_current_interval`,

@@ -461,3 +461,148 @@ L2 gas snforge reports for the test; the budget is its `#[available_gas(l2_gas: 
 | `quiver_quest_integrationtest::test_schedule::schedule_validate_rejects_end_before_start` | 15520 | 16296 | 2026-09-28 | 49fbdb9 |
 | `quiver_quest_integrationtest::test_schedule::schedule_validate_rejects_half_recurring_duration_only` | 15520 | 16296 | 2026-09-28 | 49fbdb9 |
 | `quiver_quest_integrationtest::test_schedule::schedule_validate_rejects_half_recurring_interval_only` | 15520 | 16296 | 2026-09-28 | 49fbdb9 |
+
+## Cost model of `progress_many` (ARC-03b, fix loop 2)
+
+Written by hand below the generated table: `scripts/gas.py --write` rewrites this file and drops
+this section, `--check` reads only the rows above. Figures are L2 gas as snforge 0.61 reports it,
+from the full run of this commit; reads, writes and events from `snforge test
+--detailed-resources`. A call's cost is its test minus its baseline (the same fixture without the
+call), through a dispatcher, with hooks that do nothing (`MockBench`).
+
+### Unit costs (`test_component_probe`, 100 operations per test)
+
+| Operation | L2 gas | of which Sierra gas |
+|---|---|---|
+| Storage read, `Map` with a tuple key | 30 205 | 30 205 |
+| Storage write to a slot whose value changes in the transaction | 459 099 | 57 099 |
+| Storage write of a slot already changed in the transaction, or unchanged | 57 099 | 57 099 |
+| Event of 3 keys and 1 data felt (`QuestCompleted`'s shape) | 48 542 | 12 742 |
+| Unpack `QuestDefinition` / `QuestTasks` / `QuestRecord` | 20 613 / 12 625 / 10 635 | same |
+
+A slot changed by the transaction costs about 402 000 L2 gas beyond the write's computation, once
+per slot per transaction. A quest completed by `progress_many` changes two slots (its progress
+P and its record R): about 918 000 L2 gas of the 1.17 M it costs. The rest is 4 to 5 reads, the
+`QuestCompleted` event and about 0.14 M of computation.
+
+### The grid: storage mode, every quest completing (`test_component_grid`)
+
+E tasks per call (entries 1..=E, distinct), N live quests per task (one task each, target 1, no
+accept step), K prerequisites per quest, completed earlier and first observed by this call (no
+two quests share one). Fixtures are seeded in storage, past the caps where needed; N = 28 are the
+corners of the bounds of A-G1.
+
+| E | N | K | Quests | Call L2 gas | Sierra gas | Reads | Writes | Events | L2 gas per quest |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1 | 0 | 1 | 1 412 006 | 573 496 | 6 | 2 | 1 | 1 412 006 |
+| 1 | 1 | 1 | 1 | 1 504 416 | 665 906 | 8 | 2 | 1 | 1 504 416 |
+| 1 | 1 | 3 | 1 | 1 587 916 | 749 406 | 10 | 2 | 1 | 1 587 916 |
+| 1 | 1 | 7 | 1 | 1 754 326 | 915 816 | 14 | 2 | 1 | 1 754 326 |
+| 1 | 2 | 0 | 2 | 2 583 826 | 905 476 | 10 | 4 | 2 | 1 291 913 |
+| 1 | 2 | 1 | 2 | 2 768 646 | 1 090 296 | 14 | 4 | 2 | 1 384 323 |
+| 1 | 2 | 3 | 2 | 2 935 646 | 1 257 296 | 18 | 4 | 2 | 1 467 823 |
+| 1 | 2 | 7 | 2 | 3 268 466 | 1 590 116 | 26 | 4 | 2 | 1 634 233 |
+| 1 | 4 | 0 | 4 | 4 928 036 | 1 570 006 | 18 | 8 | 4 | 1 232 009 |
+| 1 | 4 | 1 | 4 | 5 297 676 | 1 939 646 | 26 | 8 | 4 | 1 324 419 |
+| 1 | 4 | 3 | 4 | 5 631 676 | 2 273 646 | 34 | 8 | 4 | 1 407 919 |
+| 1 | 4 | 7 | 4 | 6 297 316 | 2 939 286 | 50 | 8 | 4 | 1 574 329 |
+| 1 | 7 | 0 | 7 | 8 502 336 | 2 624 786 | 31 | 14 | 7 | 1 214 619 |
+| 1 | 7 | 1 | 7 | 9 149 206 | 3 271 656 | 45 | 14 | 7 | 1 307 029 |
+| 1 | 7 | 3 | 7 | 9 733 706 | 3 856 156 | 59 | 14 | 7 | 1 390 529 |
+| 1 | 7 | 7 | 7 | 10 898 576 | 5 021 026 | 87 | 14 | 7 | 1 556 939 |
+| 1 | 28 | 0 | 28 | 33 232 396 | 9 718 206 | 117 | 56 | 28 | 1 186 871 |
+| 1 | 28 | 7 | 28 | 42 817 356 | 19 303 166 | 341 | 56 | 28 | 1 529 191 |
+| 4 | 1 | 0 | 4 | 5 142 164 | 1 784 134 | 21 | 8 | 4 | 1 285 541 |
+| 4 | 1 | 1 | 4 | 5 511 804 | 2 153 774 | 29 | 8 | 4 | 1 377 951 |
+| 4 | 1 | 3 | 4 | 5 845 804 | 2 487 774 | 37 | 8 | 4 | 1 461 451 |
+| 4 | 1 | 7 | 4 | 6 511 444 | 3 153 414 | 53 | 8 | 4 | 1 627 861 |
+| 4 | 2 | 0 | 8 | 9 829 444 | 3 112 054 | 37 | 16 | 8 | 1 228 680 |
+| 4 | 2 | 1 | 8 | 10 568 724 | 3 851 334 | 53 | 16 | 8 | 1 321 090 |
+| 4 | 2 | 3 | 8 | 11 236 724 | 4 519 334 | 69 | 16 | 8 | 1 404 590 |
+| 4 | 2 | 7 | 8 | 12 568 004 | 5 850 614 | 101 | 16 | 8 | 1 571 000 |
+| 4 | 4 | 0 | 16 | 19 206 284 | 5 770 174 | 69 | 32 | 16 | 1 200 392 |
+| 4 | 4 | 1 | 16 | 20 684 844 | 7 248 734 | 101 | 32 | 16 | 1 292 802 |
+| 4 | 4 | 3 | 16 | 22 020 844 | 8 584 734 | 133 | 32 | 16 | 1 376 302 |
+| 4 | 4 | 7 | 16 | 24 683 404 | 11 247 294 | 197 | 32 | 16 | 1 542 712 |
+| 4 | 7 | 0 | 28 | 33 503 484 | 9 989 294 | 121 | 56 | 28 | 1 196 553 |
+| 4 | 7 | 1 | 28 | 36 090 964 | 12 576 774 | 177 | 56 | 28 | 1 288 963 |
+| 4 | 7 | 3 | 28 | 38 428 964 | 14 914 774 | 233 | 56 | 28 | 1 372 463 |
+| 4 | 7 | 7 | 28 | 43 088 444 | 19 574 254 | 345 | 56 | 28 | 1 538 873 |
+| 16 | 1 | 0 | 16 | 20 062 796 | 6 626 686 | 81 | 32 | 16 | 1 253 924 |
+| 16 | 1 | 1 | 16 | 21 541 356 | 8 105 246 | 113 | 32 | 16 | 1 346 334 |
+| 16 | 1 | 3 | 16 | 22 877 356 | 9 441 246 | 145 | 32 | 16 | 1 429 834 |
+| 16 | 1 | 7 | 16 | 25 539 916 | 12 103 806 | 209 | 32 | 16 | 1 596 244 |
+| 16 | 2 | 0 | 32 | 38 811 916 | 11 938 366 | 145 | 64 | 32 | 1 212 872 |
+| 16 | 2 | 1 | 32 | 41 769 036 | 14 895 486 | 209 | 64 | 32 | 1 305 282 |
+| 16 | 2 | 3 | 32 | 44 441 036 | 17 567 486 | 273 | 64 | 32 | 1 388 782 |
+| 16 | 2 | 7 | 32 | 49 766 156 | 22 892 606 | 401 | 64 | 32 | 1 555 192 |
+| 16 | 4 | 0 | 64 | 76 319 276 | 22 570 846 | 273 | 128 | 64 | 1 192 488 |
+| 16 | 4 | 1 | 64 | 82 233 516 | 28 485 086 | 401 | 128 | 64 | 1 284 898 |
+| 16 | 4 | 3 | 64 | 87 577 516 | 33 829 086 | 529 | 128 | 64 | 1 368 398 |
+| 16 | 4 | 7 | 64 | 98 227 756 | 44 479 326 | 785 | 128 | 64 | 1 534 808 |
+| 16 | 7 | 0 | 112 | 133 508 076 | 39 447 326 | 481 | 224 | 112 | 1 192 036 |
+| 16 | 7 | 1 | 112 | 143 857 996 | 49 797 246 | 705 | 224 | 112 | 1 284 446 |
+| 16 | 7 | 3 | 112 | 153 209 996 | 59 149 246 | 929 | 224 | 112 | 1 367 946 |
+| 16 | 7 | 7 | 112 | 171 847 916 | 77 787 166 | 1377 | 224 | 112 | 1 534 356 |
+| 16 | 28 | 0 | 448 | 529 189 036 | 152 942 046 | 1857 | 896 | 448 | 1 181 225 |
+| 16 | 28 | 7 | 448 | 682 548 396 | 306 301 406 | 5441 | 896 | 448 | 1 523 545 |
+
+### The model
+
+Fitted by least squares on the 52 points; largest error 0.02 %:
+
+```
+call(E, N, K) = 169 946
+              +    71 229 × E                     per task entry, its first page read included
+              +    58 206 × E × (pages(N) − 1)    per further page, pages(N) = min(⌊N/7⌋ + 1, 4)
+              + 1 172 066 × E × N                 per quest completed
+              +    50 828 × E × N × [K > 0]       per quest with prerequisites: slot C read
+              +    41 642 × E × N × K             per prerequisite first observed
+```
+
+A task entry with no quest costs about 71 000 (the page read). A quest reached but skipped (not
+accepted, locked, outside its schedule, already completed) costs its reads only, about 100 000 to
+150 000: no write.
+
+**Event mode** (`grid_event_e*`): 220 946, 419 984 and 1 216 136 for E = 1, 4, 16, that is
+about 155 000 + 66 346 × E (one `QuestProgressed` per entry). It does not depend on N or K:
+1 214 706 for E = 16 on the fixture of (16, 7, 7).
+
+**The merge.** The grid's entries are distinct ids, the fast path of `batch_merge`. The worst
+entries for E (a collision modulo 128 at the last entry, which runs the plain merge) add about
+0.5 M at E = 15 or 16 and less below; the options below are measured with them.
+
+### Cap options under 20 M L2 gas (`test_component_options`)
+
+Each option's worst case: E entries of which the last collides modulo 128, N quests per task, K
+prerequisites first observed, all completing.
+
+| E | N | K | Quests | Measured call (L2 gas) | Model, fast merge | Reads | Writes | Under 20M |
+|---|---|---|---|---|---|---|---|---|
+| 2 | 7 | 4 | 14 | 19 900 849 | 19 879 974 | 131 | 28 | yes |
+| 3 | 5 | 2 | 15 | 20 011 115 | 19 974 986 | 109 | 30 | **no** |
+| 4 | 3 | 7 | 12 | 18 678 701 | 18 626 215 | 149 | 24 | yes |
+| 4 | 4 | 0 | 16 | 19 259 661 | 19 206 596 | 69 | 32 | yes |
+| 5 | 3 | 1 | 15 | 19 567 457 | 19 492 811 | 96 | 30 | yes |
+| 7 | 2 | 3 | 14 | 19 672 209 | 19 536 717 | 120 | 28 | yes |
+| 8 | 2 | 0 | 16 | 19 659 245 | 19 491 514 | 73 | 32 | yes |
+| 12 | 1 | 7 | 12 | 19 542 149 | 19 196 051 | 157 | 24 | yes |
+| 15 | 1 | 0 | 15 | 19 336 217 | 18 818 053 | 76 | 30 | yes |
+| 16 | 1 | 0 | 16 | 20 644 413 | 20 061 349 | 81 | 32 | **no** |
+
+**16 entries per call do not fit under 20 M with any caps**: the smallest configuration, one quest
+per task and no prerequisite, measures 20 644 413. Every option that fits completes at most 14 to
+16 quests in one call.
+
+### Grim World's case (`test_component_game`)
+
+16 task entries; 3 held quests with an accept step and one daily contract, all accepted and all
+completing; prerequisites 0 to 2, cached by `accept`; every task shared by 2 or 3 quests in all,
+the others not accepted.
+
+| Case | Call (L2 gas) | Reads | Writes | Events |
+|---|---|---|---|---|
+| 3 quests per task (48) | 10 144 166 | 160 | 8 | 4 |
+| 2 quests per task (32) | 8 015 046 | 112 | 8 | 4 |
+
+Reads exclude the reporter check (1 read).
