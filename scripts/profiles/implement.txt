@@ -1,0 +1,115 @@
+# Profile `implement`: everything `audit` grants, plus editing, the project's toolchain, git
+# except force-push, and opening the pull request. Never merging it, never publishing a package.
+# Format: see research.txt.
+# Copied from bal7hazar/grimworld and narrowed to a pure Cairo workspace: no client, no Rust, no
+# local node, no deployment tool.
+# The deny rules below stop these actions when they are typed as commands. They do not stop an
+# interpreter, a test or a project script, which can do anything the user can: that is the
+# price of running code. What holds whatever the agent runs is elsewhere: no secret in the
+# agent's environment and the CI checks.
+
+@audit
+
+# Toolchain (Scarb 2.19.4 and snforge 0.61, the machine's global versions).
+Bash(scripts/lock.sh *)
+Bash(scarb *)
+Bash(snforge *)
+Bash(asdf current*)
+Bash(asdf where *)
+# CI tooling and gas reports may be small Python scripts of the repository.
+Bash(python3 *)
+
+# Project scripts.
+Bash(scripts/*)
+Bash(./scripts/*)
+Bash(bash scripts/*)
+
+# Files: no rule for mkdir, touch, cp, mv, rm. `acceptEdits` approves them inside the worktree
+# and refuses them outside it, resolving quotes, $HOME and `..` (tested 2026-09-28 in the
+# game's repository); a prefix rule here would override that check. Edits go through the Edit
+# and Write tools.
+Bash(chmod +x *)
+Bash(sed -n *)
+
+# git and the pull request.
+Bash(git add *)
+Bash(git commit *)
+# Pushing: exactly these two forms (COMMON.md §6). Any other form (a refspec, a flag, a
+# colon deleting a remote branch) is refused as unlisted.
+Bash(git push)
+Bash(git push -u origin HEAD)
+Bash(git fetch*)
+Bash(git merge *)
+Bash(git checkout *)
+Bash(git switch *)
+Bash(git restore *)
+Bash(git reset *)
+Bash(git mv *)
+Bash(git rm *)
+Bash(git branch *)
+Bash(gh pr create*)
+Bash(gh pr edit*)
+Bash(gh pr comment*)
+
+# Never: publish a package. A release on scarbs.xyz cannot be undone and needs the project
+# manager's go; the orchestrator publishes.
+!Bash(scarb publish*)
+!Bash(scarb * publish*)
+!Bash(scripts/lock.sh * publish*)
+
+# Never: rebase (a branch that needs it merges origin/main instead), skip hooks, merge or
+# close the pull request, act on another repository, force-add ignored files, use the stash
+# (shared by every worktree), change git configuration.
+!Bash(git commit *--no-verify*)
+!Bash(git commit -n*)
+!Bash(git commit * -n*)
+!Bash(git rebase*)
+!Bash(git stash*)
+!Bash(git config*)
+!Bash(git -C *)
+!Bash(git submodule*)
+!Bash(git add -f*)
+!Bash(git add * -f*)
+!Bash(git add *--force*)
+!Bash(gh pr merge*)
+!Bash(gh pr close*)
+!Bash(gh api*)
+!Bash(gh release*)
+
+# Never: change the machine's shared toolchain (other programmes use it) or its build shims.
+!Bash(asdf set*)
+!Bash(asdf install*)
+!Bash(asdf uninstall*)
+!Bash(asdf plugin*)
+!Bash(* ~/.local/bin*)
+!Bash(* $HOME/.local/bin*)
+!Bash(* /home/claude/.local/bin*)
+!Bash(* ~/orchestrator*)
+!Bash(* $HOME/orchestrator*)
+!Bash(* /home/claude/orchestrator*)
+
+# Never: delete outside the worktree. `acceptEdits` already refuses it; these rules are a
+# second line should an allow rule ever cover rm.
+!Bash(rm /*)
+!Bash(rm * /*)
+!Bash(rm ~*)
+!Bash(rm * ~*)
+!Bash(rm $HOME*)
+!Bash(rm * $HOME*)
+!Bash(rm ..*)
+!Bash(rm * ..*)
+!Bash(rm *../*)
+
+# Never: launch, resume or stop agents; that is the orchestrator's act.
+!Bash(scripts/agent.sh*)
+!Bash(./scripts/agent.sh*)
+!Bash(bash scripts/agent.sh*)
+!Bash(systemd-run*)
+!Bash(systemctl*)
+!Bash(claude *)
+!Bash(codex *)
+
+# Never: reach outside the project's folders through a relative path.
+!Bash(scripts/*..*)
+!Bash(./scripts/*..*)
+!Bash(bash scripts/*..*)

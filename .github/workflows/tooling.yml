@@ -1,0 +1,78 @@
+# Minimal CI of the repository (ARC-00), so that "merge on green CI" holds from the first pull
+# request: the agent tooling and the documents' links. ARC-02 adds the Cairo CI by affected
+# package beside it.
+name: tooling
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: shellcheck
+        run: |
+          shellcheck --version
+          shellcheck scripts/*.sh
+
+      - name: launcher dry-run
+        run: |
+          set -euo pipefail
+          out=$(scripts/agent.sh --dry-run smoke claude sonnet new "x" research)
+          echo "$out"
+          grep -q -- '^# \[Sonnet 5.5\] smoke new (research)' <<< "$out"
+          grep -q -- ' --model claude-sonnet-5-5 ' <<< "$out"
+          grep -q -- '^claude -p .* --permission-mode acceptEdits --allowedTools ' <<< "$out"
+          grep -q -- ' unit quiver-smoke-' <<< "$out"
+          if grep -q -- '--dangerously' <<< "$out"; then echo "dangerous flag in a launch" >&2; exit 1; fi
+          for profile in research audit implement; do
+            for model in sonnet opus fable claude-sonnet-5-5 claude-opus-5-5 claude-fable-5-1; do
+              out=$(scripts/agent.sh --dry-run smoke claude "$model" new "x" "$profile")
+              if grep -q -- '--dangerously' <<< "$out"; then echo "dangerous flag: $profile" >&2; exit 1; fi
+            done
+          done
+          grep -q -- '^# \[Opus 5.5\] smoke resume (implement)' \
+            <<< "$(scripts/agent.sh --dry-run smoke claude opus resume "x" implement)"
+          # The implement profile denies publishing a package.
+          out=$(scripts/agent.sh --dry-run smoke claude opus new "x" implement)
+          grep -qF -- '--disallowedTools' <<< "$out"
+          grep -qF -- 'Bash\(scarb\ publish\*\)' <<< "${out#*--disallowedTools}"
+          for model in gpt-6-astra gpt-6-sol gpt-6-luna; do
+            out=$(scripts/agent.sh --dry-run smoke codex "$model" new "x")
+            grep -q -- ' -s read-only ' <<< "$out"
+            if grep -q -- '--dangerously' <<< "$out"; then echo "dangerous flag: codex" >&2; exit 1; fi
+          done
+          grep -qF -- "-c sandbox_mode=\\\"read-only\\\" " \
+            <<< "$(scripts/agent.sh --dry-run smoke codex gpt-6-sol resume "x" audit 0000)"
+          # Refusals: codex never implements; a model without a known tag is never launched
+          # (Sonnet 5 included: new launches use Sonnet 5.5); only the three named profiles exist.
+          if scripts/agent.sh --dry-run smoke codex gpt-6-sol new "x" implement; then exit 1; fi
+          if scripts/agent.sh --dry-run smoke claude claude-sonnet-5 new "x"; then exit 1; fi
+          if scripts/agent.sh --dry-run smoke claude sonnet-4 new "x"; then exit 1; fi
+          if scripts/agent.sh --dry-run smoke claude sonnet new "x" ../profiles/implement; then exit 1; fi
+          if scripts/agent.sh --dry-run --with-assets smoke claude sonnet new "x"; then exit 1; fi
+          # The build lock wraps build and test subcommands only.
+          for bad in "rm -rf x" "scarb publish" "scarb run x" "--heavy scarb publish" "pnpm install" "snforge"; do
+            if scripts/lock.sh $bad 2> /dev/null; then echo "lock.sh accepted: $bad" >&2; exit 1; fi
+          done
+          # Under the heavy lock without the project lock, the order would be reversed: refused.
+          if HEAVY_BUILD_LOCK_HELD=1 scripts/lock.sh scarb build 2> /dev/null; then
+            echo "lock.sh accepted a reversed lock order" >&2; exit 1
+          fi
+
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: relative links of the Markdown files
+        run: python3 .github/ci/check-links.py
