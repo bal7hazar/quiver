@@ -18,7 +18,7 @@ scarbs.xyz and consumed by the game **by version**.
 | Reference | `cartridge-gg/arcade`, `packages/quest` and `packages/achievement` (MIT by the owner's statement) |
 | Order | `quiver_quest` (needed by the game's GLD-02, Phase 3), then `quiver_achievement` (titles); `leaderboard` and `social` after the game's MVP |
 | CI | Runs the checks of the packages a change touches and of those that depend on them; the whole workspace on `main` and before a release |
-| Publication | Per package. **The first publication of each package needs the project manager's go**, who asks the owner |
+| Publication | Per package. **Publishing is the owner's act** (D-128): the first publication of each package is asked when the package is accepted, through the project manager |
 | Out of scope | Moving the owner's other `*-cairo` libraries here: the owner decides, library by library |
 
 ## Tasks
@@ -27,10 +27,10 @@ scarbs.xyz and consumed by the game **by version**.
 |---|---|---|---|---|---|
 | ARC-00 | The repository: name, visibility (owner); minimum, launcher, CI of the tooling | — | Project manager; orchestrator | — | done: `bal7hazar/quiver`, first pull request |
 | ARC-01 | **Analysis** of `quest` and `achievement` as they are: data model, modes, hooks, intervals, prerequisites, claim, what depends on Dojo; the defects of ADR-0004 points 3 to 5 confirmed or refuted as test cases; the **API of the native packages**; coverage of the game's needs A-1 to A-9; cost per call; the workspace and its CI by affected package. Report `docs/research/ARC-01-quest-achievement.md` | ARC-00 | Opus 5.5, research | GPT-6-Sol | done: [#2](https://github.com/bal7hazar/quiver/pull/2), three fix loops |
-| **Gate A-G1** | **Is the API accepted?** The project manager decides on the recommendation (D-128). Package names confirmed with the registry's availability | ARC-01 | Project manager | — | asked: [PENDING-A-G1](docs/decisions/PENDING-A-G1.md) |
-| ARC-02 | Workspace, **CI by affected package**, gas tooling, publication pipeline per package | A-G1 | Sonnet 5.5 | GPT-6-Luna | todo |
-| ARC-03 | `quiver_quest`: implementation, test-driven; released on scarbs.xyz after the project manager's go | ARC-02 | Opus 5.5 | GPT-6-Astra (access control, ownership) | todo |
-| ARC-04 | `quiver_achievement`: implementation, release | ARC-03 | Opus 5.5 | GPT-6-Astra | todo |
+| **Gate A-G1** | **Is the API accepted?** The project manager decides on the recommendation (D-128). Package names confirmed with the registry's availability | ARC-01 | Project manager | — | **accepted** 2026-09-28, D-131: [decision](docs/decisions/2026-09-28-A-G1-api.md) |
+| ARC-02 | Workspace, **CI by affected package**, gas tooling, publication pipeline per package ([brief](docs/briefs/ARC-02-workspace.md)) | A-G1 | Sonnet 5.5 | GPT-6-Luna | next |
+| ARC-03 | `quiver_quest`: implementation, test-driven, on the accepted API; released on scarbs.xyz after the owner's go (D-128) | ARC-02 | Opus 5.5 | GPT-6-Astra (access control, ownership) | todo |
+| ARC-04 | `quiver_achievement`: implementation, release; on the game's path (titles in event mode, D-131) | ARC-03 | Opus 5.5 | GPT-6-Astra | todo |
 | ARC-05 | `leaderboard`, `social` | After the game's MVP | — | — | todo |
 
 ## Budget and rules

@@ -1,13 +1,18 @@
 # Status
 
-**2026-09-28 20:16 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-28 20:30 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
-**Stopped at gate A-G1**: is the API of `quiver_quest` and `quiver_achievement` accepted? The
-question, the options and the recommendation (accept) are in
-[docs/decisions/PENDING-A-G1.md](docs/decisions/PENDING-A-G1.md), sent to the project manager.
-No implementation starts before the answer.
+**Gate A-G1 accepted** by the project manager on 2026-09-28 (D-131): option A, the API with
+the recommended answers to Q-1 to Q-20
+([decision](docs/decisions/2026-09-28-A-G1-api.md)). The game answered its questions: a held
+contract is lost at rollover (A-11), at most 16 distinct tasks per call, enforced by the game
+(A-10), no repeatable quest without an interval in 0.1, titles on `quiver_achievement` in event
+mode (ARC-04 is on the game's path). **Next: ARC-02** on Sonnet 5.5
+([brief](docs/briefs/ARC-02-workspace.md)), launched when a Grim World slot is free; then
+ARC-03 on Opus 5.5 with a `[GPT-6-Astra]` audit. Publication is not granted: asked when
+ARC-03 is accepted.
 
 ## What moved
 
@@ -18,7 +23,7 @@ No implementation starts before the answer.
 
 ## Agents
 
-None running. ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
+None running. ARC-02 is ready to launch. ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
 to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
 
 ## Budget
@@ -31,5 +36,4 @@ the game has nothing ready.
 
 | | |
 |---|---|
-| Gate A-G1 | To the project manager, 2026-09-28 20:16 UTC |
-| For the game | Q-12, Q-17, Q-18, Q-19 (a ceiling of distinct task ids per expedition), and whether titles use `quiver_achievement` at all (listed in the pending file) |
+| ARC-02 | Ready; waits for fewer than 3 Grim World agents across the three tracks |
