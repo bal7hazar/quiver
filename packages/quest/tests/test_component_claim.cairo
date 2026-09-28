@@ -14,7 +14,7 @@ use super::setup::{
 };
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 22689768)]
 fn quest_claim_index_counts_claims() {
     let q = deploy();
     at(q, 0);
@@ -34,7 +34,7 @@ fn quest_claim_index_counts_claims() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 13652579)]
 fn quest_claim_twice_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 1);
@@ -47,7 +47,7 @@ fn quest_claim_twice_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 6897772)]
 fn quest_claim_uncompleted_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -60,7 +60,7 @@ fn quest_claim_uncompleted_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 13381795)]
 fn quest_claim_emits_and_writes() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 1);
@@ -73,7 +73,9 @@ fn quest_claim_emits_and_writes() {
             @array![
                 (
                     q.address,
-                    Event::QuestClaimed(QuestClaimed { player_id: PLAYER, quest_id: 1, interval_id: 0 }),
+                    Event::QuestClaimed(
+                        QuestClaimed { player_id: PLAYER, quest_id: 1, interval_id: 0 },
+                    ),
                 ),
             ],
         );
@@ -83,7 +85,7 @@ fn quest_claim_emits_and_writes() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 10158452)]
 fn quest_complete_hook_after_state_written() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);
@@ -107,7 +109,7 @@ fn quest_complete_hook_after_state_written() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 13369027)]
 fn quest_claim_hook_after_state_written() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);
@@ -133,7 +135,7 @@ fn quest_claim_hook_after_state_written() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 8438510)]
 fn quest_complete_hook_panic_reverts_progress() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);
@@ -151,7 +153,7 @@ fn quest_complete_hook_panic_reverts_progress() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 11584300)]
 fn quest_claim_hook_panic_reverts_claim() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 3);

@@ -119,7 +119,9 @@ pub fn define(
 }
 
 /// A quest of one task, no condition, no accept step.
-pub fn define_simple(quest: Quest, quest_id: u32, schedule: QuestSchedule, task_id: u32, total: u32) {
+pub fn define_simple(
+    quest: Quest, quest_id: u32, schedule: QuestSchedule, task_id: u32, total: u32,
+) {
     define(quest, quest_id, schedule, array![task(task_id, total)].span(), array![].span(), false);
 }
 

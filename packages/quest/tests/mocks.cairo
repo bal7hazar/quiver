@@ -46,17 +46,19 @@ pub trait IMockConsumer<TState> {
         ref self: TState, adventurer_id: felt252, progress: Span<quiver_quest::logic::TaskProgress>,
     );
     fn accept_quest(ref self: TState, adventurer_id: felt252, quest_id: u32);
-    fn claim_quest(ref self: TState, adventurer_id: felt252, quest_id: u32, interval_id: u64) -> u64;
+    fn claim_quest(
+        ref self: TState, adventurer_id: felt252, quest_id: u32, interval_id: u64,
+    ) -> u64;
 }
 
 #[starknet::contract]
 pub mod MockQuest {
     use quiver_quest::component::QuestComponent;
+    use starknet::ContractAddress;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
-    use starknet::ContractAddress;
     use super::{HookCall, IMockQuest};
 
     component!(path: QuestComponent, storage: quest, event: QuestEvent);
@@ -281,5 +283,65 @@ pub mod MockConsumer {
         ) -> u64 {
             self.quest.claim(adventurer_id, quest_id, interval_id)
         }
+    }
+}
+
+/// For the benchmarks: authorizes every caller and its hooks do nothing, so that a measure is
+/// the component's own cost.
+#[starknet::contract]
+pub mod MockBench {
+    use quiver_quest::component::QuestComponent;
+    use starknet::ContractAddress;
+
+    component!(path: QuestComponent, storage: quest, event: QuestEvent);
+
+    #[abi(embed_v0)]
+    impl QuestImpl = QuestComponent::QuestImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl QuestViewImpl = QuestComponent::QuestViewImpl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        quest: QuestComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        QuestEvent: QuestComponent::Event,
+    }
+
+    impl QuestHooks of QuestComponent::QuestHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @QuestComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+
+        fn authorize_player(
+            self: @QuestComponent::ComponentState<ContractState>,
+            caller: ContractAddress,
+            player_id: felt252,
+        ) -> bool {
+            true
+        }
+
+        fn on_quest_complete(
+            ref self: QuestComponent::ComponentState<ContractState>,
+            player_id: felt252,
+            quest_id: u32,
+            interval_id: u64,
+            completions: u64,
+        ) {}
+
+        fn on_quest_claim(
+            ref self: QuestComponent::ComponentState<ContractState>,
+            player_id: felt252,
+            quest_id: u32,
+            interval_id: u64,
+            claim_index: u64,
+        ) {}
     }
 }

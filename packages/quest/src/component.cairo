@@ -295,9 +295,8 @@ pub mod QuestComponent {
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
             assert(definition.needs_accept, errors::NO_ACCEPT_STEP);
-            let interval_id = match schedule_interval_id(
-                @definition.schedule, get_block_timestamp(),
-            ) {
+            let interval_id =
+                match schedule_interval_id(@definition.schedule, get_block_timestamp()) {
                 Option::Some(interval_id) => interval_id,
                 Option::None => core::panic_with_felt252(errors::NOT_ACTIVE),
             };
@@ -322,9 +321,8 @@ pub mod QuestComponent {
             let definition = self.Quest_definitions.read(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
-            let interval_id = match schedule_interval_id(
-                @definition.schedule, get_block_timestamp(),
-            ) {
+            let interval_id =
+                match schedule_interval_id(@definition.schedule, get_block_timestamp()) {
                 Option::Some(interval_id) => interval_id,
                 Option::None => core::panic_with_felt252(errors::NOT_ACTIVE),
             };
@@ -368,9 +366,7 @@ pub mod QuestComponent {
             let conditions = if definition.condition_count == 0 {
                 array![].span()
             } else {
-                conditions_span(
-                    @self.Quest_conditions.read(quest_id), definition.condition_count,
-                )
+                conditions_span(@self.Quest_conditions.read(quest_id), definition.condition_count)
             };
             (definition, tasks_span(@quest_tasks, definition.task_count), conditions)
         }
@@ -536,7 +532,9 @@ pub mod QuestComponent {
 
         /// The first page of `task_id` with room, and its index. Panics `'Quest: task full'`
         /// when the `MAX_PAGES` pages are full.
-        fn first_open_page(self: @ComponentState<TContractState>, task_id: u32) -> (u8, QuestIdPage) {
+        fn first_open_page(
+            self: @ComponentState<TContractState>, task_id: u32,
+        ) -> (u8, QuestIdPage) {
             let mut index: u8 = 0;
             loop {
                 let page = self.Quest_task_pages.read((task_id, index));
@@ -551,7 +549,9 @@ pub mod QuestComponent {
         /// Removes `quest_id` from the pages of `task_id`, keeping them contiguous: the last id
         /// of the last non-empty page fills the hole. One write if both are the same page, two
         /// otherwise.
-        fn remove_from_pages(ref self: ComponentState<TContractState>, task_id: u32, quest_id: u32) {
+        fn remove_from_pages(
+            ref self: ComponentState<TContractState>, task_id: u32, quest_id: u32,
+        ) {
             // Read the pages in order until one is not full (at most MAX_PAGES)
             let mut pages: Array<QuestIdPage> = array![];
             let mut hole: Option<(u8, u8)> = Option::None;
@@ -683,8 +683,7 @@ pub mod QuestComponent {
         self: @ComponentState<TContractState>, player_id: felt252,
     ) {
         assert(
-            Hooks::authorize_player(self, get_caller_address(), player_id),
-            errors::NOT_AUTHORIZED,
+            Hooks::authorize_player(self, get_caller_address(), player_id), errors::NOT_AUTHORIZED,
         );
     }
 

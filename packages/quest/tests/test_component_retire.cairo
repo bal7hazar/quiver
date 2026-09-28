@@ -64,7 +64,7 @@ fn full_task() -> Quest {
 }
 
 #[test]
-#[available_gas(l2_gas: 2000000000)]
+#[available_gas(l2_gas: 54128267)]
 fn quest_retire_frees_slot() {
     let q = full_task();
     let mut spy = spy_events();
@@ -83,7 +83,7 @@ fn quest_retire_frees_slot() {
 
 /// Every position of a full task: retiring any quest keeps the others, contiguous.
 #[test]
-#[available_gas(l2_gas: 4000000000)]
+#[available_gas(l2_gas: 61009347)]
 fn quest_retire_keeps_pages_contiguous() {
     let q = full_task();
     // From the first page, the middle, the last id, then down to empty
@@ -101,7 +101,7 @@ fn quest_retire_keeps_pages_contiguous() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5236119)]
 fn quest_retire_last_quest_empties_page() {
     let q = deploy();
     define(q, 1, one_off(), array![task(T, 1), task(6, 1)].span(), array![].span(), false);
@@ -111,7 +111,7 @@ fn quest_retire_last_quest_empties_page() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 8259601)]
 fn quest_retired_not_progressed() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 5);
@@ -123,7 +123,7 @@ fn quest_retired_not_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 13354001)]
 fn quest_retired_completed_still_claimable() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -135,7 +135,7 @@ fn quest_retired_completed_still_claimable() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5380358)]
 fn quest_retired_accept_reverts() {
     let q = deploy();
     define(q, 1, one_off(), array![task(T, 1)].span(), array![].span(), true);
@@ -147,7 +147,7 @@ fn quest_retired_accept_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5657411)]
 fn quest_retire_twice_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -160,7 +160,7 @@ fn quest_retire_twice_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5366067)]
 fn quest_redefine_retired_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -175,7 +175,7 @@ fn quest_redefine_retired_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 6539652)]
 fn quest_retired_is_not_accepted() {
     let q = deploy();
     define(q, 1, one_off(), array![task(T, 5)].span(), array![].span(), true);
@@ -191,7 +191,7 @@ fn quest_retired_is_not_accepted() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 7981334)]
 fn quest_retire_prerequisite_with_live_dependent_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -204,7 +204,7 @@ fn quest_retire_prerequisite_with_live_dependent_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 8326847)]
 fn quest_retire_dependent_then_prerequisite() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -219,7 +219,7 @@ fn quest_retire_dependent_then_prerequisite() {
 
 /// A retired quest's definition stays readable, with `retired` set.
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5115254)]
 fn quest_retired_definition_readable() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -230,7 +230,7 @@ fn quest_retired_definition_readable() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 6008961)]
 fn quest_retire_abandon_before_is_kept() {
     let q = deploy();
     define(q, 1, one_off(), array![task(T, 5)].span(), array![].span(), true);

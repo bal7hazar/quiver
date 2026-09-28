@@ -22,9 +22,7 @@ pub trait IQuest<TState> {
     fn retire(ref self: TState, quest_id: u32);
     fn set_reporter(ref self: TState, reporter: ContractAddress, allowed: bool);
     fn progress(ref self: TState, player_id: felt252, task_id: u32, count: u32, mode: Mode);
-    fn progress_many(
-        ref self: TState, player_id: felt252, entries: Span<TaskProgress>, mode: Mode,
-    );
+    fn progress_many(ref self: TState, player_id: felt252, entries: Span<TaskProgress>, mode: Mode);
     fn accept(ref self: TState, player_id: felt252, quest_id: u32);
     fn abandon(ref self: TState, player_id: felt252, quest_id: u32);
     fn claim(ref self: TState, player_id: felt252, quest_id: u32, interval_id: u64) -> u64;

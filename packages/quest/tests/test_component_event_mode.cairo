@@ -13,7 +13,7 @@ use super::setup::{
 };
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5438681)]
 fn quest_event_mode_emits_only_progressed() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 10);
@@ -26,7 +26,9 @@ fn quest_event_mode_emits_only_progressed() {
             @array![
                 (
                     q.address,
-                    Event::QuestProgressed(QuestProgressed { player_id: PLAYER, task_id: 7, count: 3 }),
+                    Event::QuestProgressed(
+                        QuestProgressed { player_id: PLAYER, task_id: 7, count: 3 },
+                    ),
                 ),
             ],
         );
@@ -35,7 +37,7 @@ fn quest_event_mode_emits_only_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5192183)]
 fn quest_event_mode_calls_no_hook() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 10);
@@ -50,7 +52,7 @@ fn quest_event_mode_calls_no_hook() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5706421)]
 fn quest_event_mode_cannot_be_claimed() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 10);
@@ -61,7 +63,7 @@ fn quest_event_mode_cannot_be_claimed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 6257362)]
 fn quest_modes_do_not_mix() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 10);
@@ -72,7 +74,7 @@ fn quest_modes_do_not_mix() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 5498912)]
 fn quest_batch_event_mode_one_event_per_task() {
     let q = deploy();
     define_simple(q, 1, one_off(), 1, 10);
@@ -87,11 +89,15 @@ fn quest_batch_event_mode_one_event_per_task() {
             @array![
                 (
                     q.address,
-                    Event::QuestProgressed(QuestProgressed { player_id: PLAYER, task_id: 1, count: 3 }),
+                    Event::QuestProgressed(
+                        QuestProgressed { player_id: PLAYER, task_id: 1, count: 3 },
+                    ),
                 ),
                 (
                     q.address,
-                    Event::QuestProgressed(QuestProgressed { player_id: PLAYER, task_id: 3, count: 1 }),
+                    Event::QuestProgressed(
+                        QuestProgressed { player_id: PLAYER, task_id: 3, count: 1 },
+                    ),
                 ),
             ],
         );
@@ -100,7 +106,7 @@ fn quest_batch_event_mode_one_event_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1000000000)]
+#[available_gas(l2_gas: 3323458)]
 fn quest_event_mode_zero_count_emits_nothing() {
     let q = deploy();
     let mut spy = spy_events();
