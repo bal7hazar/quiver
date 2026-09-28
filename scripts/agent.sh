@@ -13,8 +13,9 @@
 # (the rules of this repository) and docs/briefs/COMMON.md.
 #
 # Shared parts (the agent budget and its count, the launch lock, the emptied secrets) match the
-# game's scripts/agent.sh at bal7hazar/grimworld 39cd2c2 (#53), the reference of the three
-# launchers; sync again when it changes.
+# game's scripts/agent.sh at bal7hazar/grimworld 44586e6 (#54). The reference is the commit the
+# game's CHANGELOG marks as "launcher reference" after a passed audit: the orchestrator reads it at
+# its check-ins and syncs in one pull request naming the commit.
 #
 # usage:
 #   scripts/agent.sh [options] <task> <claude|codex> <model> <new|resume> "<prompt>" [profile] [sid] [effort]
@@ -155,12 +156,13 @@ thresholds_ok() { # prints the reason and returns 1 when a launch must wait
   units=$(grep -c . <<< "$ulist" || true)
   # Detached agents (codex audits), one per working directory under the three repositories (a
   # codex audit runs several processes). Two sources, both failing closed (as the game's launcher
-  # at 39cd2c2):
+  # at 44586e6):
   # - every codex `exec` process, whatever started it: its program is `codex` (the native binary)
   #   or `node` running `codex.js`, with an `exec` argument; found by scanning /proc;
   # - the live pids the launchers record (logs/*.pid): a record that cannot be read or holds no pid
   #   refuses the launch; a live pid whose command line holds its task's log is an agent; one whose
-  #   command line cannot be read counts as an agent; a live pid without its log is a reused pid.
+  #   command line cannot be read counts as an agent; a live pid without its log is a reused pid;
+  #   a records directory that cannot be listed, or a record that is not a regular file, refuses.
   # A pid whose directory cannot be read counts as an agent.
   if ! [ -r /proc/self/cmdline ]; then
     echo "agent.sh: /proc cannot be read, so the agents cannot be counted: wait and check again" >&2
@@ -178,18 +180,30 @@ thresholds_ok() { # prints the reason and returns 1 when a launch must wait
     for x in "${argv[@]:1}"; do [ "$x" = exec ] && { is_exec=1; break; }; done
     [ "$is_exec" = 1 ] && plist+=$'\n'"${d#/proc/}"
   done
-  for f in "$HOME"/projects/{grimworld,hexx-cairo,quiver}/.claude/worktrees/logs/*.pid; do
-    [ -e "$f" ] || continue
-    if ! pid=$(cat "$f" 2> /dev/null) || ! [[ $pid =~ ^[0-9]+$ ]]; then
-      echo "agent.sh: the launch record $f cannot be read or holds no pid, so the agents cannot be counted: check it" >&2
+  local dir
+  for dir in "$HOME"/projects/{grimworld,hexx-cairo,quiver}/.claude/worktrees/logs; do
+    [ -e "$dir" ] || [ -L "$dir" ] || continue   # that repository has never launched an agent
+    if ! [ -d "$dir" ] || ! [ -r "$dir" ] || ! [ -x "$dir" ]; then
+      echo "agent.sh: the launch records in $dir cannot be listed, so the agents cannot be counted: check it" >&2
       return 1
     fi
-    kill -0 "$pid" 2> /dev/null || continue   # that launch has ended
-    if ! cmd=$(tr '\0' '\n' < "/proc/$pid/cmdline" 2> /dev/null); then
-      plist+=$'\n'"$pid"; continue   # alive, but its identity cannot be read: counted
-    fi
-    grep -qxF -- "${f%.pid}.log" <<< "$cmd" || continue   # a reused pid
-    plist+=$'\n'"$pid"
+    for f in "$dir"/*.pid; do
+      if ! [ -e "$f" ] && ! [ -L "$f" ]; then continue; fi   # no record: the pattern did not match
+      if ! [ -f "$f" ]; then
+        echo "agent.sh: the launch record $f is not a regular file (a dangling link?), so the agents cannot be counted: check it" >&2
+        return 1
+      fi
+      if ! pid=$(cat "$f" 2> /dev/null) || ! [[ $pid =~ ^[0-9]+$ ]]; then
+        echo "agent.sh: the launch record $f cannot be read or holds no pid, so the agents cannot be counted: check it" >&2
+        return 1
+      fi
+      kill -0 "$pid" 2> /dev/null || continue   # that launch has ended
+      if ! cmd=$(tr '\0' '\n' < "/proc/$pid/cmdline" 2> /dev/null); then
+        plist+=$'\n'"$pid"; continue   # alive, but its identity cannot be read: counted
+      fi
+      grep -qxF -- "${f%.pid}.log" <<< "$cmd" || continue   # a reused pid
+      plist+=$'\n'"$pid"
+    done
   done
   dirs=$(while read -r p; do
       [ -n "$p" ] || continue
