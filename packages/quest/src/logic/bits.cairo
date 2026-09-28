@@ -1,0 +1,39 @@
+//! Powers of two for the packings of ARC-01 §3.3. A shift is a multiplication (packing, on
+//! felts) or a division with remainder (unpacking, on `u128` limbs) by an entry of this table
+//! (docs/CAIRO.md §3).
+
+// Multipliers, as felts: the bit offset of a field in the packed felt.
+pub const TWO_POW_32: felt252 = 0x100000000;
+pub const TWO_POW_64: felt252 = 0x10000000000000000;
+pub const TWO_POW_96: felt252 = 0x1000000000000000000000000;
+pub const TWO_POW_97: felt252 = 0x2000000000000000000000000;
+pub const TWO_POW_128: felt252 = 0x100000000000000000000000000000000;
+pub const TWO_POW_129: felt252 = 0x200000000000000000000000000000000;
+pub const TWO_POW_130: felt252 = 0x400000000000000000000000000000000;
+pub const TWO_POW_160: felt252 = 0x10000000000000000000000000000000000000000;
+pub const TWO_POW_192: felt252 = 0x1000000000000000000000000000000000000000000000000;
+pub const TWO_POW_194: felt252 = 0x4000000000000000000000000000000000000000000000000;
+pub const TWO_POW_197: felt252 = 0x20000000000000000000000000000000000000000000000000;
+pub const TWO_POW_198: felt252 = 0x40000000000000000000000000000000000000000000000000;
+pub const TWO_POW_199: felt252 = 0x80000000000000000000000000000000000000000000000000;
+pub const TWO_POW_200: felt252 = 0x100000000000000000000000000000000000000000000000000;
+pub const TWO_POW_224: felt252 = 0x100000000000000000000000000000000000000000000000000000000;
+
+// Divisors, as non-zero `u128`: the width of a field within a `u128` limb.
+pub const NZ_2: NonZero<u128> = 0x2;
+pub const NZ_4: NonZero<u128> = 0x4;
+pub const NZ_8: NonZero<u128> = 0x8;
+pub const NZ_2_32: NonZero<u128> = 0x100000000;
+pub const NZ_2_64: NonZero<u128> = 0x10000000000000000;
+
+/// The two `u128` limbs of a felt, `(low, high)`: bits [0, 128) and [128, 252).
+///
+/// Why `u256` appears here: converting a felt to `u256` is the `u128s_from_felt252` libfunc and
+/// nothing else, and it is the only public way in the corelib to split a felt into its limbs.
+/// No `u256` arithmetic is done; the fields are then read from the limbs with `u128`
+/// division and remainder. No field of §3.3 straddles bit 128.
+#[inline(always)]
+pub fn split(value: felt252) -> (u128, u128) {
+    let u256 { low, high } = value.into();
+    (low, high)
+}

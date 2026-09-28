@@ -1,9 +1,10 @@
 //! Every packed type of ARC-01 §3.3: round trip at zero, at every field's maximum and on mixed
 //! values; the same felt as a plain oracle; below 2^251.
 //!
-//! The oracle uses `u256` and a loop on purpose: it is the plain, obviously correct version the
-//! arithmetic packing is tested against (docs/CAIRO.md §2). It never runs in the library.
+//! The oracle uses `u256` on purpose: it is the plain, obviously correct version the arithmetic
+//! packing is tested against (docs/CAIRO.md §2). It never runs in the library.
 
+use core::num::traits::Pow;
 use quiver_quest::logic::{
     QuestConditions, QuestDefinition, QuestIdPage, QuestProgress, QuestRecord, QuestTasks,
 };
@@ -13,13 +14,7 @@ use super::helpers::{U32_MAX, U64_MAX, ids, page, progress, record, schedule, ta
 // The oracle
 
 fn pow2(n: u32) -> u256 {
-    let mut result: u256 = 1;
-    let mut i = 0;
-    while i < n {
-        result = result * 2;
-        i += 1;
-    }
-    result
+    Pow::pow(2_u256, n.into())
 }
 
 /// Puts `value` in bits [offset, offset + width) of `acc`; the value must fit its width.
