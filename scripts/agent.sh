@@ -12,11 +12,9 @@
 # read-only sandbox (codex audits, it never implements). See OPERATIONS.md §4 of bal7hazar/grimworld
 # (the rules of this repository) and docs/briefs/COMMON.md.
 #
-# Shared parts (the agent budget, the launch lock, the emptied secrets) match the game's
-# scripts/agent.sh at bal7hazar/grimworld e3a2e75 (#48), the reference of the three launchers.
-# Inherited findings, to fix when the game's launcher does (bal7hazar/hexx-cairo#24 audit): a
-# codex audit started under another command form without a pid file is not counted; an
-# unreadable pid record is skipped instead of refusing the launch.
+# Shared parts (the agent budget and its count, the launch lock, the emptied secrets) match the
+# game's scripts/agent.sh at bal7hazar/grimworld 39cd2c2 (#53), the reference of the three
+# launchers; sync again when it changes.
 #
 # usage:
 #   scripts/agent.sh [options] <task> <claude|codex> <model> <new|resume> "<prompt>" [profile] [sid] [effort]
@@ -148,7 +146,7 @@ thresholds_ok() { # prints the reason and returns 1 when a launch must wait
   fi
   # The budget, whoever launched the agents (as the game's launcher, bal7hazar/grimworld#48). A
   # count that cannot be made refuses the launch (fails closed).
-  local units ulist plist dirs detached agents rc=0 f pid
+  local units ulist plist dirs detached agents f pid
   if ! ulist=$(systemctl --user list-units --type=service --no-legend --plain \
       --state=active,activating,deactivating,reloading 'grimworld-*' 'hexmap-*' 'quiver-*' 2>&1); then
     echo "agent.sh: cannot list the systemd user units, so the agents cannot be counted: wait and check again" >&2
@@ -156,19 +154,41 @@ thresholds_ok() { # prints the reason and returns 1 when a launch must wait
   fi
   units=$(grep -c . <<< "$ulist" || true)
   # Detached agents (codex audits), one per working directory under the three repositories (a
-  # codex audit runs several processes): codex `exec` processes, and the live pids recorded by the
-  # launchers, checked to be the launch they record (their command line holds the task's log, so
-  # a reused pid is not counted). A pid whose directory cannot be read counts as an agent.
-  plist=$(pgrep -f '^/usr/bin/node .*codex[^ ]* exec( |$)') || rc=$?
-  if [ "$rc" -gt 1 ]; then   # 1: no process matched
-    echo "agent.sh: pgrep failed, so the agents cannot be counted: wait and check again" >&2
+  # codex audit runs several processes). Two sources, both failing closed (as the game's launcher
+  # at 39cd2c2):
+  # - every codex `exec` process, whatever started it: its program is `codex` (the native binary)
+  #   or `node` running `codex.js`, with an `exec` argument; found by scanning /proc;
+  # - the live pids the launchers record (logs/*.pid): a record that cannot be read or holds no pid
+  #   refuses the launch; a live pid whose command line holds its task's log is an agent; one whose
+  #   command line cannot be read counts as an agent; a live pid without its log is a reused pid.
+  # A pid whose directory cannot be read counts as an agent.
+  if ! [ -r /proc/self/cmdline ]; then
+    echo "agent.sh: /proc cannot be read, so the agents cannot be counted: wait and check again" >&2
     return 1
   fi
+  plist=""
+  local d a0 a1 x argv is_exec cmd
+  for d in /proc/[0-9]*; do
+    argv=()
+    mapfile -d '' -t argv 2> /dev/null < "$d/cmdline" || continue   # gone meanwhile (stderr first: the redirection itself fails)
+    [ "${#argv[@]}" -ge 2 ] || continue
+    a0=${argv[0]##*/} a1=${argv[1]##*/}
+    [[ $a0 == codex || ( $a0 == node && $a1 == codex.js ) ]] || continue
+    is_exec=0
+    for x in "${argv[@]:1}"; do [ "$x" = exec ] && { is_exec=1; break; }; done
+    [ "$is_exec" = 1 ] && plist+=$'\n'"${d#/proc/}"
+  done
   for f in "$HOME"/projects/{grimworld,hexx-cairo,quiver}/.claude/worktrees/logs/*.pid; do
-    [ -f "$f" ] || continue
-    pid=$(cat "$f" 2> /dev/null || true)
-    if ! [[ $pid =~ ^[0-9]+$ ]] || ! kill -0 "$pid" 2> /dev/null; then continue; fi
-    tr '\0' '\n' < "/proc/$pid/cmdline" 2> /dev/null | grep -qxF -- "${f%.pid}.log" || continue
+    [ -e "$f" ] || continue
+    if ! pid=$(cat "$f" 2> /dev/null) || ! [[ $pid =~ ^[0-9]+$ ]]; then
+      echo "agent.sh: the launch record $f cannot be read or holds no pid, so the agents cannot be counted: check it" >&2
+      return 1
+    fi
+    kill -0 "$pid" 2> /dev/null || continue   # that launch has ended
+    if ! cmd=$(tr '\0' '\n' < "/proc/$pid/cmdline" 2> /dev/null); then
+      plist+=$'\n'"$pid"; continue   # alive, but its identity cannot be read: counted
+    fi
+    grep -qxF -- "${f%.pid}.log" <<< "$cmd" || continue   # a reused pid
     plist+=$'\n'"$pid"
   done
   dirs=$(while read -r p; do
