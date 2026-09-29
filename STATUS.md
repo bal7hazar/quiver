@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 00:05 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 00:16 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -38,18 +38,14 @@ H = 4 held quests per player (8 at most), progress walks the held list, prerequi
 acceptance. **Next: ARC-03c** ([brief](docs/briefs/ARC-03c-quest-held.md)), Opus 5.5, from
 ARC-03b's branch; #7 is superseded and closed when ARC-03c's pull request opens.
 
-**Launcher**: [#8](https://github.com/bal7hazar/quiver/pull/8) **merged** (`c1eda41`, CI green on
-`main`), by the project manager's decision although its `[GPT-6-Sol]` audit
-([report](docs/reports/PR-8-audit-gpt-6-sol-1.md)) failed, because `main` counted nothing and took
-no lock before it. It carries the game's launcher reference `44586e6`: the budget counted across
-the three tracks, failing closed, the count and start under `~/orchestrator/agent-launch.lock`.
-**Open, inherited from the game's launcher** (their source; to close when the game's CHANGELOG
-marks the next reference, which replaces the process scan with slot locks held for each agent's
-life): (1) a codex audit just forked, before its exec, reads as a reused pid and is not counted;
-(2) two audits in one working directory count as one; (3) an unreadable `/proc` cmdline is skipped
-(undercount); (4) unreadable working directories overcount. Until then, before each launch the
-orchestrator also looks at the units and the codex processes itself and does not launch within a
-minute of another track's launch.
+**Launcher**: the budget is now **slot locks** ([#9](https://github.com/bal7hazar/quiver/pull/9),
+`1d61843`, synced with the game's `scripts/agent.sh` at `65425a2` by the project manager's
+decision, before the game's audit of it): an agent holds `~/orchestrator/slots/total-N` and
+`quiver-1` by a kernel lock for as long as it lives; a launch takes both or refuses, and refuses
+while the game's waiting marker is fresh. This replaces #8's process count, and with it the four
+findings inherited from the game's launcher. ARC-03c, launched before the slots, is covered by the
+placeholder `slotkeep-quiver-ARC-03c-234905` (holds `total-2` and `quiver-1`). To sync again when
+the game's CHANGELOG marks the audited reference, if it differs.
 
 Budget slip, 22:28 UTC: the orchestrator resumed ARC-03b while three Grim World agents ran (two
 codex audits of the game and the library were counted, then overlooked); it stopped the run
@@ -80,8 +76,8 @@ to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
 
 ## Budget
 
-The game's OPERATIONS §3 at `377576a`: caps game 2, map library 1, **quiver 1, audits included**,
-total 3; the game comes first: no quiver launch while `~/orchestrator/waiting/game` exists and is
+The game's OPERATIONS §3 at `377576a`: caps game 2, map library 1, **quiver 1 (the slot `quiver-1`),
+audits included**, total 3; the game comes first: no quiver launch while `~/orchestrator/waiting/game` exists and is
 less than 30 minutes old. ARC-03b (fix loop 2) is this track's one agent; the queued `[GPT-6-Sol]`
 audit of #8 was withdrawn at 23:07 UTC before it launched, and waits for ARC-03b to end.
 
