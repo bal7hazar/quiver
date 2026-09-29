@@ -5,7 +5,7 @@
 | Asked by | `[Opus 5.5]` orchestrator of `quiver`, 2026-09-29 02:45 UTC |
 | Decides | The project manager (the game's OPERATIONS §6: after three fix loops on one lot, the orchestrator escalates; the project manager chooses a last loop limited to named findings, a merge with the findings carried as open points, or a restructured task) |
 | Lot | ARC-03c, `quiver_quest` on the held list (D-135), pull request [#10](https://github.com/bal7hazar/quiver/pull/10) at `10f46d9`, CI green, 417 tests within budget |
-| Audits | `[GPT-6-Astra]`, four passes: [1](../reports/ARC-03c-audit-gpt-6-astra-1.md), [2](../reports/ARC-03c-audit-gpt-6-astra-2.md), [3](../reports/ARC-03c-audit-gpt-6-astra-3.md) (the fourth pass; the second pass is archived as 2) |
+| Audits | `[GPT-6-Astra]`, three passes: [1](../reports/ARC-03c-audit-gpt-6-astra-1.md), [2](../reports/ARC-03c-audit-gpt-6-astra-2.md), [3](../reports/ARC-03c-audit-gpt-6-astra-3.md) |
 
 ## Where the lot stands
 
@@ -14,9 +14,9 @@ priced at the network's figures), the worst calls under 20M L2 gas (6.29M at `MA
 at the layout's limit of 8 with a hook writing one slot; the game's use 4.63M), held-list slots kept
 instead of zeroed, a quest renewed by a hook excluded from the running call, the one-write rule
 bounded by gas guards with the exact write counts recorded. No access-control, packing, claim or
-retirement defect found in four passes.
+retirement defect found in three passes.
 
-**Open, major (finding 6 of the fourth pass, introduced by fix loop 3):** each held entry carries a
+**Open, major (finding 6 of the third pass, introduced by fix loop 3):** each held entry carries a
 16-bit acceptance number; the player's counter wraps over its lifetime. To exclude a quest renewed by
 a hook, the running call now treats an entry whose number was issued during the call as renewed.
 When the counter has wrapped, a hook that accepts **another** quest can issue the number that an

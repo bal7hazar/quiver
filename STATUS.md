@@ -105,7 +105,7 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 |---|---|---|---|---|
 | ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
 | ARC-03c quest held list | `quiver-ARC-03c-*` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Three fix loops done; escalated |
-| ARC-03c audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | Fourth pass FAIL at 02:38 UTC (one new major) |
+| ARC-03c audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | Third pass FAIL at 02:38 UTC (one new major) |
 | PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | FAIL (findings in the shared code, inherited); #8 merged by decision |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
