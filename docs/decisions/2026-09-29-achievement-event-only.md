@@ -1,4 +1,4 @@
-# PENDING — `quiver_achievement`: the accepted design breaks the 20M cap in storage mode
+# `quiver_achievement` 0.1.0 in event mode only — decided 2026-09-29
 
 | | |
 |---|---|
@@ -41,3 +41,24 @@ consumer needs it yet. (c) breaks A-7 in storage mode and is not recommended.
 
 If (a): ARC-04 is briefed on it (Opus 5.5, `[GPT-6-Astra]` audit), with its worst calls measured,
 and ARC-01 §3.10, §3.11 and §5.2 are amended "by D-…" in the same pull request.
+
+## Answer
+
+Decided by the project manager `[Fable 5.1]` on 2026-09-29: **option (a)**, `quiver_achievement`
+0.1.0 in event mode only. It amends the API accepted at A-G1 (D-131) for this package.
+
+Why: the game uses titles in event mode only (design/13, rule T-1: a title never changes a rule, so
+no contract reads it), and a storage mode whose worst call is about 200M L2 gas must not be published:
+a consumer could configure a call no transaction should pay. Publishing only what is measured and
+bounded is the rule learnt on `quiver_quest`.
+
+Conditions:
+
+- the package refuses `Mode::Storage` **at compile time or by an absent entrypoint**, not by a runtime
+  panic a consumer discovers in production;
+- the README says that a storage design with per-task counters is planned for a later version, and
+  that its layout is **not reserved** by 0.1.0;
+- the worst call in event mode is **measured**, with the game's use (the MVP's 8 titles, tiers sharing
+  a task) as a benchmark, and stays under 20M L2 gas;
+- reporters' access control is audited by `[GPT-6-Astra]`, as for the quest;
+- ARC-01's API is amended accordingly (§3.10, §3.11, §5.2), in the same pull request as the code.
