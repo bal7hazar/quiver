@@ -14,7 +14,7 @@ use snforge_std::{
 };
 use starknet::ContractAddress;
 use starknet::storage_access::StorePacking;
-use super::helpers::{held, held_slot0, no_progress, one_off, stamped, task, unstamped};
+use super::helpers::{entry, held, held_slot0, no_progress, one_off, stamped, task, unstamped};
 use super::mock_reentrant::{IMockReentrantDispatcher, IMockReentrantDispatcherTrait, Reentry};
 use super::mocks::HookCall;
 use super::setup::{PLAYER, assert_error};
@@ -102,7 +102,7 @@ fn hook_calls(r: Reentrant) -> Array<HookCall> {
 /// second, which the call read from the held list before.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 14322563)]
+#[available_gas(l2_gas: 14351302)]
 fn quest_retired_by_hook_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -126,7 +126,7 @@ fn quest_retired_by_hook_not_progressed() {
 /// Progress from `on_quest_complete` on the same quest, same interval: no second completion, no
 /// second hook call.
 #[test]
-#[available_gas(l2_gas: 11539041)]
+#[available_gas(l2_gas: 11550381)]
 fn quest_reentrant_progress_same_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, true);
@@ -148,7 +148,7 @@ fn quest_reentrant_progress_same_quest_completes_once() {
 /// Progress from the first quest's hook on the same task completes the second quest inside the
 /// hook; the outer call then reaches the second quest, finds it completed, and skips it.
 #[test]
-#[available_gas(l2_gas: 18818754)]
+#[available_gas(l2_gas: 18852007)]
 fn quest_reentrant_progress_later_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, true);
@@ -169,7 +169,7 @@ fn quest_reentrant_progress_later_quest_completes_once() {
 /// reverts the outer claim; nothing is claimed twice.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 12551707)]
+#[available_gas(l2_gas: 12581978)]
 fn quest_reentrant_claim_same_quest_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -200,7 +200,7 @@ fn quest_reentrant_claim_same_quest_refused() {
 /// which reverts the outer progress.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 7941041)]
+#[available_gas(l2_gas: 7964750)]
 fn quest_reentrant_accept_after_completion_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -294,28 +294,28 @@ fn assert_outer_unchanged(reentry: Reentry) -> Reentrant {
 }
 
 #[test]
-#[available_gas(l2_gas: 66707130)]
+#[available_gas(l2_gas: 66703025)]
 fn quest_reentrant_progress_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'progress', 0, 8));
     assert!(r.view.quest_progress(PLAYER, 3, 0).completed);
 }
 
 #[test]
-#[available_gas(l2_gas: 64666817)]
+#[available_gas(l2_gas: 64699430)]
 fn quest_reentrant_claim_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'claim', 4, 0));
     assert!(r.view.quest_progress(PLAYER, 4, 0).claimed);
 }
 
 #[test]
-#[available_gas(l2_gas: 62784062)]
+#[available_gas(l2_gas: 62905872)]
 fn quest_reentrant_accept_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'accept', 5, 0));
     assert!(r.view.quest_is_accepted(PLAYER, 5));
 }
 
 #[test]
-#[available_gas(l2_gas: 61968936)]
+#[available_gas(l2_gas: 62055278)]
 fn quest_reentrant_abandon_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'abandon', 6, 0));
     assert!(!r.view.quest_is_accepted(PLAYER, 6));
@@ -325,7 +325,7 @@ fn quest_reentrant_abandon_other_quest_leaves_outer_unchanged() {
 }
 
 #[test]
-#[available_gas(l2_gas: 61368546)]
+#[available_gas(l2_gas: 61401159)]
 fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'retire', 6, 0));
     let (definition, _, _) = r.view.quest_definition(6);
@@ -337,7 +337,7 @@ fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
 
 /// A hook of quest 1 abandons quest 2, later in the list: quest 2 is not progressed.
 #[test]
-#[available_gas(l2_gas: 21691001)]
+#[available_gas(l2_gas: 21751187)]
 fn quest_reentrant_abandon_later_quest_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -361,7 +361,7 @@ fn quest_reentrant_abandon_later_quest_not_progressed() {
 /// A hook of quest 1 accepts quest 2 on the same task: quest 2 is held from then on, but this
 /// call, whose batch was reported before the acceptance, does not progress it.
 #[test]
-#[available_gas(l2_gas: 17764900)]
+#[available_gas(l2_gas: 17799193)]
 fn quest_reentrant_accept_not_progressed_by_the_call() {
     let r = deploy();
     define(r, 1, T, true);
@@ -385,7 +385,7 @@ fn quest_reentrant_accept_not_progressed_by_the_call() {
 
 /// Quest 1's hook abandons quest 2, then accepts it again, in the same interval.
 #[test]
-#[available_gas(l2_gas: 18614886)]
+#[available_gas(l2_gas: 18681529)]
 fn quest_reentrant_abandon_then_accept_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -405,7 +405,7 @@ fn quest_reentrant_abandon_then_accept_not_progressed() {
 
 /// Quest 1's hook accepts quest 2, abandons it, and accepts it again.
 #[test]
-#[available_gas(l2_gas: 13162429)]
+#[available_gas(l2_gas: 13215412)]
 fn quest_reentrant_accept_abandon_accept_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -420,7 +420,7 @@ fn quest_reentrant_accept_abandon_accept_not_progressed() {
 /// Quest 2 held when the call starts, renewed by the hook of quest 1; quest 3, held throughout,
 /// still counts after it.
 #[test]
-#[available_gas(l2_gas: 21019936)]
+#[available_gas(l2_gas: 21095567)]
 fn quest_reentrant_renewed_not_progressed_others_are() {
     let r = deploy();
     define(r, 1, T, true);
@@ -433,10 +433,14 @@ fn quest_reentrant_renewed_not_progressed_others_are() {
     assert!(r.view.quest_is_accepted(PLAYER, 2));
 }
 
-// Fix loop 3, point 2: the acceptance number is 16 bits and wraps over a player's lifetime. The
-// prehistory of the audit: Q1 (number 1) and Q2 (number 2) held; in earlier transactions the
-// player accepted and abandoned another quest 65 535 times, so the counter is back at 1. Seeded
-// with `store`: slot 0 holds the two entries and the counter 1.
+// Fix loop 3, point 2, and fix loop 4: the prehistory of the audit. Q1 (number 1) and Q2 (number
+// 2) held; in earlier transactions the player accepted and abandoned another quest 65 535 times.
+// A 16-bit counter was then back at 1, and the next acceptance got number 2 again, Q2's.
+// Since fix loop 4 the counter has 30 bits, and the same history leaves it at 65 537: the next
+// number is 65 538, which is 2 modulo 2^16 but not equal to 2. Seeded with `store`.
+
+/// The counter after the prehistory: 2 + 65 535.
+const AFTER_PREHISTORY: u32 = 65537;
 
 fn wrapped_prehistory() -> Reentrant {
     let r = deploy();
@@ -446,7 +450,8 @@ fn wrapped_prehistory() -> Reentrant {
     store(
         r.address,
         map_entry_address(selector!("Quest_held"), array![PLAYER, 0].span()),
-        array![StorePacking::pack(held_slot0(stamped(1, 0, 1), stamped(2, 0, 2), 1))].span(),
+        array![StorePacking::pack(held_slot0(stamped(1, 0, 1), stamped(2, 0, 2), AFTER_PREHISTORY))]
+            .span(),
     );
     r
 }
@@ -455,14 +460,15 @@ fn wrapped_prehistory() -> Reentrant {
 /// tuple as the entry the call started with. It is still a new acceptance, and the call must not
 /// progress it.
 #[test]
-#[available_gas(l2_gas: 18668950)]
+#[available_gas(l2_gas: 18809997)]
 fn quest_reentrant_renewal_after_counter_wrap_not_progressed() {
     let r = wrapped_prehistory();
     r.mock.set_reentry(on_complete(1, 'abandon_accept', 2, 0));
     r.quest.progress(PLAYER, T, 1, Mode::Storage);
     assert!(r.view.quest_progress(PLAYER, 1, 0).completed);
-    // the identity was reused: same quest, interval and number
-    assert!(r.view.quest_held(PLAYER) == array![stamped(2, 0, 2)].span());
+    // the renewed entry's number is 65 538: at 16 bits it would have been 2, Q2's old number
+    assert!(r.view.quest_held(PLAYER) == array![stamped(2, 0, 65538)].span());
+    assert!(65538_u32 % 0x10000 == 2);
     assert!(r.view.quest_progress(PLAYER, 2, 0) == no_progress());
     assert!(r.mock.hook_count() == 1);
     // the next call progresses it
@@ -472,10 +478,97 @@ fn quest_reentrant_renewal_after_counter_wrap_not_progressed() {
 
 /// Without a renewal, the wrapped counter changes nothing: both held quests count.
 #[test]
-#[available_gas(l2_gas: 14805836)]
+#[available_gas(l2_gas: 14845243)]
 fn quest_counter_wrap_without_renewal_progresses_both() {
     let r = wrapped_prehistory();
     r.quest.progress(PLAYER, T, 1, Mode::Storage);
     assert!(r.view.quest_progress(PLAYER, 1, 0).completed);
     assert!(r.view.quest_progress(PLAYER, 2, 0).completed);
+}
+
+// Fix loop 4 (exception): finding 6 of the third audit pass, pinned at the old width. Q1 (number
+// 1) and Q2 (number 2) held, Q2 on task T with target 10; the player has made 65 535 more
+// acceptances since. Q1's completion hook accepts **another** quest, Q3. At 16 bits Q3 got
+// number 2, the number of the unchanged Q2, and fix loop 3's window then skipped Q2 and lost the
+// batch's counts (this test failed on that code, seeded with the 16-bit counter 1). At 30 bits Q3
+// gets 65 538 and the call compares whole entries: Q2 keeps the counts.
+
+fn prehistory_other_accept() -> Reentrant {
+    let r = deploy();
+    define(r, 1, T, true);
+    r.quest.define(2, one_off(), array![task(T, 10)].span(), array![].span());
+    r.quest.accept(PLAYER, 2);
+    define(r, 3, 9, false);
+    store(
+        r.address,
+        map_entry_address(selector!("Quest_held"), array![PLAYER, 0].span()),
+        array![StorePacking::pack(held_slot0(stamped(1, 0, 1), stamped(2, 0, 2), AFTER_PREHISTORY))]
+            .span(),
+    );
+    r
+}
+
+#[test]
+#[available_gas(l2_gas: 16903260)]
+fn quest_hook_accepting_another_quest_keeps_counts_after_16_bit_wrap() {
+    let r = prehistory_other_accept();
+    r.mock.set_reentry(on_complete(1, 'accept', 3, 0));
+    r.quest.progress(PLAYER, T, 3, Mode::Storage);
+    assert!(r.view.quest_progress(PLAYER, 1, 0).completed);
+    assert!(r.view.quest_is_accepted(PLAYER, 3));
+    // Q3's number collides with Q2's at 16 bits, not at 30
+    assert!(unstamped(r.view.quest_held(PLAYER)) == array![held(2, 0), held(3, 0)].span());
+    assert!(*r.view.quest_held(PLAYER)[1].acceptance == 65538);
+    // Q2 was held throughout: it keeps the 3 of this batch
+    assert!(r.view.quest_progress(PLAYER, 2, 0).c0 == 3);
+    r.quest.progress(PLAYER, T, 1, Mode::Storage);
+    assert!(r.view.quest_progress(PLAYER, 2, 0).c0 == 4);
+}
+
+// Fix loop 4: the new counter's wrap boundary, seeded. After 2^30 - 1 the counter wraps to 0.
+// From there, an acceptance can get the number of an entry accepted 2^30 acceptances earlier (about
+// 1.07 × 10^9 acceptances by one player, at least 7.5 × 10^14 L2 gas of their own) and still
+// held;
+// that is the only way two outstanding acceptances can share a whole entry.
+
+#[test]
+#[available_gas(l2_gas: 26762083)]
+fn quest_acceptance_counter_wraps_at_2_30() {
+    let r = deploy();
+    define(r, 1, T, true);
+    // the counter one short of its last value: Q1 had number 2^30 - 2, the last issued
+    store(
+        r.address,
+        map_entry_address(selector!("Quest_held"), array![PLAYER, 0].span()),
+        array![StorePacking::pack(held_slot0(stamped(1, 0, 0x3ffffffe), held(0, 0), 0x3ffffffe))]
+            .span(),
+    );
+    define(r, 2, 8, true);
+    define(r, 3, 9, true);
+    // Q2 got the last number, 2^30 - 1; Q3 the first after the wrap, 0
+    assert!(
+        r
+            .view
+            .quest_held(
+                PLAYER,
+            ) == array![stamped(1, 0, 0x3ffffffe), stamped(2, 0, 0x3fffffff), stamped(3, 0, 0)]
+            .span(),
+    );
+    // and progress is unaffected: whole entries are compared, all three count
+    r.mock.set_reentry(on_complete(1, 'accept', 4, 0));
+    r.quest.define(4, one_off(), array![task(10, 1)].span(), array![].span());
+    r
+        .quest
+        .progress_many(PLAYER, array![entry(T, 1), entry(8, 1), entry(9, 1)].span(), Mode::Storage);
+    assert!(r.view.quest_progress(PLAYER, 2, 0).completed);
+    assert!(r.view.quest_progress(PLAYER, 3, 0).completed);
+    // Q4, accepted by Q1's hook, got number 1; the accept pruned Q1, completed
+    assert!(
+        r
+            .view
+            .quest_held(
+                PLAYER,
+            ) == array![stamped(2, 0, 0x3fffffff), stamped(3, 0, 0), stamped(4, 0, 1)]
+            .span(),
+    );
 }

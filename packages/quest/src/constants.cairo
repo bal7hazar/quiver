@@ -15,3 +15,9 @@ pub const MAX_HELD: u8 = 4;
 pub const MAX_HELD_LIMIT: u8 = 8;
 /// Slots of a player's held list: `MAX_HELD_LIMIT / 2`.
 pub const HELD_SLOTS: u8 = 4;
+/// Interval ids a held entry can store: 48 bits (2^48 one-second intervals are about 8.9 million
+/// years). `accept` refuses an interval at or above it as not active.
+pub const HELD_INTERVAL_LIMIT: u64 = 0x1000000000000;
+/// Acceptance numbers and the player's counter: 30 bits. The counter wraps to 0 after
+/// `ACCEPTANCE_LIMIT - 1`, that is after about 1.07 × 10^9 acceptances by one player.
+pub const ACCEPTANCE_LIMIT: u32 = 0x40000000;

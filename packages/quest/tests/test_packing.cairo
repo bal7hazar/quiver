@@ -6,7 +6,8 @@
 
 use core::num::traits::Pow;
 use quiver_quest::logic::{
-    QuestConditions, QuestDefinition, QuestHeldSlot, QuestProgress, QuestRecord, QuestTasks,
+    ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, QuestConditions, QuestDefinition, QuestHeldSlot,
+    QuestProgress, QuestRecord, QuestTasks,
 };
 use starknet::storage_access::StorePacking;
 use super::helpers::{
@@ -93,14 +94,14 @@ fn oracle_conditions(c: QuestConditions) -> felt252 {
 fn oracle_held_slot(h: QuestHeldSlot) -> felt252 {
     let mut acc: u256 = 0;
     put(ref acc, h.e0.quest_id.into(), 0, 32);
-    put(ref acc, h.e0.interval_id.into(), 32, 64);
-    put(ref acc, h.e0.acceptance.into(), 96, 16);
-    put(ref acc, h.counter.into(), 112, 16);
-    put(ref acc, h.e1.quest_id.into(), 128, 32);
-    put(ref acc, h.e1.interval_id.into(), 160, 64);
-    put(ref acc, h.e1.acceptance.into(), 224, 16);
-    put(ref acc, bit(h.kept), 240, 1);
-    assert!(acc < pow2(241), "held slot wider than 241 bits");
+    put(ref acc, h.e0.interval_id.into(), 32, 48);
+    put(ref acc, h.e0.acceptance.into(), 80, 30);
+    put(ref acc, h.counter.into(), 110, 30);
+    put(ref acc, h.e1.quest_id.into(), 140, 32);
+    put(ref acc, h.e1.interval_id.into(), 172, 48);
+    put(ref acc, h.e1.acceptance.into(), 220, 30);
+    put(ref acc, bit(h.kept), 250, 1);
+    assert!(acc < pow2(251), "held slot wider than 251 bits");
     to_felt(acc)
 }
 
@@ -290,28 +291,65 @@ fn quest_packing_round_trip_conditions() {
 // QuestHeldSlot
 
 #[test]
-#[available_gas(l2_gas: 31913837)]
+#[available_gas(l2_gas: 42076577)]
 fn quest_packing_round_trip_held_slot() {
     let none = held(0, 0);
+    // the widths of fix loop 4: interval ids 48 bits, acceptance numbers and the counter 30
+    let iv: u64 = HELD_INTERVAL_LIMIT - 1;
+    let n: u32 = ACCEPTANCE_LIMIT - 1;
     check_held_slot(held_slot(none, none));
-    check_held_slot(held_slot(held(U32_MAX, U64_MAX), held(U32_MAX, U64_MAX)));
+    check_held_slot(held_slot(held(U32_MAX, iv), held(U32_MAX, iv)));
     check_held_slot(held_slot(held(U32_MAX, 0), none));
-    check_held_slot(held_slot(held(0, U64_MAX), none));
+    check_held_slot(held_slot(held(0, iv), none));
     check_held_slot(held_slot(none, held(U32_MAX, 0)));
-    check_held_slot(held_slot(none, held(0, U64_MAX)));
-    check_held_slot(held_slot(held(7, 19000), held(0x80000000, 0x8000000000000001)));
-    // acceptance numbers and the counter, alone and at their maximum
-    check_held_slot(held_slot0(stamped(0, 0, 0xffff), none, 0));
-    check_held_slot(held_slot0(none, none, 0xffff));
-    check_held_slot(held_slot0(none, stamped(0, 0, 0xffff), 0));
-    check_held_slot(
-        held_slot0(stamped(U32_MAX, U64_MAX, 0xffff), stamped(U32_MAX, U64_MAX, 0xffff), 0xffff),
-    );
-    check_held_slot(held_slot0(stamped(3, 20000, 41), stamped(9, 20000, 42), 42));
+    check_held_slot(held_slot(none, held(0, iv)));
+    check_held_slot(held_slot(held(7, 19000), held(0x80000000, 0x800000000001)));
+    // acceptance numbers and the counter, alone and at their maximum; the counter straddles
+    // bit 128: its low 18 bits and its high 12 bits alone
+    check_held_slot(held_slot0(stamped(0, 0, n), none, 0));
+    check_held_slot(held_slot0(none, none, n));
+    check_held_slot(held_slot0(none, none, 0x3ffff));
+    check_held_slot(held_slot0(none, none, 0x3ffc0000));
+    check_held_slot(held_slot0(none, stamped(0, 0, n), 0));
+    check_held_slot(held_slot0(stamped(U32_MAX, iv, n), stamped(U32_MAX, iv, n), n));
+    check_held_slot(held_slot0(stamped(3, 20000, 65537), stamped(9, 20000, 65538), 65538));
     // the kept bit alone, on an empty slot, and with nothing else
     check_held_slot(held_slot_k(none, none, 0, true));
     check_held_slot(held_slot_k(stamped(3, 1, 1), none, 0, false));
+    // every field at its maximum: the largest value, below 2^251
+    let full = StorePacking::<
+        QuestHeldSlot, felt252,
+    >::pack(held_slot_k(stamped(U32_MAX, iv, n), stamped(U32_MAX, iv, n), n, true));
+    assert!(full == to_felt(pow2(251) - 1));
     assert!(StorePacking::<QuestHeldSlot, felt252>::pack(held_slot(none, none)) == 0);
+}
+
+/// Fix loop 4: an interval id or a number wider than its field is refused, not truncated.
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_held_interval_2_48() {
+    StorePacking::<
+        QuestHeldSlot, felt252,
+    >::pack(held_slot(held(1, HELD_INTERVAL_LIMIT), held(0, 0)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_held_acceptance_2_30() {
+    StorePacking::<
+        QuestHeldSlot, felt252,
+    >::pack(held_slot(held(1, 0), stamped(2, 0, ACCEPTANCE_LIMIT)));
+}
+
+#[test]
+#[should_panic(expected: 'Packing: field out of range')]
+#[available_gas(l2_gas: 16296)]
+fn quest_packing_rejects_held_counter_2_30() {
+    StorePacking::<
+        QuestHeldSlot, felt252,
+    >::pack(held_slot0(held(1, 0), held(0, 0), ACCEPTANCE_LIMIT));
 }
 
 // QuestProgress
@@ -410,17 +448,19 @@ fn quest_unpacking_rejects_conditions_bit_224() {
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
-#[available_gas(l2_gas: 429062)]
-fn quest_unpacking_rejects_held_bit_241() {
-    // bit 240 is `kept`; bits [241, 252) are reserved
-    StorePacking::<QuestHeldSlot, felt252>::unpack(to_felt(pow2(241)));
+#[available_gas(l2_gas: 36803)]
+fn quest_unpacking_rejects_held_bit_251() {
+    // bit 250 is `kept`; bit 251, the only one above the layout, is reserved
+    StorePacking::<
+        QuestHeldSlot, felt252,
+    >::unpack(0x800000000000000000000000000000000000000000000000000000000000000);
 }
 
 #[test]
-#[should_panic(expected: 'Packing: reserved bits set')]
-#[available_gas(l2_gas: 442218)]
-fn quest_unpacking_rejects_held_bit_251() {
-    StorePacking::<QuestHeldSlot, felt252>::unpack(to_felt(pow2(250)));
+#[available_gas(l2_gas: 450114)]
+fn quest_unpacking_reads_held_bit_250_as_kept() {
+    let h = StorePacking::<QuestHeldSlot, felt252>::unpack(to_felt(pow2(250)));
+    assert!(h == held_slot_k(held(0, 0), held(0, 0), 0, true));
 }
 
 #[test]
@@ -454,7 +494,7 @@ fn quest_unpacking_progress_reads_bit_97_alone() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4785722)]
+#[available_gas(l2_gas: 5109279)]
 fn quest_packing_accepts_the_bounds() {
     check_definition(definition(0, 0, 0, 0, 3, 7, true, false, 0));
     check_held_slot(held_slot(held(1, 2), held(3, 4)));

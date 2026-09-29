@@ -116,7 +116,7 @@ pub fn seed(grid: Grid, h: u32, state: u8) {
     while 2 * slot < h {
         let e0 = *entries[2 * slot];
         // the counter, in slot 0: the number of the last acceptance
-        let counter: u16 = if slot == 0 {
+        let counter: u32 = if slot == 0 {
             h.try_into().unwrap()
         } else {
             0

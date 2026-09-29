@@ -212,7 +212,7 @@ fn probe_unpack_record_100() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2284580)]
+#[available_gas(l2_gas: 2817980)]
 fn probe_unpack_held_100() {
     deploy().unpack_held_n(N);
 }

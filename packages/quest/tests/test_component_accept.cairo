@@ -2,7 +2,7 @@
 //! D-135; A-11: an acceptance expires at rollover with its progress; A-12: at most `MAX_HELD`
 //! held), and the held list.
 
-use quiver_quest::constants::MAX_HELD;
+use quiver_quest::constants::{HELD_INTERVAL_LIMIT, MAX_HELD};
 use quiver_quest::errors;
 use quiver_quest::interface::{IQuestSafeDispatcherTrait, IQuestViewDispatcherTrait};
 use quiver_quest::logic::{HELD_EMPTY, Mode, QuestRecord};
@@ -31,7 +31,7 @@ fn daily() -> quiver_quest::logic::QuestSchedule {
 /// Meaning changed by D-135: every quest needs acceptance, not only one defined with an accept
 /// step.
 #[test]
-#[available_gas(l2_gas: 7187547)]
+#[available_gas(l2_gas: 7204326)]
 fn quest_accept_required() {
     let q = with_quest(one_off(), 10);
     report(q, PLAYER, T, 1, Mode::Storage);
@@ -45,7 +45,7 @@ fn quest_accept_required() {
 /// Meaning changed by D-135: the acceptance is the held entry, which completion makes dead (the
 /// record has no `active` bit any more); the entry stays until the next accept prunes it.
 #[test]
-#[available_gas(l2_gas: 10849415)]
+#[available_gas(l2_gas: 10871896)]
 fn quest_completion_releases_acceptance() {
     let q = with_quest(one_off(), 2);
     accept(q, PLAYER, Q);
@@ -56,7 +56,7 @@ fn quest_completion_releases_acceptance() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9381360)]
+#[available_gas(l2_gas: 9415075)]
 fn quest_acceptance_expires_at_rollover() {
     let q = with_quest(daily(), 10);
     accept(q, PLAYER, Q);
@@ -83,7 +83,7 @@ fn quest_acceptance_expires_at_rollover() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5688743)]
+#[available_gas(l2_gas: 5707695)]
 fn quest_accept_twice_same_interval_reverts() {
     let q = with_quest(daily(), 10);
     accept(q, PLAYER, Q);
@@ -94,7 +94,7 @@ fn quest_accept_twice_same_interval_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 10773101)]
+#[available_gas(l2_gas: 10791476)]
 fn quest_accept_after_completion_reverts() {
     let q = with_quest(one_off(), 1);
     accept(q, PLAYER, Q);
@@ -106,7 +106,7 @@ fn quest_accept_after_completion_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 11706152)]
+#[available_gas(l2_gas: 11742251)]
 fn quest_accept_after_daily_completion() {
     let q = with_quest(daily(), 1);
     accept(q, PLAYER, Q);
@@ -121,7 +121,7 @@ fn quest_accept_after_daily_completion() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5683482)]
+#[available_gas(l2_gas: 5701206)]
 fn quest_abandon_expired_reverts() {
     let q = with_quest(daily(), 10);
     accept(q, PLAYER, Q);
@@ -132,7 +132,7 @@ fn quest_abandon_expired_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9048541)]
+#[available_gas(l2_gas: 9088189)]
 fn quest_abandon_keeps_counts() {
     let q = with_quest(one_off(), 10);
     accept(q, PLAYER, Q);
@@ -150,7 +150,7 @@ fn quest_abandon_keeps_counts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 12140709)]
+#[available_gas(l2_gas: 12165804)]
 fn quest_accept_refusals() {
     let q = deploy();
     at(q, 1000);
@@ -171,7 +171,7 @@ fn quest_accept_refusals() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6577253)]
+#[available_gas(l2_gas: 6587921)]
 fn quest_abandon_refusals() {
     let q = deploy();
     at(q, 1000);
@@ -186,7 +186,7 @@ fn quest_abandon_refusals() {
 
 /// `accept` evaluates the prerequisites and caches the unlock.
 #[test]
-#[available_gas(l2_gas: 15114742)]
+#[available_gas(l2_gas: 15143701)]
 fn quest_accept_caches_unlock() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -202,7 +202,7 @@ fn quest_accept_caches_unlock() {
 
 /// Outside the schedule, a quest is not accepted, even with its entry in the list.
 #[test]
-#[available_gas(l2_gas: 5866025)]
+#[available_gas(l2_gas: 5889083)]
 fn quest_is_accepted_false_outside_schedule() {
     let q = with_quest(schedule(0, 0, 10, DAY), 10);
     accept(q, PLAYER, Q);
@@ -237,7 +237,7 @@ fn accept_first_four(q: Quest) {
 /// The list full: a fifth live quest is refused, and nothing is written.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 16976862)]
+#[available_gas(l2_gas: 17142164)]
 fn quest_accept_list_full_reverts() {
     let q = five_quests();
     accept_first_four(q);
@@ -254,7 +254,7 @@ fn quest_accept_list_full_reverts() {
 
 /// The layout: entries two per slot, in the order of acceptance, the rest empty.
 #[test]
-#[available_gas(l2_gas: 13426445)]
+#[available_gas(l2_gas: 13506675)]
 fn quest_held_list_layout() {
     let q = five_quests();
     accept(q, PLAYER, 3);
@@ -274,7 +274,7 @@ fn quest_held_list_layout() {
 /// An expired acceptance (A-11) stays in the list until the next accept, which prunes it: it
 /// counts neither towards `MAX_HELD` nor in the list afterwards.
 #[test]
-#[available_gas(l2_gas: 16966782)]
+#[available_gas(l2_gas: 17148968)]
 fn quest_expired_acceptance_pruned() {
     let q = deploy();
     at(q, 0);
@@ -304,7 +304,7 @@ fn quest_expired_acceptance_pruned() {
 /// A completed quest leaves the list at the next accept; the live ones keep their order.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 22669538)]
+#[available_gas(l2_gas: 22752499)]
 fn quest_completed_leaves_list() {
     let q = five_quests();
     accept_first_four(q);
@@ -328,7 +328,7 @@ fn quest_completed_leaves_list() {
 
 /// A retired quest is dead in every list that holds it, and pruned at the next accept.
 #[test]
-#[available_gas(l2_gas: 16047392)]
+#[available_gas(l2_gas: 16163847)]
 fn quest_retired_pruned_at_accept() {
     let q = five_quests();
     accept_first_four(q);
@@ -345,7 +345,7 @@ fn quest_retired_pruned_at_accept() {
 
 /// `abandon` removes the quest; the later entries move up.
 #[test]
-#[available_gas(l2_gas: 19136639)]
+#[available_gas(l2_gas: 19389164)]
 fn quest_abandon_removes_from_list() {
     let q = five_quests();
     accept_first_four(q);
@@ -371,7 +371,7 @@ fn quest_abandon_removes_from_list() {
 /// A completed quest cannot be abandoned: its acceptance ended with the completion.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 16554328)]
+#[available_gas(l2_gas: 16571474)]
 fn quest_abandon_completed_reverts() {
     let q = five_quests();
     accept(q, PLAYER, 1);
@@ -384,7 +384,7 @@ fn quest_abandon_completed_reverts() {
 /// Fix loop 1, point 2: each acceptance gets the next number of the player's counter, abandoned
 /// and renewed acceptances included, so that a renewed entry differs from the one it replaces.
 #[test]
-#[available_gas(l2_gas: 14360955)]
+#[available_gas(l2_gas: 14442908)]
 fn quest_acceptance_numbers_are_new_on_renewal() {
     let q = five_quests();
     accept(q, PLAYER, 1);
@@ -401,7 +401,7 @@ fn quest_acceptance_numbers_are_new_on_renewal() {
 /// of it (abandon, or pruning at accept), the slot keeps a marker, so that the next growth into
 /// it overwrites a slot instead of creating one.
 #[test]
-#[available_gas(l2_gas: 17547317)]
+#[available_gas(l2_gas: 17711610)]
 fn quest_held_slot_kept_after_shrink() {
     let q = five_quests();
     accept(q, PLAYER, 1);
@@ -430,7 +430,7 @@ fn quest_held_slot_kept_after_shrink() {
 
 /// Pruning at accept keeps the slots too: four dead entries pruned leave slot 1 marked.
 #[test]
-#[available_gas(l2_gas: 37080041)]
+#[available_gas(l2_gas: 36992177)]
 fn quest_held_slot_kept_after_pruning() {
     let q = five_quests();
     accept_first_four(q);
@@ -441,4 +441,32 @@ fn quest_held_slot_kept_after_pruning() {
     accept(q, PLAYER, 5);
     assert!(unstamped(q.view.quest_held(PLAYER)) == array![held(5, 0)].span());
     assert!(*held_felts(q, PLAYER)[1] != 0);
+}
+
+/// Fix loop 4: a held entry stores its interval id on 48 bits. The last interval it can hold is
+/// 2^48 - 1 (8.9 million years of one-second intervals); from 2^48 on, `accept` refuses the quest
+/// as not active, and an entry of an earlier interval has expired as at any rollover.
+#[test]
+#[feature("safe_dispatcher")]
+#[available_gas(l2_gas: 9679018)]
+fn quest_held_interval_id_boundary_2_48() {
+    let q = deploy();
+    // one-second intervals from the epoch: the interval id is the time
+    define_simple(q, 1, schedule(0, 0, 1, 1), T, 5);
+    define_simple(q, 2, schedule(0, 0, 1, 1), T, 5);
+    let last: u64 = HELD_INTERVAL_LIMIT - 1;
+    at(q, last);
+    accept(q, PLAYER, 1);
+    assert!(q.view.quest_held(PLAYER) == array![stamped(1, last, 1)].span());
+    report(q, PLAYER, T, 2, Mode::Storage);
+    assert!(q.view.quest_progress(PLAYER, 1, last).c0 == 2);
+    at(q, HELD_INTERVAL_LIMIT);
+    assert!(q.view.quest_current_interval(2) == Option::Some(HELD_INTERVAL_LIMIT));
+    as_owner(q);
+    assert_error(q.safe.accept(PLAYER, 2), errors::NOT_ACTIVE);
+    assert_error(q.safe.accept(PLAYER, 1), errors::NOT_ACTIVE);
+    stop(q);
+    assert!(!q.view.quest_is_accepted(PLAYER, 1));
+    report(q, PLAYER, T, 1, Mode::Storage);
+    assert!(q.view.quest_progress(PLAYER, 1, HELD_INTERVAL_LIMIT).c0 == 0);
 }

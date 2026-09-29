@@ -6,11 +6,12 @@
 //! cost of a function is its benchmark minus the matching baseline.
 
 use quiver_quest::logic::{
-    MAX_ENTRIES, QuestConditions, QuestDefinition, QuestHeld, QuestHeldSlot, QuestProgress,
-    QuestRecord, QuestSchedule, QuestTasks, TaskProgress, batch_count_of, batch_first_position,
-    batch_merge, claim, conditions_span, definition_new, held_contains, held_position, held_remove,
-    held_slot, prerequisites_met, progress_add, progress_is_complete, record_complete,
-    schedule_interval_id, schedule_is_active, schedule_validate, tasks_index_of, tasks_span,
+    ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, MAX_ENTRIES, QuestConditions, QuestDefinition, QuestHeld,
+    QuestHeldSlot, QuestProgress, QuestRecord, QuestSchedule, QuestTasks, TaskProgress,
+    batch_count_of, batch_first_position, batch_merge, claim, conditions_span, definition_new,
+    held_contains, held_position, held_remove, held_slot, prerequisites_met, progress_add,
+    progress_is_complete, record_complete, schedule_interval_id, schedule_is_active,
+    schedule_validate, tasks_index_of, tasks_span,
 };
 use starknet::storage_access::StorePacking;
 use super::helpers::{
@@ -298,9 +299,19 @@ fn bench_pack_unpack_conditions() {
 }
 
 #[test]
-#[available_gas(l2_gas: 39375)]
+#[available_gas(l2_gas: 48017)]
 fn bench_pack_unpack_held_slot() {
-    let h: QuestHeldSlot = opaque(slot(held(U32_MAX, U64_MAX), held(U32_MAX, U64_MAX)));
+    // every field at its maximum: interval ids 2^48 - 1, numbers and the counter 2^30 - 1
+    let iv = HELD_INTERVAL_LIMIT - 1;
+    let n = ACCEPTANCE_LIMIT - 1;
+    let h: QuestHeldSlot = opaque(
+        QuestHeldSlot {
+            e0: QuestHeld { quest_id: U32_MAX, interval_id: iv, acceptance: n },
+            e1: QuestHeld { quest_id: U32_MAX, interval_id: iv, acceptance: n },
+            counter: n,
+            kept: true,
+        },
+    );
     let packed = StorePacking::<QuestHeldSlot, felt252>::pack(h);
     assert!(StorePacking::<QuestHeldSlot, felt252>::unpack(opaque(packed)) == h);
 }

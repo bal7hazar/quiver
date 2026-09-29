@@ -16,10 +16,9 @@
 
 #[starknet::component]
 pub mod QuestComponent {
-    use core::num::traits::{WrappingAdd, WrappingSub};
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
-    use crate::constants::{HELD_SLOTS, MAX_HELD};
+    use crate::constants::{ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, HELD_SLOTS, MAX_HELD};
     use crate::errors;
     use crate::interface::{IQuest, IQuestView};
     use crate::logic::{
@@ -259,14 +258,15 @@ pub mod QuestComponent {
             }
             let time = get_block_timestamp();
             // The held quests when the call starts. A hook may accept or abandon: once a hook
-            // has run, each later entry is processed only if the list still holds it, the same
-            // acceptance. An entry accepted by a hook, a renewed one included, is not in this walk
-            let (held, start_counter) = self.held_entries_from(player_id);
+            // has run, each later entry is processed only if the list still holds it, the whole
+            // entry: quest, interval and acceptance number. An entry accepted by a hook, a
+            // renewed one included, has a new number and is not in this walk
+            let held = self.held_entries(player_id);
             let mut hooked = false;
             let mut position: u32 = 0;
             for entry in held {
                 let entry = *entry;
-                if hooked && !self.still_held(player_id, entry, position, start_counter) {
+                if hooked && !self.still_held(player_id, entry, position) {
                     position += 1;
                     continue;
                 }
@@ -291,10 +291,13 @@ pub mod QuestComponent {
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
             let time = get_block_timestamp();
+            // An interval id at or above 2^48 (8.9 million years of one-second intervals) does not
+            // fit a held entry: the quest is not active there, and cannot be accepted
             let interval_id = match schedule_interval_id(@definition.schedule, time) {
                 Option::Some(interval_id) => interval_id,
                 Option::None => core::panic_with_felt252(errors::NOT_ACTIVE),
             };
+            assert(interval_id < HELD_INTERVAL_LIMIT, errors::NOT_ACTIVE);
             let record_key = (player_id, quest_id);
             let mut unlock: Option<QuestRecord> = Option::None;
             if definition.condition_count != 0 {
@@ -327,9 +330,14 @@ pub mod QuestComponent {
                 }
             }
             assert(kept_after.len() < MAX_HELD.into(), errors::TOO_MANY_HELD);
-            // A new acceptance number: a quest abandoned and accepted again, even in the same
-            // interval, is a different entry for a call that was running
-            let acceptance = counter.wrapping_add(1);
+            // A new acceptance number, 30 bits: a quest abandoned and accepted again, even in the
+            // same interval, is a different entry for a call that was running. The counter wraps to
+            // 0 after 2^30 - 1, about 1.07 × 10^9 acceptances by one player
+            let acceptance = if counter + 1 == ACCEPTANCE_LIMIT {
+                0
+            } else {
+                counter + 1
+            };
             kept_after.append(QuestHeld { quest_id, interval_id, acceptance });
             self.held_write(player_id, held, counter, kept, kept_after.span(), acceptance);
             if let Option::Some(record) = unlock {
@@ -528,36 +536,19 @@ pub mod QuestComponent {
             true
         }
 
-        /// Whether the list still holds `entry`, read at `position` of the list when the call
-        /// started. One slot read when it is still there, as after a hook that did not touch the
-        /// list; the whole list otherwise, since `abandon` moves the later entries up.
-        ///
-        /// The acceptance number wraps at 2^16 over a player's lifetime, so an entry renewed by a
-        /// hook can get the very number of the entry it replaces. Numbers issued during the call
-        /// are `start_counter + 1 ..= counter` (mod 2^16): an entry carrying one of them is a new
-        /// acceptance, made after the batch was reported, and is not processed. A collision would
-        /// need 65 536 acceptances within the call, which no transaction affords.
+        /// Whether the list still holds `entry`, the whole entry (quest, interval and acceptance
+        /// number), read at `position` of the list when the call started. One slot read when it is
+        /// still there, as after a hook that did not touch the list; the whole list otherwise,
+        /// since `abandon` moves the later entries up. A renewed entry has a new number and does
+        /// not match.
         fn still_held(
             self: @ComponentState<TContractState>,
             player_id: felt252,
             entry: QuestHeld,
             position: u32,
-            start_counter: u16,
         ) -> bool {
-            let first = self.Quest_held.read((player_id, 0));
-            let issued = first.counter.wrapping_sub(start_counter);
-            if issued != 0 {
-                let age = entry.acceptance.wrapping_sub(start_counter);
-                if age != 0 && age <= issued {
-                    return false;
-                }
-            }
             let slot: u8 = (position / 2).try_into().unwrap();
-            let pair = if slot == 0 {
-                first
-            } else {
-                self.Quest_held.read((player_id, slot))
-            };
+            let pair = self.Quest_held.read((player_id, slot));
             let found = if position % 2 == 0 {
                 pair.e0
             } else {
@@ -582,35 +573,6 @@ pub mod QuestComponent {
                 return false;
             }
             !self.Quest_progress.read((player_id, quest_id, interval_id)).completed
-        }
-
-        /// The held entries and the player's acceptance counter, read when a progress call starts:
-        /// the numbers issued after it are those of acceptances made during the call.
-        fn held_entries_from(
-            self: @ComponentState<TContractState>, player_id: felt252,
-        ) -> (Span<QuestHeld>, u16) {
-            let mut held: Array<QuestHeld> = array![];
-            let first = self.Quest_held.read((player_id, 0));
-            let counter = first.counter;
-            let mut pair = first;
-            let mut slot: u8 = 0;
-            loop {
-                let QuestHeldSlot { e0, e1, counter: _, kept: _ } = pair;
-                if e0.quest_id == 0 {
-                    break;
-                }
-                held.append(e0);
-                if e1.quest_id == 0 {
-                    break;
-                }
-                held.append(e1);
-                slot += 1;
-                if slot == HELD_SLOTS {
-                    break;
-                }
-                pair = self.Quest_held.read((player_id, slot));
-            }
-            (held.span(), counter)
         }
 
         /// The held entries alone, for the paths that do not write the list (progress, views):
@@ -642,7 +604,7 @@ pub mod QuestComponent {
         /// the list.
         fn held_read(
             self: @ComponentState<TContractState>, player_id: felt252,
-        ) -> (Span<QuestHeld>, u16, Span<bool>) {
+        ) -> (Span<QuestHeld>, u32, Span<bool>) {
             let mut held: Array<QuestHeld> = array![];
             let mut kept: Array<bool> = array![];
             let first = self.Quest_held.read((player_id, 0));
@@ -677,10 +639,10 @@ pub mod QuestComponent {
             ref self: ComponentState<TContractState>,
             player_id: felt252,
             before: Span<QuestHeld>,
-            before_counter: u16,
+            before_counter: u32,
             before_kept: Span<bool>,
             after: Span<QuestHeld>,
-            after_counter: u16,
+            after_counter: u32,
         ) {
             let len = if before.len() > after.len() {
                 before.len()

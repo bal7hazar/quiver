@@ -1,11 +1,12 @@
 //! Types of `quiver_quest::logic` (ARC-01 §3.2) and their packing into one felt (§3.3).
 
 use starknet::storage_access::StorePacking;
-use crate::constants::{MAX_CONDITIONS, MAX_TASKS};
+use crate::constants::{ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, MAX_CONDITIONS, MAX_TASKS};
 use super::bits::{
-    NZ_2, NZ_2_16, NZ_2_32, NZ_2_64, NZ_4, NZ_8, TWO_POW_112, TWO_POW_128, TWO_POW_160, TWO_POW_192,
-    TWO_POW_194, TWO_POW_197, TWO_POW_198, TWO_POW_199, TWO_POW_224, TWO_POW_240, TWO_POW_32,
-    TWO_POW_64, TWO_POW_96, TWO_POW_97, split,
+    NZ_2, NZ_2_12, NZ_2_30, NZ_2_32, NZ_2_48, NZ_2_64, NZ_4, NZ_8, TWO_POW_110, TWO_POW_128,
+    TWO_POW_140, TWO_POW_160, TWO_POW_172, TWO_POW_192, TWO_POW_194, TWO_POW_197, TWO_POW_198,
+    TWO_POW_199, TWO_POW_220, TWO_POW_250, TWO_POW_32, TWO_POW_64, TWO_POW_80, TWO_POW_96,
+    TWO_POW_97, split,
 };
 
 /// Where a progress call goes: stored records, or events only.
@@ -102,30 +103,32 @@ pub struct QuestRecord {
 ///
 /// An entry is **live** while its quest is not retired, the current interval of its quest is
 /// `interval_id`, and that interval is not completed; otherwise it is dead, and the next `accept`
-/// prunes it. `acceptance` tells two acceptances of one quest in one interval apart: a quest
-/// abandoned and accepted again is a new entry.
+/// prunes it. The whole entry, quest, interval and acceptance number, identifies an acceptance: a
+/// quest abandoned and accepted again is a new entry. `interval_id` is stored on 48 bits
+/// (`HELD_INTERVAL_LIMIT`), `acceptance` on 30 (`ACCEPTANCE_LIMIT`).
 #[derive(Drop, Copy, Serde, PartialEq, Debug)]
 pub struct QuestHeld {
     pub quest_id: u32,
     pub interval_id: u64,
-    pub acceptance: u16,
+    pub acceptance: u32,
 }
 
 /// One slot of a player's held list: two entries, and in slot 0 the player's acceptance counter.
-/// Layout: `e0.quest_id` [0, 32) · `e0.interval_id` [32, 96) · `e0.acceptance` [96, 112) ·
-/// `counter` [112, 128) · `e1.quest_id` [128, 160) · `e1.interval_id` [160, 224) ·
-/// `e1.acceptance` [224, 240) · `kept` [240].
+/// Layout: `e0.quest_id` [0, 32) · `e0.interval_id` [32, 80) · `e0.acceptance` [80, 110) ·
+/// `counter` [110, 140) · `e1.quest_id` [140, 172) · `e1.interval_id` [172, 220) ·
+/// `e1.acceptance` [220, 250) · `kept` [250]. 251 bits: every value is below 2^251. `counter` is
+/// the one field that straddles bit 128 (18 bits in the low limb, 12 in the high).
 ///
 /// The list is contiguous: entries fill slot 0 first, `e0` before `e1`, with no empty entry
 /// before a non-empty one; so a slot whose `e1` is empty ends the list. `counter` is the number
-/// of the player's last acceptance (wrapping at 2^16); it is 0 in the other slots. `kept` is set
-/// once the slot has held an entry and never cleared: a slot the list no longer uses stays
-/// non-zero, so that the next use overwrites it instead of creating it.
+/// of the player's last acceptance (30 bits, wrapping to 0 after 2^30 - 1); it is 0 in the other
+/// slots. `kept` is set once the slot has held an entry and never cleared: a slot the list no
+/// longer uses stays non-zero, so that the next use overwrites it instead of creating it.
 #[derive(Drop, Copy, Serde, PartialEq, Debug)]
 pub struct QuestHeldSlot {
     pub e0: QuestHeld,
     pub e1: QuestHeld,
-    pub counter: u16,
+    pub counter: u32,
     pub kept: bool,
 }
 
@@ -301,14 +304,13 @@ pub impl QuestRecordPacking of StorePacking<QuestRecord, felt252> {
     }
 }
 
-/// An entry in a limb: `quest_id` [0, 32) · `interval_id` [32, 96); bits [96, 128) are reserved.
+/// An entry from the low bits of a limb: `quest_id` [0, 32) · `interval_id` [32, 80) ·
+/// `acceptance` [80, 110); returns it and the bits above.
 #[inline(always)]
-/// An entry in a limb: `quest_id` [0, 32) · `interval_id` [32, 96) · `acceptance` [96, 112);
-/// returns it and the bits [112, 128) above it.
 fn unpack_held(limb: u128) -> (QuestHeld, u128) {
     let (rest, quest_id) = DivRem::div_rem(limb, NZ_2_32);
-    let (rest, interval_id) = DivRem::div_rem(rest, NZ_2_64);
-    let (above, acceptance) = DivRem::div_rem(rest, NZ_2_16);
+    let (rest, interval_id) = DivRem::div_rem(rest, NZ_2_48);
+    let (above, acceptance) = DivRem::div_rem(rest, NZ_2_30);
     let entry = QuestHeld {
         quest_id: quest_id.try_into().unwrap(),
         interval_id: interval_id.try_into().unwrap(),
@@ -317,24 +319,39 @@ fn unpack_held(limb: u128) -> (QuestHeld, u128) {
     (entry, above)
 }
 
+#[inline(always)]
+fn assert_held(entry: QuestHeld) {
+    assert(
+        entry.interval_id < HELD_INTERVAL_LIMIT && entry.acceptance < ACCEPTANCE_LIMIT,
+        FIELD_OUT_OF_RANGE,
+    );
+}
+
 pub impl QuestHeldSlotPacking of StorePacking<QuestHeldSlot, felt252> {
     fn pack(value: QuestHeldSlot) -> felt252 {
+        assert_held(value.e0);
+        assert_held(value.e1);
+        assert(value.counter < ACCEPTANCE_LIMIT, FIELD_OUT_OF_RANGE);
         value.e0.quest_id.into()
             + value.e0.interval_id.into() * TWO_POW_32
-            + value.e0.acceptance.into() * TWO_POW_96
-            + value.counter.into() * TWO_POW_112
-            + value.e1.quest_id.into() * TWO_POW_128
-            + value.e1.interval_id.into() * TWO_POW_160
-            + value.e1.acceptance.into() * TWO_POW_224
-            + value.kept.into() * TWO_POW_240
+            + value.e0.acceptance.into() * TWO_POW_80
+            + value.counter.into() * TWO_POW_110
+            + value.e1.quest_id.into() * TWO_POW_140
+            + value.e1.interval_id.into() * TWO_POW_172
+            + value.e1.acceptance.into() * TWO_POW_220
+            + value.kept.into() * TWO_POW_250
     }
 
     fn unpack(value: felt252) -> QuestHeldSlot {
         let (low, high) = split(value);
-        let (e0, counter) = unpack_held(low);
-        let (e1, kept) = unpack_held(high);
-        // bit 240 alone is `kept`; bits [241, 252) are reserved
+        // low limb: e0 [0, 110), then the counter's low 18 bits [110, 128)
+        let (e0, counter_low) = unpack_held(low);
+        // high limb (bit 128 = its bit 0): the counter's high 12 bits, then e1, then `kept`
+        let (rest, counter_high) = DivRem::div_rem(high, NZ_2_12);
+        let (e1, kept) = unpack_held(rest);
+        // bit 250 alone is `kept`; bit 251 is reserved
         assert(kept <= 1, RESERVED_BITS_SET);
+        let counter = counter_low + counter_high * 0x40000;
         QuestHeldSlot { e0, e1, counter: counter.try_into().unwrap(), kept: kept != 0 }
     }
 }

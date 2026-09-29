@@ -51,7 +51,7 @@ pub fn held(quest_id: u32, interval_id: u64) -> QuestHeld {
 }
 
 /// An entry with its acceptance number.
-pub fn stamped(quest_id: u32, interval_id: u64, acceptance: u16) -> QuestHeld {
+pub fn stamped(quest_id: u32, interval_id: u64, acceptance: u32) -> QuestHeld {
     QuestHeld { quest_id, interval_id, acceptance }
 }
 
@@ -71,12 +71,12 @@ pub fn held_slot(e0: QuestHeld, e1: QuestHeld) -> QuestHeldSlot {
 
 /// Slot 0 of a held list, with the player's acceptance counter; `kept`, as slot 0 always is
 /// once the player has accepted.
-pub fn held_slot0(e0: QuestHeld, e1: QuestHeld, counter: u16) -> QuestHeldSlot {
+pub fn held_slot0(e0: QuestHeld, e1: QuestHeld, counter: u32) -> QuestHeldSlot {
     QuestHeldSlot { e0, e1, counter, kept: true }
 }
 
 /// A slot with every field given.
-pub fn held_slot_k(e0: QuestHeld, e1: QuestHeld, counter: u16, kept: bool) -> QuestHeldSlot {
+pub fn held_slot_k(e0: QuestHeld, e1: QuestHeld, counter: u32, kept: bool) -> QuestHeldSlot {
     QuestHeldSlot { e0, e1, counter, kept }
 }
 

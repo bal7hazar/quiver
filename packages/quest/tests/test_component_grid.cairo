@@ -17,7 +17,7 @@ fn baseline_grid_h0() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2005409)]
+#[available_gas(l2_gas: 2005042)]
 fn grid_h0() {
     let grid = deploy();
     seed(grid, 0, COMPLETE);
@@ -25,7 +25,7 @@ fn grid_h0() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2277072)]
+#[available_gas(l2_gas: 2278479)]
 fn baseline_grid_h1_complete() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -33,7 +33,7 @@ fn baseline_grid_h1_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4625842)]
+#[available_gas(l2_gas: 4626671)]
 fn grid_h1_complete() {
     let grid = deploy();
     seed(grid, 1, COMPLETE);
@@ -41,7 +41,7 @@ fn grid_h1_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2277072)]
+#[available_gas(l2_gas: 2278479)]
 fn baseline_grid_h1_count() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -49,7 +49,7 @@ fn baseline_grid_h1_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4054264)]
+#[available_gas(l2_gas: 4055093)]
 fn grid_h1_count() {
     let grid = deploy();
     seed(grid, 1, COUNT);
@@ -57,7 +57,7 @@ fn grid_h1_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2277072)]
+#[available_gas(l2_gas: 2278479)]
 fn baseline_grid_h1_miss() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -65,7 +65,7 @@ fn baseline_grid_h1_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3578341)]
+#[available_gas(l2_gas: 3579170)]
 fn grid_h1_miss() {
     let grid = deploy();
     seed(grid, 1, MISS);
@@ -73,7 +73,7 @@ fn grid_h1_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2720246)]
+#[available_gas(l2_gas: 2721653)]
 fn baseline_grid_h1_done() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -81,7 +81,7 @@ fn baseline_grid_h1_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3876320)]
+#[available_gas(l2_gas: 3877150)]
 fn grid_h1_done() {
     let grid = deploy();
     seed(grid, 1, DONE);
@@ -89,7 +89,7 @@ fn grid_h1_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2277072)]
+#[available_gas(l2_gas: 2278479)]
 fn baseline_grid_h1_expired() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -97,7 +97,7 @@ fn baseline_grid_h1_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3387272)]
+#[available_gas(l2_gas: 3388102)]
 fn grid_h1_expired() {
     let grid = deploy();
     seed(grid, 1, EXPIRED);
@@ -105,7 +105,7 @@ fn grid_h1_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3160343)]
+#[available_gas(l2_gas: 3162768)]
 fn baseline_grid_h2_complete() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -113,7 +113,7 @@ fn baseline_grid_h2_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6915587)]
+#[available_gas(l2_gas: 6921971)]
 fn grid_h2_complete() {
     let grid = deploy();
     seed(grid, 2, COMPLETE);
@@ -121,7 +121,7 @@ fn grid_h2_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3160343)]
+#[available_gas(l2_gas: 3162768)]
 fn baseline_grid_h2_count() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -129,7 +129,7 @@ fn baseline_grid_h2_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5713579)]
+#[available_gas(l2_gas: 5720414)]
 fn grid_h2_count() {
     let grid = deploy();
     seed(grid, 2, COUNT);
@@ -137,7 +137,7 @@ fn grid_h2_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3160343)]
+#[available_gas(l2_gas: 3162768)]
 fn baseline_grid_h2_miss() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -145,7 +145,7 @@ fn baseline_grid_h2_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4761733)]
+#[available_gas(l2_gas: 4768568)]
 fn grid_h2_miss() {
     let grid = deploy();
     seed(grid, 2, MISS);
@@ -153,7 +153,7 @@ fn grid_h2_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4046585)]
+#[available_gas(l2_gas: 4049010)]
 fn baseline_grid_h2_done() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -161,7 +161,7 @@ fn baseline_grid_h2_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5357587)]
+#[available_gas(l2_gas: 5364422)]
 fn grid_h2_done() {
     let grid = deploy();
     seed(grid, 2, DONE);
@@ -169,7 +169,7 @@ fn grid_h2_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3160343)]
+#[available_gas(l2_gas: 3162768)]
 fn baseline_grid_h2_expired() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -177,7 +177,7 @@ fn baseline_grid_h2_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4379596)]
+#[available_gas(l2_gas: 4386431)]
 fn grid_h2_expired() {
     let grid = deploy();
     seed(grid, 2, EXPIRED);
@@ -185,7 +185,7 @@ fn grid_h2_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5375076)]
+#[available_gas(l2_gas: 5380242)]
 fn baseline_grid_h4_complete() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -193,7 +193,7 @@ fn baseline_grid_h4_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 11983255)]
+#[available_gas(l2_gas: 11905240)]
 fn grid_h4_complete() {
     let grid = deploy();
     seed(grid, 4, COMPLETE);
@@ -201,7 +201,7 @@ fn grid_h4_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5375076)]
+#[available_gas(l2_gas: 5380242)]
 fn baseline_grid_h4_count() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -209,7 +209,7 @@ fn baseline_grid_h4_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9429371)]
+#[available_gas(l2_gas: 9443620)]
 fn grid_h4_count() {
     let grid = deploy();
     seed(grid, 4, COUNT);
@@ -217,7 +217,7 @@ fn grid_h4_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5375076)]
+#[available_gas(l2_gas: 5380242)]
 fn baseline_grid_h4_miss() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -225,7 +225,7 @@ fn baseline_grid_h4_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7525679)]
+#[available_gas(l2_gas: 7539928)]
 fn grid_h4_miss() {
     let grid = deploy();
     seed(grid, 4, MISS);
@@ -233,7 +233,7 @@ fn grid_h4_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7147455)]
+#[available_gas(l2_gas: 7152621)]
 fn baseline_grid_h4_done() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -241,7 +241,7 @@ fn baseline_grid_h4_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 8717282)]
+#[available_gas(l2_gas: 8731531)]
 fn grid_h4_done() {
     let grid = deploy();
     seed(grid, 4, DONE);
@@ -249,7 +249,7 @@ fn grid_h4_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5375076)]
+#[available_gas(l2_gas: 5380242)]
 fn baseline_grid_h4_expired() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -257,7 +257,7 @@ fn baseline_grid_h4_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6761405)]
+#[available_gas(l2_gas: 6775654)]
 fn grid_h4_expired() {
     let grid = deploy();
     seed(grid, 4, EXPIRED);
@@ -265,7 +265,7 @@ fn grid_h4_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9804543)]
+#[available_gas(l2_gas: 9815190)]
 fn baseline_grid_h8_complete() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -273,7 +273,7 @@ fn baseline_grid_h8_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 22067843)]
+#[available_gas(l2_gas: 21819371)]
 fn grid_h8_complete() {
     let grid = deploy();
     seed(grid, 8, COMPLETE);
@@ -281,7 +281,7 @@ fn grid_h8_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9804543)]
+#[available_gas(l2_gas: 9815190)]
 fn baseline_grid_h8_count() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -289,7 +289,7 @@ fn baseline_grid_h8_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 16810210)]
+#[available_gas(l2_gas: 16837625)]
 fn grid_h8_count() {
     let grid = deploy();
     seed(grid, 8, COUNT);
@@ -297,7 +297,7 @@ fn grid_h8_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9804543)]
+#[available_gas(l2_gas: 9815190)]
 fn baseline_grid_h8_miss() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -305,7 +305,7 @@ fn baseline_grid_h8_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13002826)]
+#[available_gas(l2_gas: 13030241)]
 fn grid_h8_miss() {
     let grid = deploy();
     seed(grid, 8, MISS);
@@ -313,7 +313,7 @@ fn grid_h8_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13349196)]
+#[available_gas(l2_gas: 13359843)]
 fn baseline_grid_h8_done() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -321,7 +321,7 @@ fn baseline_grid_h8_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 15385927)]
+#[available_gas(l2_gas: 15413342)]
 fn grid_h8_done() {
     let grid = deploy();
     seed(grid, 8, DONE);
@@ -329,7 +329,7 @@ fn grid_h8_done() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9804543)]
+#[available_gas(l2_gas: 9815190)]
 fn baseline_grid_h8_expired() {
     let grid = deploy();
     let _entries = worst_entries();
@@ -337,7 +337,7 @@ fn baseline_grid_h8_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 11474278)]
+#[available_gas(l2_gas: 11501693)]
 fn grid_h8_expired() {
     let grid = deploy();
     seed(grid, 8, EXPIRED);
