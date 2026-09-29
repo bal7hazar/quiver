@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 04:59 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 05:33 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -79,7 +79,9 @@ request. **`quiver_quest` 0.1.0 is published** on
 `quiver_achievement`: its accepted design breaks the 20M cap in storage mode (448 records in the
 worst call, about 200M): **the project manager decided 0.1.0 in event mode only**
 ([decision](docs/decisions/2026-09-29-achievement-event-only.md)); storage mode with per-task counters
-later, its layout not reserved. **ARC-04 is running** since 04:58 UTC ([brief](docs/briefs/ARC-04-achievement.md)). The project manager
+later, its layout not reserved. **ARC-04 done** (04:58 to 05:31 UTC, [#17](https://github.com/bal7hazar/quiver/pull/17),
+CI green, 102 tests within budget): worst `progress_many` 1.82M L2 gas (9 % of the cap), the game's
+results call 0.83M, worst `define` 1.20M; its `[GPT-6-Astra]` audit runs since 05:32 UTC. The project manager
 corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
 about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
 what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
@@ -119,7 +121,8 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-04 achievement event mode | `quiver-ARC-04-045808`, slots `total-3`, `quiver-1` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Running since 04:58 UTC |
+| ARC-04 achievement event mode | `quiver-ARC-04-045808` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Exited 0; #17 |
+| ARC-04 audit | setsid (codex), slots | `gpt-6-astra` / `gpt-6-astra` | audit | Running since 05:32 UTC |
 
 ## Budget
 
