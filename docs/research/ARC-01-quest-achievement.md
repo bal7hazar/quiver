@@ -1618,6 +1618,26 @@ the network's, and 0.56 % of the network's 1.1 × 10⁹ at H = 4.
 
 ### 5.2 `quiver_achievement`, per call
 
+> **Amended by the decision of 2026-09-29** (event mode only, §3.10; ARC-04). The table below is
+> the A-G1 design's estimate, kept for the record: its storage rows describe code that 0.1.0 does
+> not have, and its worst `progress_many` (448 records written, about 200 M L2 gas at
+> `quiver_quest`'s measured prices) is the reason of the decision. **0.1.0 is measured**
+> (`packages/achievement/GAS.md`, `docs/BUDGETS.md`), snforge 0.61, through a dispatcher, the
+> reads including the reporter check of the external ABI:
+>
+> | Case | Reads | Writes (created) | Events | Call, snforge (network) |
+> |---|---|---|---|---|
+> | `progress`, 1 entry | 1 (the reporter) | 0 | 1 (0 if `count == 0`) | 209 236 |
+> | **Worst `progress_many`**: 16 entries, late collision modulo 128 (the plain merge in full) | 1 | 0 | **16** | **1 816 813** (the same: nothing written) |
+> | Same, with 48 achievements of 3 tasks defined on its 16 tasks | 1 | 0 | 16 | 1 816 613: progress reads no definition |
+> | Grim World: 6 character and 2 account tasks, two calls | 2 | 0 | 8 | 829 728 |
+> | `define`, 3 tasks / 1 task | 1 | 2 (2) / 1 (1) | 1 | 1 197 030 (1 185 818) / 707 640 (702 034) |
+> | `retire` | 1 | 1 (0) | 1 | 240 760 (215 654) |
+>
+> The worst call the package allows is 9.1 % of the 20 M cap of the A-G1 amendment. Defining the
+> game's 26 tiers in one transaction is 18 525 730 (92.6 %): definitions in bulk are spread over
+> transactions.
+
 | Case | Reads | Writes | Events |
 |---|---|---|---|
 | Event mode (Grim World's titles), `progress` | 0 | 0 | 1 (0 if `count == 0`) |
