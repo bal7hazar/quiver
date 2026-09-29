@@ -1,4 +1,4 @@
-# PENDING — publish `quiver_achievement` 0.1.0
+# `quiver_achievement` 0.1.0 — published 2026-09-29 (D-142)
 
 | | |
 |---|---|
@@ -58,3 +58,21 @@ to split definitions over several transactions (judged adequate by the audit).
 - Run an indexer that applies windows, retirement and tier thresholds; progress on a task that no
   live achievement uses still emits an event, which the indexer ignores.
 - For Grim World: titles in event mode (D-131), A-7 answered by tiers sharing a task.
+
+## Answer and publication
+
+Go given by the project manager `[Fable 5.1]` in the owner's name on 2026-09-29, **D-142**
+([record in the game](https://github.com/bal7hazar/grimworld/blob/main/docs/decisions/2026-09-29-publish-quiver_achievement-0.1.0.md),
+`32d204e`), for that package, that version, that commit and that archive only.
+
+Published by the orchestrator's session, by hand, on 2026-09-29: a fresh clone at `50017e7`,
+`scarb --manifest-path packages/achievement/Scarb.toml package` with Scarb 2.19.4 gave sha256
+`1473a07fcbe1298a9ba85ef07b1b5afc63816c1fcbe3c5c10151908ae7a4d9d9`, equal to the go's; then
+`scarb … publish` from the same checkout.
+
+| | |
+|---|---|
+| Registry | **https://scarbs.xyz/packages/quiver_achievement**, version 0.1.0 |
+| Registry checksum | `sha256:1473a07fcbe1298a9ba85ef07b1b5afc63816c1fcbe3c5c10151908ae7a4d9d9` (the index's `cksum`, equal to the approved archive) |
+| Recorded dependencies | `starknet ^2.19.0` (normal), `snforge_std ^0.61.0` (test) |
+| Tag and release | [`quiver_achievement-v0.1.0`](https://github.com/bal7hazar/quiver/releases/tag/quiver_achievement-v0.1.0), on `50017e7`, with the archive attached |

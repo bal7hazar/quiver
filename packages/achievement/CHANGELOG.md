@@ -8,6 +8,9 @@ events and error strings are named.
 
 ## [0.1.0] - 2026-09-29
 
+Published on [scarbs.xyz](https://scarbs.xyz/packages/quiver_achievement) from commit `50017e7`
+(sha256 `1473a07fcbe1298a9ba85ef07b1b5afc63816c1fcbe3c5c10151908ae7a4d9d9`); tag `quiver_achievement-v0.1.0`.
+
 The first release, **in event mode only**
 ([decision of 2026-09-29](https://github.com/bal7hazar/quiver/blob/main/docs/decisions/2026-09-29-achievement-event-only.md)):
 definitions are stored, progress is emitted as events, an indexer derives the tiers. There is no

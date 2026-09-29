@@ -11,7 +11,7 @@ The first packages are native rewrites of the owner's
 | Package | Does | State |
 |---|---|---|
 | `quiver_quest` | Quests made of tasks with a target count; one-off or recurring; prerequisites checked at acceptance; at most 4 held quests per player; claim through a hook the consumer implements | **0.1.0 on [scarbs.xyz](https://scarbs.xyz/packages/quiver_quest)** |
-| `quiver_achievement` | Achievements made of tasks, with tiers sharing a task; points; storage or event mode per call | API proposed ([ARC-01](docs/research/ARC-01-quest-achievement.md)), gate A-G1 |
+| `quiver_achievement` | Achievements made of tasks, with tiers sharing a task; points; **event mode only** in 0.1.0 (progress as events, tiers derived by an indexer); storage mode planned later | **0.1.0 on [scarbs.xyz](https://scarbs.xyz/packages/quiver_achievement)** |
 
 Names: packages of our own take the prefix of the repository (`quiver_quest`); a mirror of a
 Rust crate keeps the crate's name (Grim World, D-126). Names are confirmed at gate A-G1 with
