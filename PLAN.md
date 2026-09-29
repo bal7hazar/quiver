@@ -46,4 +46,6 @@ After three fix loops on one lot, the orchestrator escalates to the project mana
 **Launcher**: `scripts/agent.sh` follows the game's, the reference of the three launchers: the
 commit of the game's `scripts/agent.sh` that its CHANGELOG marks as "launcher reference" after a
 passed audit. The orchestrator reads it at its check-ins and syncs in one pull request naming the
-commit; a sync never delays a task of the track.
+commit; a sync never delays a task of the track. At the next sync, the profiles also deny `pkill`, `killall`,
+`git clean`, `git worktree prune` and deletions by wildcard outside the worktree (the game's
+OPERATIONS §3, "The machine is shared").
