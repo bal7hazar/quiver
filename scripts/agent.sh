@@ -12,8 +12,8 @@
 # read-only sandbox (codex audits, it never implements). See OPERATIONS.md §4 of bal7hazar/grimworld
 # (the rules of this repository) and docs/briefs/COMMON.md.
 #
-# Shared parts (the agent budget and its count, the launch lock, the emptied secrets) match the
-# game's scripts/agent.sh at bal7hazar/grimworld 44586e6 (#54). The reference is the commit the
+# Shared parts (the agent budget as slot locks, the launch lock, the emptied secrets) match the
+# game's scripts/agent.sh at bal7hazar/grimworld 65425a2 (#60). The reference is the commit the
 # game's CHANGELOG marks as "launcher reference" after a passed audit: the orchestrator reads it at
 # its check-ins and syncs in one pull request naming the commit.
 #
@@ -23,7 +23,10 @@
 #   scripts/agent.sh wait <task>         block until the agent of <task> has exited
 #   scripts/agent.sh sid <task>          codex session id of <task> (for `resume`)
 #   scripts/agent.sh model <task>        the model that actually ran, as the CLI recorded it
-#   scripts/agent.sh thresholds          may an agent start now? (load and memory; exit 4 if not)
+#   scripts/agent.sh thresholds          may an agent start now? (load, memory, a free total slot and
+#                                        a free slot of this track, the waiting marker; exit 4 if not)
+#   scripts/agent.sh slots               who holds each slot (~/orchestrator/slots)
+#   scripts/agent.sh run-in-slots …      the inner shell of a launch, for the tests
 # options:
 #   --dry-run            print what would be launched, launch nothing, need no worktree
 #   --branch <name>      create the worktree from origin/main on branch <name> if it is missing
@@ -36,7 +39,8 @@
 # files, under <main checkout>/.claude/worktrees/:
 #   cli-<task>/            the task worktree
 #   logs/<task>.log        the agent's output; each run ends with a line `exit=<status> <date>`
-#   logs/<task>.unit       the systemd unit (or <task>.pid when detached with setsid)
+#   logs/<task>.unit       the systemd unit (or <task>.pid when detached with setsid), for status and
+#                          wait only: the budget is held by the slots' locks, never read from these
 #   logs/<task>.profile    the profile of the launch, reused by `resume`
 #   logs/<task>.cli        the CLI and the model id asked for, checked against the one that ran
 #   logs/<task>.last.md    codex only: its last message, i.e. the audit report
@@ -124,11 +128,43 @@ reported_model() { # <task>
     paste -sd, - | grep . || echo unknown
 }
 
-# Machine thresholds and agent budget (the game's OPERATIONS §3): no agent starts or resumes
-# while the 5-minute load average is above 12, less than 8 GB of memory is available, or 3 Grim
-# World agents already run across the three tracks (game, map library, quiver). Fixed here on
-# purpose: no variable can relax them. Running agents are never stopped for load.
-MAX_LOAD5=12 MIN_MEM_GB=8 MAX_AGENTS=3
+# Machine thresholds (the game's OPERATIONS §3): no agent starts or resumes while the 5-minute load
+# average is above 12 or less than 8 GB of memory is available. Fixed here on purpose: no
+# variable can relax them. Running agents are never stopped for load.
+MAX_LOAD5=12 MIN_MEM_GB=8
+# The budget (D-118, the game's OPERATIONS §3) is a set of slots, and a slot is a file an agent
+# holds by a kernel lock for as long as it lives: ~/orchestrator/slots/total-1..3 for the budget of
+# 3, and per track game-1, game-2, lib-1, quiver-1. A launch takes one free total slot and one free
+# slot of its track, or refuses; the agent's process takes the two locks itself (`flock -n`) and its
+# children inherit them, so the kernel frees them when the agent's last process ends, however it
+# ends. Nothing is counted by reading processes. TRACK is this launcher's own track. While the game
+# waits (the marker ~/orchestrator/waiting/game, less than 30 minutes old), quiver launches nothing.
+TRACK=quiver
+SLOTS=$HOME/orchestrator/slots
+TOTAL_SLOTS=(total-1 total-2 total-3)
+case $TRACK in
+  grimworld) TRACK_SLOTS=(game-1 game-2) ;;
+  hexmap) TRACK_SLOTS=(lib-1) ;;
+  quiver) TRACK_SLOTS=(quiver-1) ;;
+  *) TRACK_SLOTS=() ;;
+esac
+ALL_SLOTS=(total-1 total-2 total-3 game-1 game-2 lib-1 quiver-1)
+# A slot is free when a non-blocking lock on it can be taken (and released at once); any failure
+# (held, or the file cannot be opened) counts as not free.
+slot_free() { flock -n "$SLOTS/$1" true 2> /dev/null; }
+first_free() { local x; for x in "$@"; do if slot_free "$x"; then echo "$x"; return 0; fi; done; return 1; }
+# $0 of the inner shell is the log file, "$@" the agent command line. The inner shell first takes
+# its two slots (QV_SLOT_TOTAL, QV_SLOT_TRACK) without waiting, on file descriptors 7 and 8 that the
+# agent inherits: the slots stay held while any process of the agent lives. If either is taken it
+# writes `slot-refused` and stops. After the agent, it records the model that actually ran
+# (`model=`), then the exit status. Single quotes on purpose: the inner shell expands them.
+# shellcheck disable=SC2016
+inner='exec 7>> "$QV_SLOT_TOTAL" 8>> "$QV_SLOT_TRACK" || exit 75
+if ! flock -n 7 || ! flock -n 8; then echo "slot-refused $(date -u +%FT%TZ)" >> "$0"; exit 75; fi
+printf "%s\n" "$QV_SLOT_NAME" > "$QV_SLOT_TOTAL"; printf "%s\n" "$QV_SLOT_NAME" > "$QV_SLOT_TRACK"
+"$@" < /dev/null >> "$0" 2>&1; s=$?
+echo "model=$("$QV_AGENT_SH" model "$QV_TASK" 2> /dev/null)" >> "$0"
+echo "exit=$s $(date -u +%FT%TZ)" >> "$0"'
 thresholds_ok() { # prints the reason and returns 1 when a launch must wait
   local load5 mem_kb
   load5=$(cut -d' ' -f2 /proc/loadavg)
@@ -145,83 +181,41 @@ thresholds_ok() { # prints the reason and returns 1 when a launch must wait
     echo "agent.sh: $((mem_kb / 1048576)) GB of memory available, under $MIN_MEM_GB: wait and check again" >&2
     return 1
   fi
-  # The budget, whoever launched the agents (as the game's launcher, bal7hazar/grimworld#48). A
-  # count that cannot be made refuses the launch (fails closed).
-  local units ulist plist dirs detached agents f pid
-  if ! ulist=$(systemctl --user list-units --type=service --no-legend --plain \
-      --state=active,activating,deactivating,reloading 'grimworld-*' 'hexmap-*' 'quiver-*' 2>&1); then
-    echo "agent.sh: cannot list the systemd user units, so the agents cannot be counted: wait and check again" >&2
+  if [ "$TRACK" != grimworld ] && [ -n "$(find "$HOME/orchestrator/waiting/game" -mmin -30 2> /dev/null)" ]; then
+    echo "agent.sh: the game is waiting for a slot (~/orchestrator/waiting/game): wait and check again" >&2
     return 1
   fi
-  units=$(grep -c . <<< "$ulist" || true)
-  # Detached agents (codex audits), one per working directory under the three repositories (a
-  # codex audit runs several processes). Two sources, both failing closed (as the game's launcher
-  # at 44586e6):
-  # - every codex `exec` process, whatever started it: its program is `codex` (the native binary)
-  #   or `node` running `codex.js`, with an `exec` argument; found by scanning /proc;
-  # - the live pids the launchers record (logs/*.pid): a record that cannot be read or holds no pid
-  #   refuses the launch; a live pid whose command line holds its task's log is an agent; one whose
-  #   command line cannot be read counts as an agent; a live pid without its log is a reused pid;
-  #   a records directory that cannot be listed, or a record that is not a regular file, refuses.
-  # A pid whose directory cannot be read counts as an agent.
-  if ! [ -r /proc/self/cmdline ]; then
-    echo "agent.sh: /proc cannot be read, so the agents cannot be counted: wait and check again" >&2
+  if ! mkdir -p "$SLOTS" 2> /dev/null; then
+    echo "agent.sh: the slot directory $SLOTS cannot be created: wait and check again" >&2
     return 1
   fi
-  plist=""
-  local d a0 a1 x argv is_exec cmd
-  for d in /proc/[0-9]*; do
-    argv=()
-    mapfile -d '' -t argv 2> /dev/null < "$d/cmdline" || continue   # gone meanwhile (stderr first: the redirection itself fails)
-    [ "${#argv[@]}" -ge 2 ] || continue
-    a0=${argv[0]##*/} a1=${argv[1]##*/}
-    [[ $a0 == codex || ( $a0 == node && $a1 == codex.js ) ]] || continue
-    is_exec=0
-    for x in "${argv[@]:1}"; do [ "$x" = exec ] && { is_exec=1; break; }; done
-    [ "$is_exec" = 1 ] && plist+=$'\n'"${d#/proc/}"
-  done
-  local dir
-  for dir in "$HOME"/projects/{grimworld,hexx-cairo,quiver}/.claude/worktrees/logs; do
-    [ -e "$dir" ] || [ -L "$dir" ] || continue   # that repository has never launched an agent
-    if ! [ -d "$dir" ] || ! [ -r "$dir" ] || ! [ -x "$dir" ]; then
-      echo "agent.sh: the launch records in $dir cannot be listed, so the agents cannot be counted: check it" >&2
-      return 1
-    fi
-    for f in "$dir"/*.pid; do
-      if ! [ -e "$f" ] && ! [ -L "$f" ]; then continue; fi   # no record: the pattern did not match
-      if ! [ -f "$f" ]; then
-        echo "agent.sh: the launch record $f is not a regular file (a dangling link?), so the agents cannot be counted: check it" >&2
-        return 1
-      fi
-      if ! pid=$(cat "$f" 2> /dev/null) || ! [[ $pid =~ ^[0-9]+$ ]]; then
-        echo "agent.sh: the launch record $f cannot be read or holds no pid, so the agents cannot be counted: check it" >&2
-        return 1
-      fi
-      kill -0 "$pid" 2> /dev/null || continue   # that launch has ended
-      if ! cmd=$(tr '\0' '\n' < "/proc/$pid/cmdline" 2> /dev/null); then
-        plist+=$'\n'"$pid"; continue   # alive, but its identity cannot be read: counted
-      fi
-      grep -qxF -- "${f%.pid}.log" <<< "$cmd" || continue   # a reused pid
-      plist+=$'\n'"$pid"
-    done
-  done
-  dirs=$(while read -r p; do
-      [ -n "$p" ] || continue
-      readlink "/proc/$p/cwd" 2> /dev/null || echo "/projects/quiver/unreadable-$p"
-    done <<< "$plist" | grep -E '/projects/(grimworld|hexx-cairo|quiver)(/|$)' | sort -u || true)
-  detached=$(grep -c . <<< "$dirs" || true)
-  agents=$((units + detached))
-  if [ "$agents" -ge "$MAX_AGENTS" ]; then
-    echo "agent.sh: $agents Grim World agents running ($units units, $detached detached), the budget is $MAX_AGENTS: wait and check again" >&2
+  if ! FREE_TOTAL=$(first_free "${TOTAL_SLOTS[@]}"); then
+    echo "agent.sh: the budget of 3 agents is in use (${TOTAL_SLOTS[*]} held): wait and check again" >&2
     return 1
   fi
-  echo "agent.sh: load $load5, $((mem_kb / 1048576)) GB available, $agents of $MAX_AGENTS agents: a launch may proceed"
+  if [ "${#TRACK_SLOTS[@]}" = 0 ] || ! FREE_TRACK=$(first_free "${TRACK_SLOTS[@]}"); then
+    echo "agent.sh: the $TRACK track is at its cap (${TRACK_SLOTS[*]:-no slot} held): wait and check again" >&2
+    return 1
+  fi
+  echo "agent.sh: load $load5, $((mem_kb / 1048576)) GB available, slots $FREE_TOTAL and $FREE_TRACK free: a launch may proceed"
 }
 
 case "${1:-}" in
   thresholds)
     thresholds_ok || exit 4
     exit 0 ;;
+  slots)   # who holds each slot: the lock decides; the name written inside is for display only
+    mkdir -p "$SLOTS"
+    for x in "${ALL_SLOTS[@]}"; do
+      if slot_free "$x"; then printf '%-9s free\n' "$x"
+      else printf '%-9s held  %s\n' "$x" "$(head -1 "$SLOTS/$x" 2> /dev/null)"; fi
+    done
+    exit 0 ;;
+  run-in-slots)   # run-in-slots <total slot> <track slot> <log> <command…>: the inner shell of a launch (tests)
+    [ $# -ge 5 ] || die "usage: agent.sh run-in-slots <total slot> <track slot> <log> <command…>"
+    mkdir -p "$SLOTS"
+    QV_SLOT_TOTAL=$SLOTS/$2 QV_SLOT_TRACK=$SLOTS/$3 QV_SLOT_NAME="run-in-slots $$" QV_AGENT_SH=$0 QV_TASK=none \
+      exec bash -c "$inner" "$4" "${@:5}" ;;
   status)
     mkdir -p "$L"
     shopt -s nullglob
@@ -240,6 +234,12 @@ case "${1:-}" in
       printf '%-24s %-8s %-10s ran=%-18s last write %s  %s\n' "$t" "$state" \
         "$(cat "$L/$t.profile" 2> /dev/null || echo -)" "$ran" \
         "$(date -u -r "$f" +%FT%TZ)" "$last"
+    done
+    # The slots: held or free by their locks; the name inside is for display only.
+    mkdir -p "$SLOTS"
+    for x in "${ALL_SLOTS[@]}"; do
+      if slot_free "$x"; then echo "slot $x free"
+      else echo "slot $x held $(head -1 "$SLOTS/$x" 2> /dev/null)"; fi
     done
     exit 0 ;;
   model)
@@ -337,13 +337,6 @@ run=(systemd-run --user --unit="$unit" --description="$desc" --collect --quiet
   -p MemoryMax=20G --setenv=HOME="$HOME" --setenv=PATH="$path"
   --setenv=BASH_DEFAULT_TIMEOUT_MS=1800000 --setenv=BASH_MAX_TIMEOUT_MS=3600000
   --setenv=QV_AGENT_SH="$root/scripts/agent.sh" --setenv=QV_TASK="$task")
-# $0 of the inner shell is the log file, "$@" the agent command line. After the agent, it
-# records the model that actually ran (`model=`), then the exit status. Single quotes on
-# purpose: the inner shell of the unit expands them, not this one.
-# shellcheck disable=SC2016
-inner='"$@" < /dev/null >> "$0" 2>&1; s=$?
-echo "model=$("$QV_AGENT_SH" model "$QV_TASK" 2> /dev/null)" >> "$0"
-echo "exit=$s $(date -u +%FT%TZ)" >> "$0"'
 
 if [ "$dry" = 1 ]; then
   echo "# $desc"
@@ -359,7 +352,8 @@ fi
 mkdir -p "$HOME/orchestrator"
 exec 9>> "$HOME/orchestrator/agent-launch.lock"
 flock -w 600 9 || die "the launch lock $HOME/orchestrator/agent-launch.lock is held: try again"
-thresholds_ok || exit 4
+thresholds_ok || exit 4   # sets FREE_TOTAL and FREE_TRACK
+slot_total=$SLOTS/$FREE_TOTAL slot_track=$SLOTS/$FREE_TRACK
 if [ ! -d "$wt" ]; then
   [ -n "$branch" ] || die "no worktree $wt (create it, or pass --branch <type>/<task-id>-<slug>)"
   git -C "$main" fetch -q origin main
@@ -385,7 +379,9 @@ echo "$cli $model_id" > "$L/$task.cli"
 stat -c %s "$L/$task.log" 2> /dev/null > "$L/$task.start" || echo 0 > "$L/$task.start"
 echo "--- $(date -u +%FT%TZ) $desc $cli $model_id $([ "$use_unit" = 1 ] && echo "unit=$unit" || echo setsid)" >> "$L/$task.log"
 rm -f "$L/$task.unit" "$L/$task.pid"
+slot_name="$task ($([ "$use_unit" = 1 ] && echo "unit $unit" || echo setsid), $(date -u +%FT%TZ))"
 if [ "$use_unit" = 1 ]; then
+  run+=(--setenv=QV_SLOT_TOTAL="$slot_total" --setenv=QV_SLOT_TRACK="$slot_track" --setenv=QV_SLOT_NAME="$slot_name")
   "${run[@]}" bash -c "$inner" "$L/$task.log" "${cmd[@]}" 9>&-
   echo "$unit" > "$L/$task.unit"
   echo "$task: started [$label] as systemd user unit $unit, log $L/$task.log"
@@ -397,7 +393,20 @@ else
     LANG="${LANG:-C.UTF-8}" PATH="$path" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
     DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
     BASH_DEFAULT_TIMEOUT_MS=1800000 BASH_MAX_TIMEOUT_MS=3600000 \
+    QV_SLOT_TOTAL="$slot_total" QV_SLOT_TRACK="$slot_track" QV_SLOT_NAME="$slot_name" \
     QV_AGENT_SH="$root/scripts/agent.sh" QV_TASK="$task" nice -n 10 setsid nohup bash -c "$inner" "$L/$task.log" "${cmd[@]}" > /dev/null 2>&1 9>&- &
   echo "$!" > "$L/$task.pid"
   echo "$task: started [$label] detached with setsid, pid $!, log $L/$task.log"
 fi
+# The launch lock is held until the agent holds its two slots, so no other launcher can take them
+# in between; an agent that could not take them wrote `slot-refused` and stopped.
+for _ in $(seq 1 100); do
+  if ! slot_free "$FREE_TOTAL" && ! slot_free "$FREE_TRACK"; then
+    echo "$task: holds slots $FREE_TOTAL and $FREE_TRACK"; exit 0
+  fi
+  if tail -c +$(($(cat "$L/$task.start") + 1)) "$L/$task.log" 2> /dev/null | grep -q '^slot-refused'; then
+    die "$task could not take its slots ($FREE_TOTAL, $FREE_TRACK) and did not start"
+  fi
+  sleep 0.1
+done
+die "$task was started but does not hold its slots after 10 s: check $L/$task.log and the slots (agent.sh status)"
