@@ -1,4 +1,4 @@
-# PENDING — publish `quiver_quest` 0.1.0
+# `quiver_quest` 0.1.0 — published 2026-09-29 (D-138)
 
 | | |
 |---|---|
@@ -73,3 +73,21 @@ per-transaction limit is 1.1 × 10⁹ L2 gas.
   cannot be told apart from a renewal of the same quest in the same interval made by a hook during
   a progress call (the residual accepted under the [decision of the last loop](2026-09-29-ARC-03c-last-loop.md)).
 - `quest_held` returns stale entries until the player's next `accept` prunes them, by design.
+
+## Answer and publication
+
+Go given by the project manager `[Fable 5.1]` in the owner's name on 2026-09-29, **D-138**
+([record in the game](https://github.com/bal7hazar/grimworld/blob/main/docs/decisions/2026-09-29-publish-quiver_quest-0.1.0.md),
+`6e7393a`), for that package, that version, that commit and that archive only.
+
+Published by the orchestrator's session, by hand, on 2026-09-29: a fresh clone at `364462f`,
+`scarb --manifest-path packages/quest/Scarb.toml package` with Scarb 2.19.4 gave sha256
+`494228f198376611f338d75a4c8511cd02eec1bc8ee666c4bd6c7973eeb4379c`, equal to the go's; then
+`scarb … publish` from the same checkout.
+
+| | |
+|---|---|
+| Registry | **https://scarbs.xyz/packages/quiver_quest**, version 0.1.0 |
+| Registry checksum | `sha256:494228f198376611f338d75a4c8511cd02eec1bc8ee666c4bd6c7973eeb4379c` (the index's `cksum`, equal to the approved archive) |
+| Recorded dependencies | `starknet ^2.19.0` (normal), `snforge_std ^0.61.0` (test) |
+| Tag and release | [`quiver_quest-v0.1.0`](https://github.com/bal7hazar/quiver/releases/tag/quiver_quest-v0.1.0), on `364462f`, with the archive attached |

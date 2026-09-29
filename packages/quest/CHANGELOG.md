@@ -10,6 +10,9 @@ Nothing yet.
 
 ## [0.1.0] - 2026-09-29
 
+Published on [scarbs.xyz](https://scarbs.xyz/packages/quiver_quest) from commit `364462f`
+(sha256 `494228f198376611f338d75a4c8511cd02eec1bc8ee666c4bd6c7973eeb4379c`); tag `quiver_quest-v0.1.0`.
+
 The first version: the API accepted at gate A-G1
 ([ARC-01 §3](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-01-quest-achievement.md)), amended by D-135 (every quest is
 accepted before it progresses; a player holds at most 4 quests; progress walks them).

@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 04:50 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 05:00 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -72,9 +72,11 @@ about 10⁹ acceptances by one player), a 48-bit held interval id, whole entries
 ([report](docs/reports/ARC-03c-audit-gpt-6-astra-4.md)) is **PASS WITH FINDINGS**, no major left;
 **#10 merged** (`6e92b2c`, CI green on `main`). Its last minor (stale layout wording and estimates) and
 the ARC-01 sections the lot could not touch are closed by the orchestrator's documentation pull
-request. **Publication of `quiver_quest` 0.1.0 asked** of the project manager (D-132):
-[PENDING-publish-quiver_quest-0.1.0](docs/decisions/PENDING-publish-quiver_quest-0.1.0.md), commit
-`364462f`; nothing is published before the go. The project manager
+request. **`quiver_quest` 0.1.0 is published** on
+[scarbs.xyz](https://scarbs.xyz/packages/quiver_quest) (go of the project manager, D-138;
+[record](docs/decisions/2026-09-29-publish-quiver_quest-0.1.0.md)): commit `364462f`, sha256
+`494228f1…379c`, tag and release `quiver_quest-v0.1.0`. **Next: ARC-04**, `quiver_achievement`
+(titles in event mode, on the game's path). The project manager
 corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
 about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
 what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
@@ -104,7 +106,6 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | | |
 |---|---|
-| Publication of `quiver_quest` 0.1.0 | [PENDING-publish-quiver_quest-0.1.0](docs/decisions/PENDING-publish-quiver_quest-0.1.0.md), to the project manager |
 | ARC-00 | [#1](https://github.com/bal7hazar/quiver/pull/1): the repository's minimum, launcher, build lock, profiles, CI of the tooling and the links. [#3](https://github.com/bal7hazar/quiver/pull/3): every profile denies `scarb publish` and reading the user-level settings (D-128). [#5](https://github.com/bal7hazar/quiver/pull/5): every agent runs with the registry token and the Sepolia variables emptied (port of grimworld#38) |
 | ARC-01 | [#2](https://github.com/bal7hazar/quiver/pull/2) merged: [docs/research/ARC-01-quest-achievement.md](docs/research/ARC-01-quest-achievement.md). ADR-0004 points 3 and 4 all confirmed, ten further defects, the full API, needs A-1 to A-9, cost estimates, the workspace and CI by affected package, twenty questions. `[GPT-6-Sol]` audit: FAIL, FAIL, then PASS WITH FINDINGS after three fix loops; reports archived in [docs/reports/](docs/reports/ARC-01-report.md) |
 | ARC-02 | [#4](https://github.com/bal7hazar/quiver/pull/4) merged: root `Scarb.toml`, `quiver_quest` and `quiver_achievement` skeletons (bounds as constants, one budgeted test each), `cairo.yml` by affected package (base-branch script, fail closed, summary job `cairo`), `scripts/gas.py` (every source test measured and budgeted, `GAS.md` checked), `release.yml` (checks and `scarb package`, no publish), [docs/WORKSPACE.md](docs/WORKSPACE.md). `[GPT-6-Luna]` audit: FAIL, FAIL, then closed by the orchestrator (one finding refuted as a repository limit, D-121); reports in docs/reports |
