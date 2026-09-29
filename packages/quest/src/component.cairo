@@ -1,27 +1,31 @@
-//! The Starknet component of `quiver_quest` (ARC-01 §3.3 to §3.7): storage, events, hooks, the
-//! trusted internal layer, and the optional external ABI with its access control.
+//! The Starknet component of `quiver_quest` (ARC-01 §3.3 to §3.7, amended by D-135): storage,
+//! events, hooks, the trusted internal layer, and the optional external ABI with its access
+//! control.
 //!
 //! **The internal layer is trusted**: `InternalImpl` checks no caller. A consumer calls it from
 //! its own entrypoints, after its own checks. Only the external impls `QuestImpl` and
 //! `QuestViewImpl` check anything, and only when the consumer embeds them.
 //!
-//! Every loop is bounded: batches by `MAX_ENTRIES` (checked first by `batch_merge`), pages by
-//! `MAX_PAGES`, the quests of a page by `QUESTS_PER_PAGE`, tasks by `MAX_TASKS`, conditions by
-//! `MAX_CONDITIONS`.
+//! **Every quest is accepted before it progresses** (D-135). A player holds at most `MAX_HELD`
+//! quests, in a list of at most `HELD_SLOTS` slots; progress walks that list, not the quests of
+//! the reported tasks, so the cost of a call depends on the held quests only.
+//!
+//! Every loop is bounded: batches by `MAX_ENTRIES` (checked first by `batch_merge`), the held
+//! list by `HELD_SLOTS` slots of 2 entries (`MAX_HELD_LIMIT`), tasks by `MAX_TASKS`, conditions
+//! by `MAX_CONDITIONS`.
 
 #[starknet::component]
 pub mod QuestComponent {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
-    use crate::constants::{MAX_PAGES, QUESTS_PER_PAGE};
+    use crate::constants::{HELD_SLOTS, MAX_HELD};
     use crate::errors;
     use crate::interface::{IQuest, IQuestView};
     use crate::logic::{
-        Mode, QuestConditions, QuestDefinition, QuestIdPage, QuestProgress, QuestRecord,
-        QuestSchedule, QuestTask, QuestTasks, TaskProgress, batch_first_position, batch_merge,
-        claim as claim_logic, conditions_span, definition_new, page_pop, page_position, page_push,
-        page_set, progress_add, record_abandon, record_accept, record_complete, record_is_accepted,
-        schedule_interval_id, tasks_span,
+        Mode, QuestConditions, QuestDefinition, QuestHeld, QuestHeldSlot, QuestProgress,
+        QuestRecord, QuestSchedule, QuestTask, QuestTasks, TaskProgress, batch_merge,
+        claim as claim_logic, conditions_span, definition_new, held_contains, held_position,
+        held_remove, held_slot, progress_add, record_complete, schedule_interval_id, tasks_span,
     };
 
     /// Members are prefixed with `Quest_` so that they do not collide in the consumer's storage.
@@ -34,12 +38,12 @@ pub mod QuestComponent {
         pub Quest_tasks: Map<u32, QuestTasks>,
         /// Slot C, key `quest_id`; written only for a quest with conditions.
         pub Quest_conditions: Map<u32, QuestConditions>,
-        /// Live quests using a task, key `(task_id, page)`; pages are contiguous.
-        pub Quest_task_pages: Map<(u32, u8), QuestIdPage>,
         /// Key `(player_id, quest_id, interval_id)`.
         pub Quest_progress: Map<(felt252, u32, u64), QuestProgress>,
         /// Key `(player_id, quest_id)`.
         pub Quest_records: Map<(felt252, u32), QuestRecord>,
+        /// The held list, key `(player_id, slot)`, slots `0..HELD_SLOTS`; contiguous from slot 0.
+        pub Quest_held: Map<(felt252, u8), QuestHeldSlot>,
         pub Quest_reporters: Map<ContractAddress, bool>,
     }
 
@@ -62,7 +66,6 @@ pub mod QuestComponent {
         pub schedule: QuestSchedule,
         pub tasks: Span<QuestTask>,
         pub conditions: Span<u32>,
-        pub needs_accept: bool,
     }
 
     /// `Mode::Event` only; one per merged, non-zero entry.
@@ -147,19 +150,18 @@ pub mod QuestComponent {
     > of InternalTrait<TContractState> {
         /// Validates (`definition_new`), then refuses `'Quest: already defined'` (retired or
         /// not), a condition not defined or retired (`'Quest: invalid condition'`), a condition
-        /// with `0xffff` live dependents (`'Quest: too many dependents'`), and a task whose 4
-        /// pages are full (`'Quest: task full'`). Writes each condition's A (`live_dependents +
-        /// 1`), one page per task, A, B, C (only with conditions); emits `QuestDefined`.
+        /// with `0xffff` live dependents (`'Quest: too many dependents'`). Writes each
+        /// condition's A (`live_dependents + 1`), A, B, C (only with conditions); emits
+        /// `QuestDefined`. Any number of quests may use a task.
         fn define(
             ref self: ComponentState<TContractState>,
             quest_id: u32,
             schedule: QuestSchedule,
             tasks: Span<QuestTask>,
             conditions: Span<u32>,
-            needs_accept: bool,
         ) {
             let (definition, quest_tasks, quest_conditions) = definition_new(
-                quest_id, schedule, tasks, conditions, needs_accept,
+                quest_id, schedule, tasks, conditions,
             );
             assert(!self.Quest_definitions.read(quest_id).defined, errors::ALREADY_DEFINED);
             // Conditions: at most MAX_CONDITIONS, checked by definition_new
@@ -171,34 +173,24 @@ pub mod QuestComponent {
                 prerequisite.live_dependents += 1;
                 self.Quest_definitions.write(condition, prerequisite);
             }
-            // Tasks: at most MAX_TASKS, checked by definition_new
-            for task in tasks {
-                let task_id = *task.task_id;
-                let (index, page) = self.first_open_page(task_id);
-                self.Quest_task_pages.write((task_id, index), page_push(page, quest_id));
-            }
             self.Quest_definitions.write(quest_id, definition);
             self.Quest_tasks.write(quest_id, quest_tasks);
             if definition.condition_count != 0 {
                 self.Quest_conditions.write(quest_id, quest_conditions);
             }
-            self.emit(QuestDefined { quest_id, schedule, tasks, conditions, needs_accept });
+            self.emit(QuestDefined { quest_id, schedule, tasks, conditions });
         }
 
         /// Refuses `'Quest: does not exist'`, `'Quest: retired'`, `'Quest: has live
-        /// dependents'`. Removes the quest from each of its tasks' pages (the last id of the
-        /// last non-empty page fills the hole, so pages stay contiguous), decrements its
-        /// conditions' `live_dependents`, sets `retired`; emits `QuestRetired`. Player data is
-        /// kept: completed intervals stay claimable.
+        /// dependents'`. Decrements its conditions' `live_dependents`, sets `retired`; emits
+        /// `QuestRetired`. Player data is kept: completed intervals stay claimable. The held
+        /// entries of the quest become dead: progress skips them, and each player's next `accept`
+        /// prunes them.
         fn retire(ref self: ComponentState<TContractState>, quest_id: u32) {
             let mut definition = self.Quest_definitions.read(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
             assert(definition.live_dependents == 0, errors::HAS_LIVE_DEPENDENTS);
-            let quest_tasks = self.Quest_tasks.read(quest_id);
-            for task in tasks_span(@quest_tasks, definition.task_count) {
-                self.remove_from_pages(*task.task_id, quest_id);
-            }
             if definition.condition_count != 0 {
                 let conditions = self.Quest_conditions.read(quest_id);
                 for condition in conditions_span(@conditions, definition.condition_count) {
@@ -236,12 +228,14 @@ pub mod QuestComponent {
 
         /// Panics `'Quest: too many entries'` above `MAX_ENTRIES` entries (duplicates and zero
         /// counts included) and `'Quest: invalid task'` on a task id 0. Never reverts for a
-        /// quest-level reason: a quest inactive, locked, not accepted or already completed is
-        /// skipped.
+        /// quest-level reason: a held quest retired, outside the interval of its acceptance, or
+        /// already completed is skipped; a quest not held is not read.
         ///
         /// `Mode::Event`: one `QuestProgressed` per merged, non-zero entry; no read, no write, no
-        /// hook. `Mode::Storage`: each affected progress and record is read and written at most
-        /// once; `QuestCompleted` then `on_quest_complete` per completion, after its writes.
+        /// hook. `Mode::Storage`: walks the player's held list, in the order of acceptance; each
+        /// held quest's progress and record are read and written at most once; `QuestCompleted`
+        /// then `on_quest_complete` per completion, after its writes. The list itself is not
+        /// written.
         ///
         /// The consumer aggregates its results by task and calls this once per player per
         /// transaction: the package cannot see across calls.
@@ -263,76 +257,90 @@ pub mod QuestComponent {
                 return;
             }
             let time = get_block_timestamp();
-            let mut position: u32 = 0;
-            for entry in batch {
-                let task_id = *entry.task_id;
-                // The live quests on the task, read before any of them is processed. The first
-                // page alone when it is not full, as with a few quests per task
-                let first = self.Quest_task_pages.read((task_id, 0));
-                let mut pages: Array<QuestIdPage> = array![first];
-                if first.len == QUESTS_PER_PAGE {
-                    let mut index: u8 = 1;
-                    while index < MAX_PAGES {
-                        let page = self.Quest_task_pages.read((task_id, index));
-                        pages.append(page);
-                        if page.len < QUESTS_PER_PAGE {
-                            break;
-                        }
-                        index += 1;
-                    }
+            // The held quests when the call starts. A hook may accept or abandon: after a hook
+            // has run, each later entry is processed only if the list still holds it, read again
+            // once per hook. An entry accepted by a hook is not in this walk
+            let held = self.held_read(player_id);
+            let mut current = held;
+            let mut hooked = false;
+            let mut stale = false;
+            for entry in held {
+                let entry = *entry;
+                if stale {
+                    current = self.held_read(player_id);
+                    stale = false;
                 }
-                for page in pages {
-                    let QuestIdPage { len, ids } = page;
-                    let mut slot: u8 = 0;
-                    while slot < len {
-                        let quest_id = match slot {
-                            0 => ids.q0,
-                            1 => ids.q1,
-                            2 => ids.q2,
-                            3 => ids.q3,
-                            4 => ids.q4,
-                            5 => ids.q5,
-                            _ => ids.q6,
-                        };
-                        self.progress_quest(player_id, quest_id, batch, position, time);
-                        slot += 1;
-                    }
+                if hooked && !held_contains(current, entry) {
+                    continue;
                 }
-                position += 1;
+                if self.progress_held(player_id, entry, batch, time) {
+                    hooked = true;
+                    stale = true;
+                }
             }
         }
 
-        /// Refuses `'Quest: does not exist'`, `'Quest: retired'`, `'Quest: no accept step'`,
-        /// `'Quest: not active'` (outside the schedule), `'Quest: locked'` (prerequisites not
-        /// met), `'Quest: already accepted'` (in this interval), `'Quest: already completed'`
-        /// (this interval). The acceptance holds until completion, abandon or rollover.
+        /// Refuses, in this order: `'Quest: does not exist'`, `'Quest: retired'`, `'Quest: not
+        /// active'` (outside the schedule), `'Quest: locked'` (prerequisites not met; once met,
+        /// cached in the record), `'Quest: already accepted'` (held and live in this interval),
+        /// `'Quest: already completed'` (this interval), `'Quest: too many held'` (`MAX_HELD`
+        /// live quests held).
+        ///
+        /// Prunes the held list of its dead entries (retired, expired at rollover, completed),
+        /// appends the quest, and writes the slots of the list that changed. The acceptance holds
+        /// until completion, abandon, retirement or rollover.
         fn accept(ref self: ComponentState<TContractState>, player_id: felt252, quest_id: u32) {
             let definition = self.Quest_definitions.read(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
-            assert(definition.needs_accept, errors::NO_ACCEPT_STEP);
-            let interval_id =
-                match schedule_interval_id(@definition.schedule, get_block_timestamp()) {
+            let time = get_block_timestamp();
+            let interval_id = match schedule_interval_id(@definition.schedule, time) {
                 Option::Some(interval_id) => interval_id,
                 Option::None => core::panic_with_felt252(errors::NOT_ACTIVE),
             };
-            let mut record = self.Quest_records.read((player_id, quest_id));
-            if definition.condition_count != 0 && !record.unlocked {
-                assert(
-                    self.prerequisites_are_met(player_id, quest_id, definition.condition_count),
-                    errors::LOCKED,
-                );
-                record.unlocked = true;
+            let record_key = (player_id, quest_id);
+            let mut unlock: Option<QuestRecord> = Option::None;
+            if definition.condition_count != 0 {
+                let record = self.Quest_records.read(record_key);
+                if !record.unlocked {
+                    assert(
+                        self.prerequisites_are_met(player_id, quest_id, definition.condition_count),
+                        errors::LOCKED,
+                    );
+                    unlock = Option::Some(QuestRecord { unlocked: true, ..record });
+                }
             }
-            assert(!record_is_accepted(@record, interval_id), errors::ALREADY_ACCEPTED);
-            let progress = self.Quest_progress.read((player_id, quest_id, interval_id));
-            assert(!progress.completed, errors::ALREADY_COMPLETED);
-            self.Quest_records.write((player_id, quest_id), record_accept(record, interval_id));
+            let held = self.held_read(player_id);
+            let completed = self.Quest_progress.read((player_id, quest_id, interval_id)).completed;
+            if let Option::Some(position) = held_position(held, quest_id) {
+                // Its own entry is live when it is of this interval and not completed: A is
+                // already known not retired
+                assert(
+                    *held[position].interval_id != interval_id || completed,
+                    errors::ALREADY_ACCEPTED,
+                );
+            }
+            assert(!completed, errors::ALREADY_COMPLETED);
+            // Keep the live entries of the other quests, in order
+            let mut kept: Array<QuestHeld> = array![];
+            for entry in held {
+                let entry = *entry;
+                if entry.quest_id != quest_id && self.held_is_live(player_id, entry, time) {
+                    kept.append(entry);
+                }
+            }
+            assert(kept.len() < MAX_HELD.into(), errors::TOO_MANY_HELD);
+            kept.append(QuestHeld { quest_id, interval_id });
+            self.held_write(player_id, held, kept.span());
+            if let Option::Some(record) = unlock {
+                self.Quest_records.write(record_key, record);
+            }
         }
 
         /// Refuses `'Quest: does not exist'`, `'Quest: retired'`, `'Quest: not active'`,
-        /// `'Quest: not accepted'` (no acceptance in the current interval). The counts of the
-        /// interval are kept.
+        /// `'Quest: not accepted'` (not held in the current interval, or that interval is
+        /// completed). Removes the quest from the held list; the later entries move up. The
+        /// counts of the interval are kept.
         fn abandon(ref self: ComponentState<TContractState>, player_id: felt252, quest_id: u32) {
             let definition = self.Quest_definitions.read(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
@@ -342,8 +350,17 @@ pub mod QuestComponent {
                 Option::Some(interval_id) => interval_id,
                 Option::None => core::panic_with_felt252(errors::NOT_ACTIVE),
             };
-            let record = self.Quest_records.read((player_id, quest_id));
-            self.Quest_records.write((player_id, quest_id), record_abandon(record, interval_id));
+            let held = self.held_read(player_id);
+            let position = match held_position(held, quest_id) {
+                Option::Some(position) => position,
+                Option::None => core::panic_with_felt252(errors::NOT_ACCEPTED),
+            };
+            assert(*held[position].interval_id == interval_id, errors::NOT_ACCEPTED);
+            assert(
+                !self.Quest_progress.read((player_id, quest_id, interval_id)).completed,
+                errors::NOT_ACCEPTED,
+            );
+            self.held_write(player_id, held, held_remove(held, position));
         }
 
         /// Refuses `'Quest: not completed'`, `'Quest: already claimed'`. Writes the progress and
@@ -397,7 +414,7 @@ pub mod QuestComponent {
             self.Quest_progress.read((player_id, quest_id, interval_id))
         }
 
-        /// The raw record; use `is_accepted` to know whether a quest is accepted.
+        /// The record: completions, claims, and the cached unlock.
         fn record_of(
             self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
         ) -> QuestRecord {
@@ -414,7 +431,7 @@ pub mod QuestComponent {
         }
 
         /// Panics `'Quest: does not exist'`. True without conditions or once cached; otherwise
-        /// evaluates the prerequisites. Writes nothing: the next progress or accept caches it.
+        /// evaluates the prerequisites. Writes nothing: `accept` caches it.
         fn is_unlocked(
             self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
         ) -> bool {
@@ -427,8 +444,8 @@ pub mod QuestComponent {
             self.prerequisites_are_met(player_id, quest_id, definition.condition_count)
         }
 
-        /// False for a quest not defined or retired, and outside the schedule; otherwise
-        /// accepted in the current interval.
+        /// False for a quest not defined or retired, and outside the schedule; otherwise held in
+        /// the current interval, and that interval not completed.
         fn is_accepted(
             self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
         ) -> bool {
@@ -436,12 +453,19 @@ pub mod QuestComponent {
             if !definition.defined || definition.retired {
                 return false;
             }
-            match schedule_interval_id(@definition.schedule, get_block_timestamp()) {
-                Option::Some(interval_id) => record_is_accepted(
-                    @self.Quest_records.read((player_id, quest_id)), interval_id,
-                ),
-                Option::None => false,
-            }
+            let interval_id =
+                match schedule_interval_id(@definition.schedule, get_block_timestamp()) {
+                Option::Some(interval_id) => interval_id,
+                Option::None => { return false; },
+            };
+            let entry = QuestHeld { quest_id, interval_id };
+            held_contains(self.held_read(player_id), entry)
+                && !self.Quest_progress.read((player_id, quest_id, interval_id)).completed
+        }
+
+        /// The player's held entries, in the order of acceptance, live or dead (not yet pruned).
+        fn held_of(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
+            self.held_read(player_id)
         }
     }
 
@@ -452,96 +476,108 @@ pub mod QuestComponent {
         impl Hooks: QuestHooksTrait<TContractState>,
         +Drop<TContractState>,
     > of PrivateTrait<TContractState> {
-        /// Step 2.2 of `progress_many` (ARC-01 §3.5) for one quest reached at `position` of the
-        /// merged `batch`.
-        fn progress_quest(
+        /// One held entry of `progress_many` (ARC-01 §3.5). Returns whether a hook ran.
+        fn progress_held(
             ref self: ComponentState<TContractState>,
             player_id: felt252,
-            quest_id: u32,
+            entry: QuestHeld,
             batch: Span<TaskProgress>,
-            position: u32,
             time: u64,
-        ) {
-            // 1. B; a quest reached at a later entry was handled at its first one. A quest of one
-            // task (t1 unused) is on this task's page only, so this entry is its first position
-            // and its only count: neither needs a scan of the batch
-            let quest_tasks = self.Quest_tasks.read(quest_id);
-            let single = quest_tasks.t1.task_id == 0;
-            if !single && batch_first_position(batch, @quest_tasks) != Option::Some(position) {
-                return;
-            }
-            // 2. A; skip a quest retired since the pages were read (a hook of an earlier quest
-            // of this call may retire it: page removal alone does not stop this call), then
-            // outside the schedule
+        ) -> bool {
+            let QuestHeld { quest_id, interval_id } = entry;
+            // 1. A; skip a retired quest (a hook of an earlier quest of this call may retire it),
+            // then an acceptance of another interval (expired at rollover) or outside the
+            // schedule
             let definition = self.Quest_definitions.read(quest_id);
             if definition.retired {
-                return;
+                return false;
             }
-            let interval_id = match schedule_interval_id(@definition.schedule, time) {
-                Option::Some(interval_id) => interval_id,
-                Option::None => { return; },
-            };
-            // 3. R, only for acceptance or prerequisites
-            let record_key = (player_id, quest_id);
-            let mut record = QuestRecord {
-                completions: 0, claims: 0, unlocked: false, active: false, accepted_interval: 0,
-            };
-            let mut record_read = false;
-            let mut record_marked = false;
-            if definition.needs_accept || definition.condition_count != 0 {
-                record = self.Quest_records.read(record_key);
-                record_read = true;
-                if definition.needs_accept && !record_is_accepted(@record, interval_id) {
-                    return;
-                }
-                if definition.condition_count != 0 && !record.unlocked {
-                    if !self
-                        .prerequisites_are_met(player_id, quest_id, definition.condition_count) {
-                        return;
-                    }
-                    record.unlocked = true;
-                    record_marked = true;
-                }
+            if schedule_interval_id(@definition.schedule, time) != Option::Some(interval_id) {
+                return false;
             }
-            // 4. P; skip once completed in this interval
+            // 2. P; skip once completed in this interval
             let progress_key = (player_id, quest_id, interval_id);
             let progress = self.Quest_progress.read(progress_key);
             if progress.completed {
-                return;
+                return false;
             }
-            // 5. Every batched count of the quest's tasks at once
-            let counts = if single {
-                batch.slice(position, 1)
-            } else {
-                batch
-            };
+            // 3. B, and every batched count of the quest's tasks at once
+            let quest_tasks = self.Quest_tasks.read(quest_id);
             let (progress, changed, completed) = progress_add(
-                progress, @quest_tasks, definition.task_count, counts,
+                progress, @quest_tasks, definition.task_count, batch,
             );
-            if !changed && !record_marked {
-                return;
+            if !changed {
+                return false;
             }
-            // 6. The record on completion
-            if completed {
-                if !record_read {
-                    record = self.Quest_records.read(record_key);
+            // 4. One write each: P, and R on completion
+            self.Quest_progress.write(progress_key, progress);
+            if !completed {
+                return false;
+            }
+            let record_key = (player_id, quest_id);
+            let record = record_complete(self.Quest_records.read(record_key));
+            self.Quest_records.write(record_key, record);
+            // 5. Event, then hook, after the writes
+            self.emit(QuestCompleted { player_id, quest_id, interval_id });
+            Hooks::on_quest_complete(ref self, player_id, quest_id, interval_id, record.completions);
+            true
+        }
+
+        /// Whether a held entry is live at `time`: its quest is not retired, `time` is in the
+        /// entry's interval, and that interval is not completed. Reads A, then P only when the
+        /// interval matches.
+        fn held_is_live(
+            self: @ComponentState<TContractState>, player_id: felt252, entry: QuestHeld, time: u64,
+        ) -> bool {
+            let QuestHeld { quest_id, interval_id } = entry;
+            let definition = self.Quest_definitions.read(quest_id);
+            if definition.retired
+                || schedule_interval_id(@definition.schedule, time) != Option::Some(interval_id) {
+                return false;
+            }
+            !self.Quest_progress.read((player_id, quest_id, interval_id)).completed
+        }
+
+        /// The held list: slots read in order while full, at most `HELD_SLOTS`. A slot whose
+        /// `e1` is empty ends the list.
+        fn held_read(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
+            let mut held: Array<QuestHeld> = array![];
+            let mut slot: u8 = 0;
+            while slot < HELD_SLOTS {
+                let QuestHeldSlot { e0, e1 } = self.Quest_held.read((player_id, slot));
+                if e0.quest_id == 0 {
+                    break;
                 }
-                record = record_complete(record);
-                record_marked = true;
+                held.append(e0);
+                if e1.quest_id == 0 {
+                    break;
+                }
+                held.append(e1);
+                slot += 1;
             }
-            // 7. One write each
-            if changed {
-                self.Quest_progress.write(progress_key, progress);
-            }
-            if record_marked {
-                self.Quest_records.write(record_key, record);
-            }
-            // 8. Event, then hook, after the writes
-            if completed {
-                self.emit(QuestCompleted { player_id, quest_id, interval_id });
-                Hooks::on_quest_complete(
-                    ref self, player_id, quest_id, interval_id, record.completions,
-                );
+            held.span()
+        }
+
+        /// Writes the slots of `after` that differ from those of `before`, the list as read: an
+        /// unchanged slot is not written.
+        fn held_write(
+            ref self: ComponentState<TContractState>,
+            player_id: felt252,
+            before: Span<QuestHeld>,
+            after: Span<QuestHeld>,
+        ) {
+            let len = if before.len() > after.len() {
+                before.len()
+            } else {
+                after.len()
+            };
+            let mut slot: u32 = 0;
+            while 2 * slot < len {
+                let value = held_slot(after, slot);
+                if held_slot(before, slot) != value {
+                    self.Quest_held.write((player_id, slot.try_into().unwrap()), value);
+                }
+                slot += 1;
             }
         }
 
@@ -562,67 +598,6 @@ pub mod QuestComponent {
             }
             true
         }
-
-        /// The first page of `task_id` with room, and its index. Panics `'Quest: task full'`
-        /// when the `MAX_PAGES` pages are full.
-        fn first_open_page(
-            self: @ComponentState<TContractState>, task_id: u32,
-        ) -> (u8, QuestIdPage) {
-            let mut index: u8 = 0;
-            loop {
-                let page = self.Quest_task_pages.read((task_id, index));
-                if page.len < QUESTS_PER_PAGE {
-                    break (index, page);
-                }
-                index += 1;
-                assert(index < MAX_PAGES, errors::TASK_FULL);
-            }
-        }
-
-        /// Removes `quest_id` from the pages of `task_id`, keeping them contiguous: the last id
-        /// of the last non-empty page fills the hole. One write if both are the same page, two
-        /// otherwise.
-        fn remove_from_pages(
-            ref self: ComponentState<TContractState>, task_id: u32, quest_id: u32,
-        ) {
-            // Read the pages in order until one is not full (at most MAX_PAGES)
-            let mut pages: Array<QuestIdPage> = array![];
-            let mut hole: Option<(u8, u8)> = Option::None;
-            let mut index: u8 = 0;
-            while index < MAX_PAGES {
-                let page = self.Quest_task_pages.read((task_id, index));
-                pages.append(page);
-                if hole.is_none() {
-                    if let Option::Some(position) = page_position(@page, quest_id) {
-                        hole = Option::Some((index, position));
-                    }
-                }
-                if page.len < QUESTS_PER_PAGE {
-                    break;
-                }
-                index += 1;
-            }
-            // A live quest is on each of its tasks' pages
-            let (hole_index, hole_position) = hole.unwrap();
-            // The last non-empty page: the last read, or the one before it when that is empty
-            let mut last_index: u8 = pages.len().try_into().unwrap() - 1;
-            if *pages[last_index.into()].len == 0 {
-                last_index -= 1;
-            }
-            let (last_page, moved) = page_pop(*pages[last_index.into()]);
-            if last_index == hole_index {
-                let page = if moved == quest_id {
-                    last_page
-                } else {
-                    page_set(last_page, hole_position, moved)
-                };
-                self.Quest_task_pages.write((task_id, hole_index), page);
-            } else {
-                let page = page_set(*pages[hole_index.into()], hole_position, moved);
-                self.Quest_task_pages.write((task_id, hole_index), page);
-                self.Quest_task_pages.write((task_id, last_index), last_page);
-            }
-        }
     }
 
     /// The access-checked ABI (ARC-01 §3.6), optional to embed.
@@ -640,10 +615,9 @@ pub mod QuestComponent {
             schedule: QuestSchedule,
             tasks: Span<QuestTask>,
             conditions: Span<u32>,
-            needs_accept: bool,
         ) {
             assert(Hooks::authorize_admin(@self, get_caller_address()), errors::NOT_ADMIN);
-            InternalTrait::define(ref self, quest_id, schedule, tasks, conditions, needs_accept);
+            InternalTrait::define(ref self, quest_id, schedule, tasks, conditions);
         }
 
         /// `authorize_admin(caller)` or `'Quest: not admin'`.
@@ -765,6 +739,10 @@ pub mod QuestComponent {
             self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
         ) -> bool {
             self.is_accepted(player_id, quest_id)
+        }
+
+        fn quest_held(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
+            self.held_of(player_id)
         }
 
         fn quest_is_reporter(

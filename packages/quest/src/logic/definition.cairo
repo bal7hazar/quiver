@@ -19,7 +19,6 @@ pub fn definition_new(
     schedule: QuestSchedule,
     tasks: Span<QuestTask>,
     conditions: Span<u32>,
-    needs_accept: bool,
 ) -> (QuestDefinition, QuestTasks, QuestConditions) {
     assert(quest_id != 0, errors::INVALID_ID);
     schedule_validate(@schedule);
@@ -29,7 +28,6 @@ pub fn definition_new(
         schedule,
         task_count: tasks.len().try_into().unwrap(),
         condition_count: conditions.len().try_into().unwrap(),
-        needs_accept,
         defined: true,
         retired: false,
         live_dependents: 0,

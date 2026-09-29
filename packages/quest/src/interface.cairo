@@ -3,7 +3,8 @@
 
 use starknet::ContractAddress;
 use crate::logic::{
-    Mode, QuestDefinition, QuestProgress, QuestRecord, QuestSchedule, QuestTask, TaskProgress,
+    Mode, QuestDefinition, QuestHeld, QuestProgress, QuestRecord, QuestSchedule, QuestTask,
+    TaskProgress,
 };
 
 /// The access-checked entrypoints (§3.6): `define`, `retire` and `set_reporter` need
@@ -17,7 +18,6 @@ pub trait IQuest<TState> {
         schedule: QuestSchedule,
         tasks: Span<QuestTask>,
         conditions: Span<u32>,
-        needs_accept: bool,
     );
     fn retire(ref self: TState, quest_id: u32);
     fn set_reporter(ref self: TState, reporter: ContractAddress, allowed: bool);
@@ -41,5 +41,8 @@ pub trait IQuestView<TState> {
     fn quest_current_interval(self: @TState, quest_id: u32) -> Option<u64>;
     fn quest_is_unlocked(self: @TState, player_id: felt252, quest_id: u32) -> bool;
     fn quest_is_accepted(self: @TState, player_id: felt252, quest_id: u32) -> bool;
+    /// The player's held entries in the order of acceptance, including dead ones not yet pruned
+    /// by an `accept`; `quest_is_accepted` tells whether one is live.
+    fn quest_held(self: @TState, player_id: felt252) -> Span<QuestHeld>;
     fn quest_is_reporter(self: @TState, reporter: ContractAddress) -> bool;
 }
