@@ -71,7 +71,11 @@ Bash(gh pr comment*)
 !Bash(gh pr merge*)
 !Bash(gh pr close*)
 !Bash(gh api*)
-!Bash(gh release*)
+# Releases are the orchestrator's; reading them (`gh release view`, `list`) stays allowed.
+!Bash(gh release create*)
+!Bash(gh release edit*)
+!Bash(gh release delete*)
+!Bash(gh release upload*)
 
 # Never: change the machine's shared toolchain (other programmes use it) or its build shims.
 !Bash(asdf set*)

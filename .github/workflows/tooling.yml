@@ -59,6 +59,11 @@ jobs:
             deny=${out#*--disallowedTools}
             [ "$deny" != "$out" ] || { echo "no deny rules: $profile" >&2; exit 1; }
             grep -qF -- 'Bash\(scarb\ publish\*\)' <<< "$deny"
+            # A flag before the subcommand (`scarb -v publish`, `cargo -v publish`) is denied too (D-132).
+            grep -qF -- 'Bash\(scarb\ \*\ publish\*\)' <<< "$deny"
+            grep -qF -- 'Bash\(cargo\ \*\ publish\*\)' <<< "$deny"
+            # Reading releases stays allowed: no deny rule covers `gh release view` or `list`.
+            if grep -qE -- 'Bash\\\(gh\\ release(\\\*|\\\)|\\ view|\\ list)' <<< "$deny"; then echo "gh release reads denied: $profile" >&2; exit 1; fi
             grep -qF -- 'Read\(~/.claude/\*\*\)' <<< "$deny"
             grep -qF -- 'Bash\(printenv\*\)' <<< "$deny"
           done
