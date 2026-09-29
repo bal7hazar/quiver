@@ -140,7 +140,8 @@ pub struct TaskProgress {
 }
 
 // Packing. Every field is put at its offset by a multiplication on felts and read back by a
-// division with remainder on a `u128` limb; no field straddles bit 128.
+// division with remainder on a `u128` limb; no field straddles bit 128 but the held list's
+// counter, packed in two parts (see `QuestHeldSlot`).
 //
 // A field narrower than its Cairo type (`task_count`, `condition_count`) is checked against its
 // bound before packing, so that it never spills into its neighbour: the layout of §3.3 holds

@@ -74,7 +74,8 @@ pub const POW2: [u128; 128] = [
 /// Why `u256` appears here: converting a felt to `u256` is the `u128s_from_felt252` libfunc and
 /// nothing else, and it is the only public way in the corelib to split a felt into its limbs.
 /// No `u256` arithmetic is done; the fields are then read from the limbs with `u128`
-/// division and remainder. No field of §3.3 straddles bit 128.
+/// division and remainder. No field of §3.3 straddles bit 128, except the held list's counter
+/// (`QuestHeldSlot::counter`, [110, 140)), which is split in two parts.
 #[inline(always)]
 pub fn split(value: felt252) -> (u128, u128) {
     let u256 { low, high } = value.into();

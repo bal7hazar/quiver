@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 03:50 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 04:25 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -68,8 +68,11 @@ left by that pass blocks the merge and goes back to the project manager. **The l
 03:37 UTC, CI green, 423 tests within budget): a 30-bit acceptance number and counter (a wrap needs
 about 10⁹ acceptances by one player), a 48-bit held interval id, whole entries compared again, the
 16-bit wrap case pinned as a regression; worst calls re-measured, all under 20M (6.21M at H = 4;
-15.06M at H = 8 with a one-slot hook; the game's use 4.55M). The narrow `[GPT-6-Astra]` pass waits
-for a slot. The project manager
+15.06M at H = 8 with a one-slot hook; the game's use 4.55M). The narrow `[GPT-6-Astra]` pass
+([report](docs/reports/ARC-03c-audit-gpt-6-astra-4.md)) is **PASS WITH FINDINGS**, no major left;
+**#10 merged** (`6e92b2c`, CI green on `main`). Its last minor (stale layout wording and estimates) and
+the ARC-01 sections the lot could not touch are closed by the orchestrator's documentation pull
+request. **Next: the publication request of `quiver_quest` 0.1.0** to the project manager (D-132). The project manager
 corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
 about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
 what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
@@ -103,14 +106,13 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 | ARC-01 | [#2](https://github.com/bal7hazar/quiver/pull/2) merged: [docs/research/ARC-01-quest-achievement.md](docs/research/ARC-01-quest-achievement.md). ADR-0004 points 3 and 4 all confirmed, ten further defects, the full API, needs A-1 to A-9, cost estimates, the workspace and CI by affected package, twenty questions. `[GPT-6-Sol]` audit: FAIL, FAIL, then PASS WITH FINDINGS after three fix loops; reports archived in [docs/reports/](docs/reports/ARC-01-report.md) |
 | ARC-02 | [#4](https://github.com/bal7hazar/quiver/pull/4) merged: root `Scarb.toml`, `quiver_quest` and `quiver_achievement` skeletons (bounds as constants, one budgeted test each), `cairo.yml` by affected package (base-branch script, fail closed, summary job `cairo`), `scripts/gas.py` (every source test measured and budgeted, `GAS.md` checked), `release.yml` (checks and `scarb package`, no publish), [docs/WORKSPACE.md](docs/WORKSPACE.md). `[GPT-6-Luna]` audit: FAIL, FAIL, then closed by the orchestrator (one finding refuted as a repository limit, D-121); reports in docs/reports |
 | ARC-03a | [#6](https://github.com/bal7hazar/quiver/pull/6) merged: `quiver_quest::logic`, types, one-felt packing with field-width and reserved-bit checks, pure functions and errors of the accepted API; 166 tests (36 benchmarks) with budgets; worst case of `batch_merge` 753 k L2 gas (a late duplicate among 16 entries). Reports in docs/reports |
+| ARC-03c | [#10](https://github.com/bal7hazar/quiver/pull/10) merged: `quiver_quest` 0.1.0, the component on the player's held quests (D-135): acceptance mandatory, at most 4 held, 30-bit acceptance numbers, held-list slots kept; worst calls measured under 20M (6.21M at H = 4); 423 tests within budget. Four fix loops (the fourth an exception of the project manager); `[GPT-6-Astra]` four passes, the last PASS WITH FINDINGS. Reports in docs/reports |
 
 ## Agents
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
 | ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
-| ARC-03c quest held list | `quiver-ARC-03c-025442` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Last loop done |
-| ARC-03c audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | Narrow pass waits for a slot |
 | PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | FAIL (findings in the shared code, inherited); #8 merged by decision |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 

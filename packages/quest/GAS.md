@@ -554,19 +554,20 @@ reused instead of being zeroed.
   which the API of A-G1 allows for any completed interval. That is not adopted here, and is an
   open question.
 
-Measured against the zeroing design (the code of fix loop 1, `94b6d5d`), L2 gas:
+Measured against the zeroing design (the code of fix loop 1, `94b6d5d`, 16-bit acceptance numbers), L2 gas; the kept design's figures and network estimates are those of the current layout (fix loop 4, 30-bit numbers), whose wider unpack adds about 22 000 to 26 000 to `accept` and `abandon`:
 
 | Event of a player's life | Benchmark | Zeroing design | Kept design | Network, zeroing → kept |
 |---|---|---|---|---|
-| The list grows back into slot 1 (`accept`, 2 other entries held) | `bench_accept_regrow` | 1 084 240 (slot 1 created) | **712 750** (slot 1 overwritten) | ≈ 1 053 500 → ≈ 640 200 |
-| The list shrinks out of slot 1 (`abandon` of the third of three) | `bench_abandon_shrink` | 435 600 in a transaction of its own (33 600 in the test, a zeroing) | 459 470 (slot 1 overwritten with the bit) | ≈ 410 500 → ≈ 418 800 |
+| The list grows back into slot 1 (`accept`, 2 other entries held) | `bench_accept_regrow` | 1 084 240 (slot 1 created) | **712 750** (slot 1 overwritten) | ≈ 1 053 500 → ≈ 662 538 |
+| The list shrinks out of slot 1 (`abandon` of the third of three) | `bench_abandon_shrink` | 435 600 in a transaction of its own (33 600 in the test, a zeroing) | 459 470 (slot 1 overwritten with the bit) | ≈ 410 500 → ≈ 434 364 |
 | `accept` pruning 4 dead entries, K = 7 | `bench_accept_worst_completed` | 1 724 500 in a transaction | 1 760 960 | — |
-| The worst `accept`: the list grows into a slot never used, K = 7 | `bench_accept_growth` | 1 889 960 | 1 921 540 | ≈ 1 853 600 → ≈ 1 862 900 |
+| The worst `accept`: the list grows into a slot never used, K = 7 | `bench_accept_growth` | 1 889 960 | 1 921 540 | ≈ 1 853 600 → ≈ 1 885 222 |
 | **The worst progress call**, H = 4 / H = 8 (fix loop 2, before the fix of loop 3) | `bench_progress_many_worst_held{4,8}` | 6 187 453 / 11 376 913 | **6 182 583 / 11 374 333** | not worse |
 
 **Why the kept design is adopted.**
 
-- **It saves** 393 820 measured (about 421 500 at the network's prices) each time the list grows
+- **It saves** 371 490 measured (about 391 000 at the network's prices; 393 820 before the
+  widening of fix loop 4) each time the list grows
   back into a slot it used before, which happens whenever a player's held count rises again
   past 2.
 - **It costs** about 8 000 to 9 000 per `accept` or `abandon` that writes the list: the bit is

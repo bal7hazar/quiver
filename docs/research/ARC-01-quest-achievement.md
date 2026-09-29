@@ -505,6 +505,9 @@ These are defects of reading and documentation. None needs a test.
 
 ### Also tested, to pin behaviours the game relies on
 
+> **Amended by D-135** (the orchestrator, after ARC-03c): acceptance is mandatory for every quest, so `needs_accept` no longer exists; the cases below that name it hold for every quest, and the page cases are replaced by the held-list cases of ARC-03c. The package's `README.md`,
+> `CHANGELOG.md` and `GAS.md` (`packages/quest/`) are the reference for `quiver_quest` 0.1.0.
+
 | Test | Given | When | Then |
 |---|---|---|---|
 | `quest_daily_interval_aligned_on_utc_midnight` | Q with `start = 0`, `interval = duration = 86 400` | Progress at `86 400 × k − 1` and `86 400 × k` | Interval ids `k − 1` and `k` |
@@ -850,6 +853,9 @@ No other packed type needs a presence bit: a zero `QuestProgress`, `QuestRecord`
 
 ### 3.4 `quiver_quest` — events
 
+> **Amended by D-135** (the orchestrator, after ARC-03c): `QuestDefined` has no `needs_accept` field (acceptance is mandatory). The package's `README.md`,
+> `CHANGELOG.md` and `GAS.md` (`packages/quest/`) are the reference for `quiver_quest` 0.1.0.
+
 Events are kept small: keys for what the indexer filters on, no `time` (the block has it),
 no metadata (§3.9).
 
@@ -871,7 +877,6 @@ pub struct QuestDefined {
     pub schedule: QuestSchedule,
     pub tasks: Span<QuestTask>,
     pub conditions: Span<u32>,
-    pub needs_accept: bool,
 }
 #[derive(Drop, starknet::Event)]
 pub struct QuestProgressed {           // Mode::Event only; one per merged, non-zero entry
@@ -1161,6 +1166,9 @@ exposes it.
 
 ### 3.7 Modes
 
+> **Amended by D-135** (the orchestrator, after ARC-03c): in `Mode::Storage`, only the player's held quests (at most `MAX_HELD`) are progressed, and acceptance is mandatory. The package's `README.md`,
+> `CHANGELOG.md` and `GAS.md` (`packages/quest/`) are the reference for `quiver_quest` 0.1.0.
+
 | | `Mode::Storage` | `Mode::Event` |
 |---|---|---|
 | Reads, writes | As in §3.5 | **None** |
@@ -1175,6 +1183,9 @@ one mode is invisible to the other (test `quest_modes_do_not_mix`). Definitions 
 stored and always emitted, in both modes (Q-7).
 
 ### 3.8 A consumer, sketched (Grim World's persistent contract)
+
+> **Amended by D-135** (the orchestrator, after ARC-03c): the package itself bounds the held quests (`MAX_HELD` = 4) and refuses a fifth with `'Quest: too many held'`; the consumer no longer keeps its own list of accepted quests; `quest_held(player_id)` lists what a player holds. The package's `README.md`,
+> `CHANGELOG.md` and `GAS.md` (`packages/quest/`) are the reference for `quiver_quest` 0.1.0.
 
 ```cairo
 #[starknet::contract]
@@ -1490,6 +1501,9 @@ event-mode titles, both `on_achievement_*` hooks are empty and `authorize_*` ret
 
 ## 4. Against the game's needs A-1 to A-9
 
+> **Amended by D-135** (the orchestrator, after ARC-03c): the row on the 3 active quests is superseded: acceptance is mandatory and the package holds at most `MAX_HELD` = 4 quests per player (A-12); A-10 (16 distinct tasks per call) and A-11 (an acceptance expires at rollover) are the game's answers at A-G1. The package's `README.md`,
+> `CHANGELOG.md` and `GAS.md` (`packages/quest/`) are the reference for `quiver_quest` 0.1.0.
+
 | # | Need | Status | How |
 |---|---|---|---|
 | A-1 | Quests of tasks with a target; one-shot and daily aligned on 00:00 UTC | **Covered** | `QuestTask { task_id, total }`. One-off: `interval = duration = 0`. Daily: `interval = duration = 86 400` with **`start` a multiple of 86 400** (§1.5; the README says so, and a test pins it). Alignment follows `start` (Q-17) |
@@ -1518,6 +1532,9 @@ event-mode titles, both `on_achievement_*` hooks are empty and `authorize_*` ret
 ---
 
 ## 5. Cost
+
+> **Amended by D-135** (the orchestrator, after ARC-03c): §5.1 is amended with the measured figures of ARC-03c; the estimates and the notation below that count task pages (`Pg`, `N` quests per task) describe the design before D-135, whose progress no longer reads pages. The package's `README.md`,
+> `CHANGELOG.md` and `GAS.md` (`packages/quest/`) are the reference for `quiver_quest` 0.1.0.
 
 **All figures in this section are estimates from the layouts, not measurements.** ARC-03 and
 ARC-04 measure them, and each becomes a test budget (docs/CAIRO.md §2).
