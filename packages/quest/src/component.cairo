@@ -21,12 +21,15 @@ pub mod QuestComponent {
     use crate::constants::{ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, HELD_SLOTS, MAX_HELD};
     use crate::errors;
     use crate::interface::{IQuest, IQuestView};
+    pub use crate::events::index::QuestDefined;
     use crate::logic::{
         Mode, QuestConditions, QuestDefinition, QuestHeld, QuestHeldSlot, QuestProgress,
         QuestRecord, QuestSchedule, QuestTask, QuestTasks, TaskProgress, batch_merge,
-        claim as claim_logic, conditions_span, definition_new, held_contains, held_position,
-        held_remove, held_slot, progress_add, record_complete, schedule_interval_id, tasks_span,
+        claim as claim_logic, conditions_span, held_contains, held_position, held_remove,
+        held_slot, progress_add, record_complete, schedule_interval_id, tasks_span,
     };
+    use crate::models::definition::{DefinitionAssert, DefinitionTrait};
+    use crate::store::StoreTrait;
 
     /// Members are prefixed with `Quest_` so that they do not collide in the consumer's storage.
     /// Every value is one felt (layouts in `quiver_quest::logic::types`).
@@ -56,16 +59,6 @@ pub mod QuestComponent {
         QuestClaimed: QuestClaimed,
         QuestRetired: QuestRetired,
         QuestReporterSet: QuestReporterSet,
-    }
-
-    /// Every `define`.
-    #[derive(Drop, PartialEq, Debug, starknet::Event)]
-    pub struct QuestDefined {
-        #[key]
-        pub quest_id: u32,
-        pub schedule: QuestSchedule,
-        pub tasks: Span<QuestTask>,
-        pub conditions: Span<u32>,
     }
 
     /// `Mode::Event` only; one per merged, non-zero entry.
@@ -148,11 +141,11 @@ pub mod QuestComponent {
         impl Hooks: QuestHooksTrait<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Validates (`definition_new`), then refuses `'Quest: already defined'` (retired or
-        /// not), a condition not defined or retired (`'Quest: invalid condition'`), a condition
-        /// with `0xffff` live dependents (`'Quest: too many dependents'`). Writes each
-        /// condition's A (`live_dependents + 1`), A, B, C (only with conditions); emits
-        /// `QuestDefined`. Any number of quests may use a task.
+        /// Validates (`DefinitionTrait::new`), then refuses `'Quest: already defined'` (retired
+        /// or not), a condition not defined or retired (`'Quest: invalid condition'`), a
+        /// condition with `0xffff` live dependents (`'Quest: too many dependents'`). Writes each
+        /// condition's A (`live_dependents + 1`), then the definition through the store (A, B, C
+        /// only with conditions, and `QuestDefined`). Any number of quests may use a task.
         fn define(
             ref self: ComponentState<TContractState>,
             quest_id: u32,
@@ -160,11 +153,10 @@ pub mod QuestComponent {
             tasks: Span<QuestTask>,
             conditions: Span<u32>,
         ) {
-            let (definition, quest_tasks, quest_conditions) = definition_new(
-                quest_id, schedule, tasks, conditions,
-            );
-            assert(!self.Quest_definitions.read(quest_id).defined, errors::ALREADY_DEFINED);
-            // Conditions: at most MAX_CONDITIONS, checked by definition_new
+            let definition = DefinitionTrait::new(quest_id, schedule, tasks, conditions);
+            self.get_definition(quest_id).assert_does_not_exist();
+            // Conditions: at most MAX_CONDITIONS, checked by DefinitionTrait::new. The status in
+            // their A is not part of the definition model: written here as in 0.1.0 (ARC-07)
             for condition in conditions {
                 let condition = *condition;
                 let mut prerequisite = self.Quest_definitions.read(condition);
@@ -173,12 +165,7 @@ pub mod QuestComponent {
                 prerequisite.live_dependents += 1;
                 self.Quest_definitions.write(condition, prerequisite);
             }
-            self.Quest_definitions.write(quest_id, definition);
-            self.Quest_tasks.write(quest_id, quest_tasks);
-            if definition.condition_count != 0 {
-                self.Quest_conditions.write(quest_id, quest_conditions);
-            }
-            self.emit(QuestDefined { quest_id, schedule, tasks, conditions });
+            self.set_definition(@definition);
         }
 
         /// Refuses `'Quest: does not exist'`, `'Quest: retired'`, `'Quest: has live
