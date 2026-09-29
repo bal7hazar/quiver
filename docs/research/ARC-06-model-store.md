@@ -7,8 +7,9 @@
 | Rule | [CAIRO.md](../CAIRO.md) §7 and §8 (the owner's rule D-143) |
 | Reference | `cartridge-gg/arcade` at `c53fadc`, `packages/quest/src/`: `models/definition.cairo`, `models/index.cairo`, `store.cairo`, `events/` |
 | Reference model | [`packages/quest/src/models/definition.cairo`](../../packages/quest/src/models/definition.cairo), with [`models/index.cairo`](../../packages/quest/src/models/index.cairo), [`events/`](../../packages/quest/src/events/) and [`store.cairo`](../../packages/quest/src/store.cairo) |
-| Figures | [`packages/quest/GAS.md`](../../packages/quest/GAS.md#the-store-and-the-definition-model-arc-06-unreleased), snforge 0.61, L2 gas, commit `852f546` (fix loop 1) |
+| Figures | [`packages/quest/GAS.md`](../../packages/quest/GAS.md#the-store-and-the-definition-model-arc-06), snforge 0.61, L2 gas, commit `852f546` (fix loop 1) |
 | Fix loop 1 | The audits of GPT-6-Sol (organisation) and GPT-6-Astra (cost): §1.2, §1.3, §1.4, §4, §5 and §6 changed or added |
+| ARC-07a | §7: optional tracking, and the answers to §5. §1 to §6 keep ARC-06's names: in 0.2.0, `logic::QuestDefinition` is `models::definition::HeadSlot`, `set_definition_status` is `set_status` with the status model, and the tracked `set_x` emits when the consumer tracks the model |
 
 **Summary.**
 
@@ -360,3 +361,100 @@ therefore cannot produce its event: `Tracked::event(@model)` cannot build it fro
 | Achievement definition (`quiver_achievement`, A, B) | `define`, `retire` | `AchievementDefined` (with `points`, not stored); `AchievementRetired` | **Tracked**, once `points` is stored in A's free bits (rule 1). Its `retired` bit is status: an untracked status sharing A, as for quests, with `AchievementRetired` as an action event |
 | Achievement reporters (`quiver_achievement`) | `set_reporter` | `AchievementReporterSet`, on every write | **Tracked**, as quest reporters |
 | Achievement progress (`quiver_achievement`, event mode only) | nothing stored | `AchievementProgressed` | Not a model: an action event |
+
+## 7. Optional tracking, ARC-07a
+
+| | |
+|---|---|
+| Task | ARC-07a ([brief](../briefs/ARC-07a-quest-0.2.0.md)), `[Opus 5.5]`, 2026-09-29 |
+| Rule | The owner's review of ARC-06 (D-147): a model's event is optional for the consumer |
+| Code | [`packages/quest/src/store.cairo`](../../packages/quest/src/store.cairo) (`QuestTracking`, `tracking::TrackAll`, `tracking::TrackNone`, `set_definition`, `set_reporter`) |
+| Figures | [`packages/quest/GAS.md`](../../packages/quest/GAS.md#quiver_quest-020-arc-07a), snforge 0.61, L2 gas |
+
+**The mechanism.** A model's `Tracked<M>` impl (§1.1) says **which** event it has. Whether a
+write **emits** it is the consumer's choice, made at compile time:
+
+```cairo
+// quiver_quest::store
+pub trait QuestTracking<TContractState> {
+    const DEFINITION: bool;   // QuestDefined on define
+    const REPORTER: bool;     // QuestReporterSet on set_reporter
+}
+pub mod tracking {
+    pub impl TrackAll<TContractState> of super::QuestTracking<TContractState> { … true … }
+    pub impl TrackNone<TContractState> of super::QuestTracking<TContractState> { … false … }
+}
+
+fn set_definition<impl Tracking: QuestTracking<TContractState>>(ref self: …, definition: QuestDefinition) {
+    // the writes of A, B, C
+    if Tracking::DEFINITION {
+        HasComponent::emit(ref self, Tracked::event(@definition));
+    }
+}
+```
+
+The component's impls (`InternalImpl`, `QuestImpl`, `QuestViewImpl`) take the choice as an impl
+parameter, like the hooks; the consumer writes `impl QuestTracking = TrackAll<ContractState>;`
+(or `TrackNone`, or an impl of its own that tracks one model and not the other).
+
+**Why the ready impls sit in a module of their own.** In a first build they were next to the
+trait. The compiler looks for impls in the trait's module, found `TrackAll` there as well as the
+consumer's alias, and refused the call as ambiguous (E2313). In `store::tracking` they are found
+only where the consumer names them.
+
+**Both mechanisms, measured first** (`tests/mock_tracking.cairo`, `tests/test_tracking.cairo`: one
+model of one slot, created, each choice in its own contract with its hand-written twins):
+
+| Choice | Mechanism | Store | By hand | Store − hand |
+|---|---|---|---|---|
+| Untracked (`TrackNone`) | the constant, `if Tracking::LOGGED` | 454 530 | 454 530 (the write, no event code) | **0** |
+| Untracked (`TrackNone`) | an emitter impl per model, `Silent` (empty body) | 454 530 | 454 530 | **0** |
+| Tracked (`TrackAll`) | the constant | 499 550 | 499 550 (the write, then `emit`) | **0** |
+| Tracked (`TrackAll`) | an emitter impl per model, `Emit` | 499 550 | 499 550 | **0** |
+
+Each figure is the benchmark minus its contract's baseline (280 260). The untracked write is
+ARC-06's hand-written baseline to the unit (454 530, §4), and the tracked one ARC-06's tracked
+`set` (499 550). **The compiler folds the constant**: the branch and the event code are gone from
+the untracked choice. Both mechanisms meet the criterion; **the constant is adopted**, one trait
+for all the tracked models instead of one impl parameter per model.
+
+**On the package's own tracked models** (`tests/test_store_models.cairo`, `MockDefinitionStore`
+under `TrackAll`, `MockSilentStore` under `TrackNone`):
+
+| Model | Choice | Store | 0.1.0 by hand | Store − hand |
+|---|---|---|---|---|
+| `QuestReporter`, created | `TrackNone` | 454 630 | 454 630 (the write alone) | **0** |
+| `QuestReporter`, created | `TrackAll` | 498 230 | 498 230 (the write, then `emit`) | **0** |
+| `QuestDefinition`, 3 tasks, 7 conditions, A, B, C created | `TrackNone` | 1 497 390 | 1 502 350 (`definition_new`, the three writes) | −4 960 |
+| `QuestDefinition`, the same | `TrackAll` | 1 652 890 | 1 657 450 (the same, then `emit`) | −4 560 |
+
+The reporter is the write alone to the unit when untracked, and the write plus its event (43 600)
+when tracked. The definition through the store is cheaper than 0.1.0's code under both choices:
+`DefinitionTrait::new` validates for less than `definition_new` (ARC-06, §4). Its event costs
+155 500 through the model and 155 100 by hand: the event is built from the model's fields rather
+than from the call's arguments, 4 steps more, on the tracked choice only.
+
+**What the tests check** (§1.4, extended): under `TrackAll`, each tracked `set_x` emits its event
+once per write, created, changed and rewritten unchanged, with 0.1.0's keys and data
+(`track_all_reporter_emits_once_per_write`, `store_set_definition_emits_quest_defined_once`,
+`test_component_events`); under `TrackNone`, nothing, and the same felts are written
+(`track_none_definition_emits_nothing`, `track_none_reporter_emits_nothing`); every untracked
+model emits nothing whatever the choice and writes 0.1.0's layout
+(`untracked_status_emits_nothing`, `untracked_progress_emits_nothing`,
+`untracked_record_emits_nothing`, `untracked_held_slot_emits_nothing`). The component's own
+tests run under `TrackAll`, as 0.1.0 behaves.
+
+**The questions of §5, as ARC-07a answers them.**
+
+1. The status model: `QuestStatus { id, defined, retired, live_dependents }`, untracked, in slot
+   A. A path reads A once (`get_definition_head`) and takes the status from it
+   (`head.status(id)`); `set_status(status, head)` writes the whole of A in one write.
+2. `QuestDefinition` is the model only; slot A is `HeadSlot`, and the other slots `TasksSlot`,
+   `ConditionsSlot`, `ProgressSlot`, `RecordSlot`, `HeldSlot`.
+3. The view `quest_definition` reads A once, then B, and C with conditions, and returns
+   `(HeadSlot, tasks, conditions)`, serialised as in 0.1.0.
+4. `QuestProgressed`, `QuestCompleted`, `QuestClaimed` and `QuestRetired` stay action events,
+   emitted by the component where 0.1.0 emits them, whatever the consumer tracks.
+5. The cost audit's notes are kept: B is read only for a held quest, C only with conditions, R
+   only on completion; A once per path; no model's write emits an action event, and the
+   untracked models emit nothing.

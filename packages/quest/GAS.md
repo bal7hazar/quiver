@@ -508,9 +508,148 @@ L2 gas snforge reports for the test; the budget is its `#[available_gas(l2_gas: 
 | `quiver_quest_integrationtest::test_tracking::track_all_emits_once_per_write` | 1998330 | 2098247 | 2026-09-29 | 54c164e |
 | `quiver_quest_integrationtest::test_tracking::track_none_emits_nothing` | 1632440 | 1714062 | 2026-09-29 | 54c164e |
 
-## The store and the definition model (ARC-06, Unreleased)
+## `quiver_quest` 0.2.0 (ARC-07a)
 
-Written by hand, like the section below; figures from the table above, commit `852f546` (fix loop 1). A cost is
+Written by hand, like the sections below; figures from the table above. A cost is the benchmark
+minus its baseline, both through a dispatcher. "Before" is the table of `6f4d93a` (ARC-06, on
+`main`), which is 0.1.0's for every entrypoint but `define` (0.1.0: 2 590 440). The layout, the
+models and the mechanism are in [docs/research/ARC-06-model-store.md](../../docs/research/ARC-06-model-store.md) §7.
+
+### Optional tracking
+
+`tests/test_tracking.cairo` (`MockTrackAll`, `MockTrackNone`: one model of one slot, created, each
+choice with its hand-written twins in the same contract; baseline 280 260):
+
+| Choice | The constant (`if Tracking::X`) | An emitter impl per model | By hand | Store − hand |
+|---|---|---|---|---|
+| `TrackNone` | 454 530 | 454 530 | 454 530, the write with no event code (`bench_track_none_hand_silent`) | **0** |
+| `TrackAll` | 499 550 | 499 550 | 499 550, the write then `emit` (`bench_track_all_hand_emitted`) | **0** |
+
+The constant is folded: the untracked choice is ARC-06's hand-written untracked write to the unit
+(454 530, `test_store`), the tracked one ARC-06's tracked write (499 550). The constant is adopted.
+
+`tests/test_store_models.cairo`, the package's tracked models (`MockDefinitionStore` under
+`TrackAll`, `MockSilentStore` under `TrackNone`):
+
+| Model | Choice | Benchmarks (baseline) | Store | 0.1.0 by hand | Store − hand |
+|---|---|---|---|---|---|
+| `QuestReporter`, created | `TrackNone` | `bench_store_set_reporter_silent`, `bench_hand_set_reporter_silent` (`baseline_silent_reporter`) | 454 630 | 454 630 | **0** |
+| `QuestReporter`, created | `TrackAll` | `bench_store_set_reporter`, `bench_hand_set_reporter` (`baseline_reporter`) | 498 230 | 498 230 | **0** |
+| `QuestDefinition`, 3 tasks, 7 conditions | `TrackNone` | `bench_store_set_definition_silent_worst`, `bench_hand_set_definition_silent_worst` (`baseline_silent_definition`) | 1 497 390 | 1 502 350 | −4 960 |
+| `QuestDefinition`, the same | `TrackAll` | `bench_store_set_definition_worst`, `bench_hand_set_definition_worst` (`baseline_definition`, `test_store_definition`) | 1 652 890 | 1 657 450 | −4 560 |
+
+The definition is cheaper through the model under both choices: `DefinitionTrait::new` validates
+for less than 0.1.0's `definition_new`, which the tests keep as the hand-written baseline
+(`tests/oracle.cairo`). Its event costs 155 500 through the model and 155 100 by hand.
+
+The component's tests run under `TrackAll`, as 0.1.0 behaves: `define` and `set_reporter` cost
+what they cost before, to the unit (below).
+
+### Every entrypoint, before and after
+
+| Entrypoint | Benchmark (baseline) | Before | 0.2.0 | Difference |
+|---|---|---|---|---|
+| `progress_many`, **the worst**, H = 4, created | `bench_progress_many_worst_held4` (`baseline_progress_many_worst_held4`) | 6 213 063 | **6 205 843** | −7 220 |
+| `progress_many`, H = 4, existing | `bench_progress_many_worst_held4_existing` | 2 997 063 | 2 989 843 | −7 220 |
+| `progress_many`, H = 4, created, hook writes one slot | `bench_progress_many_worst_held4_hook` | 8 027 983 | 8 020 763 | −7 220 |
+| `progress_many`, H = 4, existing, hook writes one slot | `bench_progress_many_worst_held4_existing_hook` | 4 811 983 | 4 804 763 | −7 220 |
+| `progress_many`, H = 8, created | `bench_progress_many_worst_held8` | 11 430 213 | **11 416 073** | −14 140 |
+| `progress_many`, H = 8, existing | `bench_progress_many_worst_held8_existing` | 4 998 213 | 4 984 073 | −14 140 |
+| `progress_many`, H = 8, created, hook writes one slot | `bench_progress_many_worst_held8_hook` | 15 060 053 | **15 045 913** | −14 140 |
+| `progress_many`, H = 8, existing, hook writes one slot | `bench_progress_many_worst_held8_existing_hook` | 8 628 053 | 8 613 913 | −14 140 |
+| `progress_many`, §5.1 witness adapted | `quest_batch_bound_accepted` (`baseline_batch_bound_accepted`) | 5 630 846 | 5 623 626 | −7 220 |
+| `progress_many`, 4 held all completing, 4 entries | `bench_progress_full_list_all_complete` (`baseline_full_list`) | 5 190 634 | 5 183 414 | −7 220 |
+| `progress`, 4 held, one completes | `bench_progress_full_list_one_completes` (`baseline_full_list`) | 2 116 496 | 2 105 066 | −11 430 |
+| `progress`, 4 held, one counts | `bench_progress_full_list_one_counts` (`baseline_full_list`) | 1 404 436 | 1 392 146 | −12 290 |
+| `progress`, 4 held, none in the batch | `bench_progress_full_list_none_counts` (`baseline_full_list`) | 943 726 | 930 626 | −13 100 |
+| `progress`, 1 held, counts | `bench_progress_plain` (`baseline_accepted`) | 837 546 | 835 456 | −2 090 |
+| `progress`, 1 held, completes | `bench_progress_plain_completing` (`baseline_accepted`) | 1 382 646 | 1 381 416 | −1 230 |
+| `progress`, nothing held | `bench_progress_nothing_held` (`baseline_plain`) | 226 756 | 227 256 | +500 |
+| `accept`, **the worst**: grows into a slot never used, K = 7 | `bench_accept_growth` (`baseline_accept_growth`) | 1 921 540 | **1 917 170** | −4 370 |
+| `accept`, grows back into a slot used before | `bench_accept_regrow` (`baseline_accept_regrow`) | 712 750 | 703 980 | −8 770 |
+| `accept`, mixed list, K = 7 | `bench_accept_mixed` (`baseline_accept_mixed`) | 1 684 750 | 1 680 280 | −4 470 |
+| `accept`, 4 dead entries completed, K = 7 | `bench_accept_worst_completed` (`baseline_accept_worst_completed`) | 1 760 960 | 1 755 690 | −5 270 |
+| `accept`, 4 entries expired, K = 7 | `bench_accept_worst_expired` (`baseline_accept_worst_expired`) | 1 599 200 | 1 593 930 | −5 270 |
+| `accept`, a player's first | `bench_accept_plain` (`baseline_plain`) | 778 830 | 769 490 | −9 340 |
+| `abandon`, **the worst**: the first of 4 | `bench_abandon_worst` (`baseline_full_list`) | 574 060 | **564 150** | −9 910 |
+| `abandon`, the third of 3 | `bench_abandon_shrink` (`baseline_three_held`) | 459 470 | 450 860 | −8 610 |
+| `abandon`, the second of 2 | `bench_abandon` (`baseline_two_held`) | 430 750 | 422 370 | −8 380 |
+| `claim` | `bench_claim` (`baseline_completed`) | 364 020 | 364 520 | +500 |
+| `define`, **the worst**: 3 tasks, 7 conditions | `bench_define_worst` (`baseline_define_worst`) | 2 583 680 | **2 583 680** | 0 |
+| `retire`, **the worst**: 7 conditions | `bench_retire_worst` (`baseline_retire_worst`) | 1 003 240 | **1 003 540** | +300 |
+| `set_reporter`, a new reporter | `bench_set_reporter` (`baseline_deployed`) | 608 210 | 608 210 | 0 |
+| `set_reporter`, set again, unchanged | `bench_set_reporter_unchanged` (`baseline_reporter_registered`) | 207 330 | 207 330 | 0 |
+| `progress`, event mode, 1 entry | `bench_progress_event_mode` (`baseline_deployed`) | 212 366 | 212 866 | +500 |
+| `progress_many`, event mode, 16 entries, late collision | `bench_progress_many_event_mode_late_collision` (`baseline_deployed`) | 1 831 823 | 1 831 523 | −300 |
+| `quest_definition`, 3 tasks, 7 conditions | `bench_view_definition_worst` (`baseline_prerequisites`) | 304 400 | 304 500 | +100 |
+| `quest_is_unlocked`, K = 7, not cached | `bench_view_is_unlocked_worst` (`baseline_prerequisites`) | 492 490 | 496 790 | +4 300 |
+| `quest_is_accepted`, full list | `bench_view_is_accepted` (`baseline_prerequisites`) | 332 950 | 333 350 | +400 |
+| `quest_held`, full list | `bench_view_held_full` (`baseline_prerequisites`) | 298 690 | 298 690 | 0 |
+| `quest_progress` + `quest_record` | `bench_view_progress_and_record` (`baseline_prerequisites`) | 288 290 | 289 090 | +800 |
+| `quest_current_interval` | `bench_view_current_interval` (`baseline_prerequisites`) | 160 630 | 160 630 | 0 |
+| `quest_is_reporter` | `bench_view_is_reporter` (`baseline_prerequisites`) | 124 690 | 124 690 | 0 |
+
+Grim World's case (`game_case_three_per_task`, `game_case_two_per_task`): 4 553 406 → 4 546 186
+(−7 220).
+
+**The worst calls are not raised**: `progress_many` is 7 220 cheaper at H = 4 and 14 140 at H = 8,
+`accept` 4 370, `abandon` 9 910; `define` is the same to the unit, and `retire` 300 more (3 steps,
+0.03 %). The walk of the held list is cheaper because `ProgressTrait::add` is inlined (`#[inline]`);
+not inlined, the model's `add`, which takes the model with its keys, cost about 800 more per held
+quest than 0.1.0's `progress_add` (measured: +4 900 at H = 4 before the attribute).
+
+**Where 0.2.0 costs more**, all within noise of the call:
+
+- **+300 to +500**, 3 to 5 steps, on `claim`, `retire`, `progress` with nothing held, and one
+  event-mode entry: a model is built with its keys where 0.1.0 had the bare slot.
+- **`quest_is_unlocked`, +4 300** (0.9 % of the view): seven records are read as models, each
+  with its two keys. It is a view; on `accept`, which runs the same walk, the savings elsewhere
+  win (−4 370 to −9 340).
+- **The grid's dead entries** (below): +640 per held quest completed earlier, +180 per expired
+  one, read and skipped, against −1 700 to −3 500 per quest that counts or is missed.
+
+### The grid (`test_component_grid`), before and after
+
+The call `progress_many(PLAYER, [1..=15, 129], Storage)` minus its seeded baseline:
+
+| H | all complete | all count | none in the batch | all completed earlier | all expired |
+|---|---|---|---|---|---|
+| 1 | 2 234 343 (−2 030) | 1 689 123 (−2 890) | 1 235 053 (−3 700) | 1 100 853 (+380) | 1 056 703 (−80) |
+| 2 | 3 576 433 (−3 760) | 2 430 373 (−5 480) | 1 522 233 (−7 100) | 1 253 833 (+1 060) | 1 165 533 (+140) |
+| 4 | 6 207 063 (−7 220) | 3 859 223 (−10 660) | 2 042 943 (−13 900) | 1 506 143 (+2 420) | 1 329 543 (+580) |
+| 8 | 11 418 413 (−14 140) | 6 667 013 (−21 020) | 3 034 453 (−27 500) | 1 960 853 (+5 140) | 1 607 653 (+1 460) |
+
+### Against the cap
+
+| Worst call | Call, snforge | Created / overwritten | Network estimate | Against 20 M (snforge / network) | Against 1.1 × 10⁹ |
+|---|---|---|---|---|---|
+| H = 4, created, hooks empty | **6 205 843** | 8 / 0 | 6 160 995 | 31 % / 31 % | 0.56 % |
+| H = 4, created, hook writes one slot | **8 020 763** | 12 / 0 | 7 953 491 | 40 % / 40 % | 0.73 % |
+| H = 8, created, hooks empty | **11 416 073** | 16 / 0 | 11 326 377 | 57 % / 57 % | 1.04 % |
+| H = 8, created, hook writes one slot | **15 045 913** | 24 / 0 | 14 911 369 | 75 % / 75 % | 1.37 % |
+| Grim World's use | 4 546 186 | 6 / 2 | 4 462 338 | 23 % / 22 % | 0.41 % |
+
+The reads, writes and events of each call are those of 0.1.0: the store reads and writes the same
+slots, in the same order, and emits the same events under `TrackAll`.
+
+### Budgets
+
+Every budget is `ceil(1.05 × measured)` of this table. The 26 new tests (`test_tracking`,
+`test_store_models`) got theirs, 193 budgets were lowered, and three were raised, each with its
+`// gas: raised` note: `test_record::prerequisites_met_when_each_completed_once`
+(37 080 → 43 680), `test_record::quest_prerequisites_all_required_logic` (27 020 → 30 720) and
+`test_bench::bench_prerequisites_met_seven` (29 700 → 34 800). They build spans of record models,
+each with its two keys, for `RecordTrait::all_completed`, which the component does not call (it
+reads one record at a time; its walk is the one of `quest_is_unlocked` above). The tests of 0.1.0's
+pure functions run the models' code on 0.1.0's slot values through `tests/helpers.cairo`
+(`add_counts`, `is_complete`, `complete`, `claim_both`, `definition_slots`, `held_slot_of`); the
+conversions cost a few steps, within their budgets.
+
+## The store and the definition model (ARC-06)
+
+Written by hand, like the section below; figures of commit `852f546` (fix loop 1). In 0.2.0 the figures of the mechanism and of the
+quest definition are the same to the unit (the table above); the component's are in the section
+above. A cost is
 the benchmark minus its baseline, both through a dispatcher (docs/research/ARC-06-model-store.md).
 
 ### The mechanism, on one slot (`test_store`, `MockModels`)

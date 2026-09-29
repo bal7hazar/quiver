@@ -600,7 +600,7 @@ These are defects of reading and documentation. None needs a test.
 
 | | |
 |---|---|
-| Two layers per package | `logic`: types and pure functions, state in and state out, no storage, tested without a deployment. `component`: storage, events, hooks and access control around `logic` |
+| Two layers per package | `logic`: types and pure functions, state in and state out, no storage, tested without a deployment. `component`: storage, events, hooks and access control around `logic`. **`quiver_quest`, amended by ARC-07a (0.2.0; D-143, D-147)**: no `logic`; the layers of docs/CAIRO.md §7, `models/`, `events/`, `types/`, `helpers/`, one `store`, the `component` (§3.2) |
 | No Dojo, no `graffiti` | `starknet` (Cairo 2.19) only; `snforge_std` as a dev-dependency |
 | Identifiers | `player_id: felt252` (A-3: the game passes an adventurer id or an account). `quest_id`, `achievement_id`, `task_id`: **`u32`** (docs/CAIRO.md §4 "u32 identifiers"; they make packing possible, §5). Id `0` is invalid (the empty-slot sentinel). Open question Q-1 |
 | Time | `u64` seconds from `starknet::get_block_timestamp()`. Interval ids are **`u64`**. `(time - start) / interval <= time < 2^64`, so an id never overflows, whatever the schedule. A `u32` id would overflow after 2^32 intervals: 136 years at `interval = 1`, which a valid schedule allows. Widening costs nothing measurable: ids are storage keys (hashed) or event data (one felt either way), and the record has room for 64 bits (§3.3) |
@@ -618,6 +618,34 @@ These are defects of reading and documentation. None needs a test.
 > quests in a held list; progress walks that list, not the quests of the tasks. `needs_accept`,
 > the task pages and the record's acceptance fields are gone; the held list's types and functions
 > are new.
+
+> **Amended by ARC-07a** (`quiver_quest` 0.2.0; the owner's rule D-143 and review D-147). There
+> is no `quiver_quest::logic`. The types and functions below are 0.1.0's, kept as the record;
+> their behaviour, layouts and error strings are unchanged, and in 0.2.0 they are:
+>
+> | 0.1.0 (`quiver_quest::logic`) | 0.2.0 |
+> |---|---|
+> | `Mode` | `types::mode::Mode` |
+> | `QuestSchedule`; `schedule_validate`, `schedule_is_active`, `schedule_interval_id` | `types::schedule::QuestSchedule`; `ScheduleAssert::assert_valid`, `ScheduleTrait::is_active`, `ScheduleTrait::interval_id` |
+> | `QuestTask` | `types::task::QuestTask`, `TaskAssert::assert_valid` |
+> | `TaskProgress`; `batch_merge`, `batch_count_of`, `batch_first_position` | `types::batch::TaskProgress`; `BatchTrait::merge`, `count_of`, `first_position` (methods of `Span<TaskProgress>`) |
+> | `QuestHeld`, `HELD_EMPTY`; `held_position`, `held_contains`, `held_remove` | `types::held::QuestHeld`, `HELD_EMPTY`; `HeldTrait::position`, `contains`, `remove` (methods of `Span<QuestHeld>`) |
+> | `QuestDefinition` (slot A) | `models::definition::HeadSlot`: slot A, shared by the definition and the status |
+> | `QuestTasks`, `QuestConditions` (slots B, C); `tasks_span`, `tasks_index_of`, `conditions_span` | `models::definition::TasksSlot`, `ConditionsSlot`; `TasksSlotTrait::tasks`, `index_of`, `ConditionsSlotTrait::ids` |
+> | `definition_new` | The model `models::definition::QuestDefinition { id, schedule, tasks, conditions }`: `DefinitionTrait::new` (the same checks, order and strings), `DefinitionStorage::into_slots` (the same A, B, C) |
+> | `QuestProgress` (slot P); `progress_add`, `progress_is_complete` | `models::progress::ProgressSlot`; the model `QuestProgress { player_id, quest_id, interval_id, c0, c1, c2, completed, claimed }`: `ProgressTrait::add`, `is_complete`, `claim` |
+> | `QuestRecord` (slot R); `record_complete`, `prerequisites_met` | `models::record::RecordSlot`; the model `QuestRecord { player_id, quest_id, completions, claims, unlocked }`: `RecordTrait::complete`, `claim`, `unlock`, `has_completed`, `all_completed` |
+> | `claim(progress, record)` | `ProgressTrait::claim` (`'Quest: not completed'`, `'Quest: already claimed'`), then `RecordTrait::claim` (the claim index) |
+> | `QuestHeldSlot` (slot H); `held_slot` | `models::held::HeldSlot`; the model `QuestHeldSlot { player_id, index, e0, e1, counter, kept }`: `HeldSlotTrait::new` |
+> | — (the status bits of A) | The model `models::status::QuestStatus { id, defined, retired, live_dependents }`, untracked, read from the A a path read and written back as the whole of A |
+> | — (the reporter registry) | The model `models::reporter::QuestReporter { reporter, allowed }`, tracked |
+> | The packings `QuestDefinitionPacking`, `QuestTasksPacking`, `QuestConditionsPacking`, `QuestProgressPacking`, `QuestRecordPacking`, `QuestHeldSlotPacking` | `HeadPacking`, `TasksPacking`, `ConditionsPacking` (`models::definition`), `ProgressPacking`, `RecordPacking`, `HeldPacking` (their models' files); the powers of two in `helpers::bits` |
+>
+> Every stored entity is read and written only through `quiver_quest::store` (`get_x`, `set_x`).
+> The tracked models are `QuestDefinition` (`QuestDefined`) and `QuestReporter`
+> (`QuestReporterSet`); whether their writes emit is the consumer's choice at compile time
+> (`store::QuestTracking`, §3.4). The mechanism and its cost: docs/research/ARC-06-model-store.md
+> ("Optional tracking, ARC-07a").
 
 **Types.** All are `Drop, Copy, Serde, PartialEq, Debug`.
 
@@ -798,18 +826,23 @@ Packing is done with `impl … of starknet::storage_access::StorePacking<T, felt
 > **Amended by D-135** (ARC-03c): the task pages are gone, the held list is new, and the layouts
 > of A and R changed.
 
+> **Amended by ARC-07a** (0.2.0): the members, keys and layouts are unchanged; the value types
+> are renamed for their slots (`HeadSlot`, `TasksSlot`, `ConditionsSlot`, `ProgressSlot`,
+> `RecordSlot`, `HeldSlot`, §3.2) and read and written only by the store. Slot A holds two
+> models: the definition's schedule and counts, and the quest's status.
+
 Storage members are prefixed so that they do not collide in the consumer's storage
 (OpenZeppelin's convention). Every value is **one felt** (one storage slot).
 
 ```cairo
 #[storage]
 pub struct Storage {
-    Quest_definitions: Map<u32, QuestDefinition>,            // slot A, key quest_id
-    Quest_tasks: Map<u32, QuestTasks>,                       // slot B, key quest_id
-    Quest_conditions: Map<u32, QuestConditions>,             // slot C, key quest_id
-    Quest_progress: Map<(felt252, u32, u64), QuestProgress>, // key (player_id, quest_id, interval_id)
-    Quest_records: Map<(felt252, u32), QuestRecord>,         // key (player_id, quest_id)
-    Quest_held: Map<(felt252, u8), QuestHeldSlot>,           // key (player_id, slot), slots 0..4
+    Quest_definitions: Map<u32, HeadSlot>,                   // slot A, key quest_id
+    Quest_tasks: Map<u32, TasksSlot>,                        // slot B, key quest_id
+    Quest_conditions: Map<u32, ConditionsSlot>,              // slot C, key quest_id
+    Quest_progress: Map<(felt252, u32, u64), ProgressSlot>,  // key (player_id, quest_id, interval_id)
+    Quest_records: Map<(felt252, u32), RecordSlot>,          // key (player_id, quest_id)
+    Quest_held: Map<(felt252, u8), HeldSlot>,                // key (player_id, slot), slots 0..4
     Quest_reporters: Map<ContractAddress, bool>,
 }
 ```
@@ -890,6 +923,15 @@ No other packed type needs a presence bit: a zero `QuestProgress`, `QuestRecord`
 > **Amended by D-135** (the orchestrator, after ARC-03c): `QuestDefined` has no `needs_accept` field (acceptance is mandatory). The package's `README.md`,
 > `CHANGELOG.md` and `GAS.md` (`packages/quest/`) are the reference for `quiver_quest` 0.1.0.
 
+> **Amended by ARC-07a** (0.2.0; D-147, the owner's second remark): the events, their selectors,
+> keys and data are unchanged; their structs are in `quiver_quest::events` (one file each) and
+> still exported from `QuestComponent`. `QuestDefined` and `QuestReporterSet` are the events of
+> the tracked models `QuestDefinition` and `QuestReporter`: the store emits them on every write
+> **when the consumer tracks the model**, chosen at compile time by its impl of
+> `store::QuestTracking` (`TrackAll`, as 0.1.0, or `TrackNone`, or its own). `QuestProgressed`,
+> `QuestCompleted`, `QuestClaimed` and `QuestRetired` are action events, emitted by the component
+> whatever the choice.
+
 Events are kept small: keys for what the indexer filters on, no `time` (the block has it),
 no metadata (§3.9).
 
@@ -950,6 +992,11 @@ Accept and abandon emit nothing, and the expiry of an acceptance at rollover is 
 > **Amended by D-135** (ARC-03c): `define` loses `needs_accept`; `accept` is required for every
 > quest, checks the prerequisites and the room in the held list; `progress_many` walks the held
 > list; `retire` no longer touches tasks; the view `quest_held` is new.
+
+> **Amended by ARC-07a** (0.2.0): `InternalImpl`, `QuestImpl` and `QuestViewImpl` take a second
+> impl parameter, `impl Tracking: QuestTracking<TContractState>` (§3.4), which the consumer
+> provides as it provides the hooks. The reads return the slots under their 0.2.0 names
+> (`HeadSlot`, `ProgressSlot`, `RecordSlot`), serialised as in 0.1.0.
 
 **Hooks.** The consumer implements this trait, and the component's impls are generic over it:
 
@@ -1026,10 +1073,10 @@ pub impl InternalImpl<
         // panics 'Quest: not reporter'
     // Reads (also used by QuestViewImpl); none writes
     fn definition(self: @ComponentState<TContractState>, quest_id: u32)
-        -> (QuestDefinition, Span<QuestTask>, Span<u32>);   // panics 'Quest: does not exist'
+        -> (HeadSlot, Span<QuestTask>, Span<u32>);   // panics 'Quest: does not exist'
     fn progress_of(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32, interval_id: u64)
-        -> QuestProgress;
-    fn record_of(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32) -> QuestRecord;
+        -> ProgressSlot;
+    fn record_of(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32) -> RecordSlot;
     fn current_interval(self: @ComponentState<TContractState>, quest_id: u32) -> Option<u64>;
     fn is_unlocked(self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32) -> bool;
         // panics 'Quest: does not exist'; true if condition_count == 0 or record.unlocked;
@@ -1156,9 +1203,9 @@ pub trait IQuest<TState> {
 
 #[starknet::interface]
 pub trait IQuestView<TState> {
-    fn quest_definition(self: @TState, quest_id: u32) -> (QuestDefinition, Span<QuestTask>, Span<u32>);
-    fn quest_progress(self: @TState, player_id: felt252, quest_id: u32, interval_id: u64) -> QuestProgress;
-    fn quest_record(self: @TState, player_id: felt252, quest_id: u32) -> QuestRecord;
+    fn quest_definition(self: @TState, quest_id: u32) -> (HeadSlot, Span<QuestTask>, Span<u32>);
+    fn quest_progress(self: @TState, player_id: felt252, quest_id: u32, interval_id: u64) -> ProgressSlot;
+    fn quest_record(self: @TState, player_id: felt252, quest_id: u32) -> RecordSlot;
     fn quest_current_interval(self: @TState, quest_id: u32) -> Option<u64>;
     fn quest_is_unlocked(self: @TState, player_id: felt252, quest_id: u32) -> bool;   // as is_unlocked
     fn quest_is_accepted(self: @TState, player_id: felt252, quest_id: u32) -> bool;   // as is_accepted
@@ -1214,7 +1261,9 @@ exposes it.
 
 A quest must be fed in one mode only. The package cannot tell the two apart, and progress in
 one mode is invisible to the other (test `quest_modes_do_not_mix`). Definitions are always
-stored and always emitted, in both modes (Q-7).
+stored and always emitted, in both modes (Q-7). **Amended by ARC-07a** (0.2.0): always stored;
+emitted when the consumer tracks the definition (`QuestTracking::DEFINITION`, §3.4). A consumer
+that feeds an indexer in `Mode::Event` tracks it.
 
 ### 3.8 A consumer, sketched (Grim World's persistent contract)
 
@@ -1225,13 +1274,16 @@ stored and always emitted, in both modes (Q-7).
 #[starknet::contract]
 mod Persistent {
     use quiver_quest::component::QuestComponent;
-    use quiver_quest::logic::{Mode, TaskProgress};
+    use quiver_quest::types::batch::TaskProgress;   // 0.2.0 (ARC-07a); 0.1.0: quiver_quest::logic
+    use quiver_quest::types::mode::Mode;
     use starknet::{ContractAddress, get_caller_address};
 
     component!(path: QuestComponent, storage: quest, event: QuestEvent);
     #[abi(embed_v0)]
     impl QuestViewImpl = QuestComponent::QuestViewImpl<ContractState>;
     impl QuestInternalImpl = QuestComponent::InternalImpl<ContractState>;
+    // 0.2.0: the tracked models' events, the game's own choice (TrackAll or TrackNone)
+    impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;
 
     #[storage]
     struct Storage {
