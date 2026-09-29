@@ -23,8 +23,8 @@ accepted before it progresses; a player holds at most 4 quests; progress walks t
   - `MAX_HELD = 4` quests a player holds at once;
   - `MAX_HELD_LIMIT = 8` and `HELD_SLOTS = 4`: the held list's layout, and the bound of its walk.
 
-  The worst call the package allows is measured at 6.1 M L2 gas at `MAX_HELD = 4`, and 11.3 M at
-  8 (7.9 M and 14.9 M with a completion hook writing one slot), under the 20 M of the A-G1
+  The worst call the package allows is measured at 6.2 M L2 gas at `MAX_HELD = 4`, and 11.4 M at
+  8 (8.0 M and 15.0 M with a completion hook writing one new slot), under the 20 M of the A-G1
   amendment. Any number of quests may use a task.
 - **Library** `quiver_quest::logic`, pure, without storage (ARC-01 §3.2):
   - the types `Mode`, `QuestSchedule`, `QuestTask`, `QuestDefinition`, `QuestTasks`,
@@ -80,7 +80,10 @@ accepted before it progresses; a player holds at most 4 quests; progress walks t
   prerequisite; the quests a player does not hold are not read. It never writes the list.
   - It skips a held quest retired since the call started, for instance by a hook of an earlier
     quest in the same call: it counts nothing, completes nothing and calls no hook.
-  - It skips a quest a hook abandoned, and does not progress a quest a hook accepted.
+  - It skips a quest a hook abandoned, and does not progress a quest a hook accepted, even one
+    the hook abandoned and accepted again in the same interval: each held entry carries the
+    player's acceptance number (`QuestHeld::acceptance`), from a counter kept in slot 0 of the
+    list (`QuestHeldSlot::counter`), and the call compares whole entries.
 - The prerequisites of a quest are read in order, and the reading stops at the first one never
   completed (`accept`, `quest_is_unlocked`). The results are the same, with fewer reads for a
   locked quest.

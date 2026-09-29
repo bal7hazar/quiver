@@ -138,7 +138,8 @@ A hook may re-enter the component, since the state is written first.
 - A quest completed by a re-entrant `progress` is not completed again by the outer call.
 - The rest of the call that ran a hook skips a quest the hook retired or abandoned.
 - A quest the hook accepted is not progressed by that call: its batch was reported before the
-  acceptance. The next call counts it.
+  acceptance. The next call counts it. This holds for a quest the hook abandons and accepts again
+  in the same interval too: each acceptance has its own number, and the call compares it.
 - A re-entrant `claim` of the claim being made, or `accept` of the quest just completed, is
   refused (`'Quest: already claimed'`, `'Quest: already completed'`). That reverts the whole
   outer call.
@@ -254,16 +255,32 @@ held quest completing, each quest with 3 tasks. Measured through a dispatcher
 
 | Case | L2 gas |
 |---|---|
-| `MAX_HELD` = 4, hooks empty | 6 131 373 |
-| `MAX_HELD` = 4, `on_quest_complete` writing one storage slot | 7 946 293 |
-| 8 held (the layout's limit), hooks empty | 11 279 423 |
-| 8 held, `on_quest_complete` writing one storage slot | 14 909 263 |
-| Grim World's use: 16 entries, 3 quests and a daily contract held and completing, 0 to 2 prerequisites | 5 275 716 (4 471 716 in its test, where `accept` had already changed two of the records) |
+| `MAX_HELD` = 4, hooks empty | 6 187 453 |
+| `MAX_HELD` = 4, `on_quest_complete` writing one new storage slot | 8 002 373 |
+| 8 held (the layout's limit), hooks empty | 11 376 913 |
+| 8 held, `on_quest_complete` writing one new storage slot | 15 006 753 |
+| Grim World's use: 16 entries, 3 quests and a daily contract held and completing, 0 to 2 prerequisites | 4 527 796 |
 
-Each held quest adds at most 1.29 × 10⁶ L2 gas. Most of that is the two storage slots a completed
-quest changes, its progress and its record: a slot changed by a transaction costs about 0.4 × 10⁶.
+**Each held quest adds at most 1.30 × 10⁶ L2 gas.** Most of that is its two storage writes, its
+progress and its record.
+
+- Every write costs about 57 000 L2 gas.
+- A write that **allocates** a storage cell costs about 402 000 more. Allocating means the cell
+  is zero at the start of the transaction and non-zero at its end (Starknet's allocation cost).
+- The worst call allocates both cells of each quest: its first count in the interval and its
+  first completion. A quest completed before costs about 0.4 × 10⁶ less, since its record is
+  updated, not allocated.
+
 The quests a player does not hold cost nothing, however many share the reported tasks. The worst
 call is a property of `MAX_HELD`, not of how many quests use a task.
+
+**Other entrypoints, at their worst** (a transaction of its own):
+
+| Entrypoint | L2 gas |
+|---|---|
+| `accept` (7 prerequisites checked; two allocations: the list's next slot and the record) | 1 889 960 |
+| `abandon` | 538 870 |
+| `claim` | 364 020 |
 
 **The consumer's transaction must fit.** The whole transaction counts: the consumer's own
 entrypoint and logic, the package's calls, the hooks (`on_quest_complete` runs once per completed

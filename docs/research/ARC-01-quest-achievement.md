@@ -636,10 +636,12 @@ pub struct QuestRecord {               // per (player, quest), across intervals
 pub struct QuestHeld {                 // one quest a player holds; quest_id 0 = empty
     pub quest_id: u32,
     pub interval_id: u64,              // the interval in which it was accepted
+    pub acceptance: u16,               // the player's acceptance number (ARC-03c fix loop 1)
 }
 pub struct QuestHeldSlot {             // one slot of a player's held list: two entries
     pub e0: QuestHeld,
     pub e1: QuestHeld,
+    pub counter: u16,                  // slot 0: the player's last acceptance number; else 0
 }
 // An acceptance is a held entry. It is live while its quest is not retired, the quest's current
 // interval is the entry's, and that interval is not completed:
@@ -714,11 +716,11 @@ pub fn record_complete(record: QuestRecord) -> QuestRecord;
 // held list (D-135): the list as the span of its non-empty entries, in the order of acceptance
 pub const HELD_EMPTY: QuestHeld;                                          // (0, 0)
 pub fn held_position(held: Span<QuestHeld>, quest_id: u32) -> Option<u32>;
-pub fn held_contains(held: Span<QuestHeld>, entry: QuestHeld) -> bool;   // same quest and interval
+pub fn held_contains(held: Span<QuestHeld>, entry: QuestHeld) -> bool;   // same quest, interval, acceptance
 pub fn held_remove(held: Span<QuestHeld>, position: u32) -> Span<QuestHeld>;
     // the later entries move up: the list stays contiguous and in order
-pub fn held_slot(held: Span<QuestHeld>, slot: u32) -> QuestHeldSlot;
-    // entries 2 × slot and 2 × slot + 1, HELD_EMPTY past the end
+pub fn held_slot(held: Span<QuestHeld>, slot: u32, counter: u16) -> QuestHeldSlot;
+    // entries 2 × slot and 2 × slot + 1, HELD_EMPTY past the end; counter in slot 0 only
 
 // claim
 pub fn claim(progress: QuestProgress, record: QuestRecord)
@@ -781,30 +783,39 @@ pub struct Storage {
 | **C** `QuestConditions` | `q{i}` [32i, 32i + 32), i = 0..7 | Seven `u32` ids. **224 bits**. Read by `accept` while `record.unlocked` is false |
 | `QuestProgress` | `c0` [0, 32) · `c1` [32, 64) · `c2` [64, 96) · `completed` [96] · `claimed` [97] | All counts of one quest in one interval, so one read and one write per quest per call. **98 bits**. The completion time is not stored: it is in the block of `QuestCompleted` |
 | `QuestRecord` | `completions` [0, 64) · `claims` [64, 128) · `unlocked` [128] | Counters are full `u64`, like interval ids (§3.2). **129 bits**. Acceptance is not here: it is the held list |
-| `QuestHeldSlot` | `e0.quest_id` [0, 32) · `e0.interval_id` [32, 96) · `e1.quest_id` [128, 160) · `e1.interval_id` [160, 224) | Two held entries per slot, each quest id and the interval of its acceptance; no field straddles bit 128. **224 bits**. The list is contiguous and in the order of acceptance: slot 0 first, `e0` before `e1`, no empty entry before a full one, so a slot whose `e1` is empty ends it. 4 slots hold `MAX_HELD_LIMIT = 8` |
+| `QuestHeldSlot` | `e0.quest_id` [0, 32) · `e0.interval_id` [32, 96) · `e0.acceptance` [96, 112) · `counter` [112, 128) (slot 0 only) · `e1.quest_id` [128, 160) · `e1.interval_id` [160, 224) · `e1.acceptance` [224, 240) | Two held entries per slot, each quest id, the interval of its acceptance and the player's acceptance number (fix loop 1 of ARC-03c); in slot 0, the number of the player's last acceptance; no field straddles bit 128. **240 bits**. The list is contiguous and in the order of acceptance: slot 0 first, `e0` before `e1`, no empty entry before a full one, so a slot whose `e1` is empty ends it. 4 slots hold `MAX_HELD_LIMIT = 8` |
 | `Quest_reporters` | `bool` | One slot per reporter |
 
-**The held list, and why this layout** (D-135, measured in `packages/quest/GAS.md`). A slot
-changed by a transaction costs about 402 000 L2 gas beyond its write, once per slot per
-transaction, so the layout minimises the slots each call changes:
+**The held list, and why this layout** (D-135, measured in `packages/quest/GAS.md`).
 
-| Entrypoint | Slots changed: best | common | worst |
-|---|---|---|---|
-| `progress_many` (storage) | 0 | 1 per quest that counts (P); 2 per quest that completes (P, R) | 2 × `MAX_HELD` (8), plus the hooks' own. **The list is never written** |
-| `accept` | 1 (the list slot of the new entry) | 1; 2 with a first unlock (R) | 3: both list slots and R |
-| `abandon` | 1 | 1 or 2 | 2: both list slots |
+A storage write costs about 57 000 L2 gas. A write that **allocates** a cell costs 402 000 more:
+the cell is zero at the start of the transaction and non-zero at its end (Starknet's allocation
+cost, counted from the final state diff). An update, a clear or an unchanged write pays no
+allocation. The layout minimises the allocations of progress first, then its writes:
 
-- **The acceptance is the entry**, with its interval, and not also bits of R. So `accept` and
-  `abandon` change one slot, not two, and progress needs no R to know an acceptance.
+| Entrypoint | Writes | Allocations |
+|---|---|---|
+| `progress_many` (storage) | 1 per quest that counts (P), + 1 per completion (R). **The list is never written** | P on a quest's first count in an interval; R on a first completion when the record is zero. Worst: 2 × `MAX_HELD` (8) |
+| `accept` | 1 or 2 list slots (slot 0 always, for the counter), + R when it caches an unlock | 0 to 2: slot 0 at the player's first accept only, slot 1 when the list grows into it, R when the record is zero |
+| `abandon` | 1 or 2 list slots | 0 |
+
+- **The acceptance is the entry**, with its interval and its acceptance number, and not also
+  bits of R. Progress needs no R to know an acceptance.
+- **Acceptance numbers.** Each `accept` stamps its entry with the player's `counter + 1`
+  (wrapping at 2^16) and stores it as the new counter. A quest abandoned and accepted again in
+  the same interval is a different entry, so a progress call that was running when a hook renewed
+  it does not progress it. The counter also keeps slot 0 non-zero once a player has accepted
+  anything, so later accepts update it rather than allocate it.
 - **Dead entries are pruned lazily, at the next `accept`.** A dead entry costs a later progress
-  call 0.07 M (expired: A read) to 0.12 M (completed: A and P read). Pruning it at progress would
-  change a list slot (0.46 M) in the call that meets it: that pays only after four or more calls
-  before the player's next accept, and it would add up to 2 changed slots (0.9 M) to the worst
-  call.
-- **Two entries per slot** (96 bits each, the interval id kept `u64` as in §3.1). A list of
+  call 0.05–0.08 M (expired: A read) to 0.10–0.12 M (completed: A and P read). Pruning it at
+  progress would update a list slot, about 0.07–0.09 M, in the call that meets it. That pays when
+  the dead entry would be walked by two or more later calls before the player's next accept.
+  Lazy pruning is kept: the difference is small and depends on the consumer's pattern, and
+  pruning at progress would have to write the list after hooks that may have changed it.
+- **Two entries per slot**, 112 bits each (the interval id kept `u64` as in §3.1). A list of
   `MAX_HELD = 4` is 2 slots. Progress reads slots in order until one is not full: 1 slot for 0 or
-  1 held quests, 2 for 2 or 3, 3 for 4. The walk reads at most `HELD_SLOTS = 4` slots,
-  whatever `MAX_HELD` is.
+  1 held quests, 2 for 2 or 3, 3 for 4. The walk reads at most `HELD_SLOTS = 4` slots, whatever
+  `MAX_HELD` is.
 
 Packing is done with arithmetic (multiplying and dividing by powers of two from a constant
 table), as docs/CAIRO.md §3 says. No `u256` is needed: every packed value is below 2^251 and
@@ -990,9 +1001,10 @@ pub impl InternalImpl<
    entries `(q, iid)` of the call, in the order of acceptance. A quest the player does not hold
    is not read, whatever tasks it shares with the batch.
 3. For each entry `(q, iid)` at position `i`:
-   1. If a hook has run earlier in this call, check that the list still holds the entry: read
-      the slot of position `i`; if the entry is not there, read the list and look for it. Skip
-      it if it is gone (a hook abandoned it). An entry a hook accepted is not in this walk.
+   1. If a hook has run earlier in this call, check that the list still holds the entry, the
+      same quest, interval and acceptance number: read the slot of position `i`; if the entry is
+      not there, read the list and look for it. Skip it if it is gone (a hook abandoned it, or
+      abandoned and accepted it again). An entry a hook accepted is not in this walk.
    2. Read A. Skip if `A.retired`, then if `schedule_interval_id(time) != Some(iid)` (expired at
       rollover, or outside the window of the interval).
    3. Read `P(player, q, iid)`. If it is completed, skip.
@@ -1029,7 +1041,8 @@ write. An empty batch (every count zero) emits nothing.
    retired, current interval equal to the entry's; then their P: not completed). The quest's own
    entry, necessarily dead at this point, is dropped. Revert `'Quest: too many held'` if
    `MAX_HELD` entries are kept.
-7. Append `(q, iid)`. Write the slots of the list that changed, and R if marked.
+7. Append `(q, iid, counter + 1)` and store `counter + 1` in slot 0. Write the slots of the
+   list that changed, and R if marked.
 
 **`abandon`, step by step** (D-135): read A (`'Quest: does not exist'`, `'Quest: retired'`),
 `iid` (`'Quest: not active'`), the held list and `P(player, q, iid)`. Revert `'Quest: not
@@ -1510,38 +1523,41 @@ A call whose counts are all zero reads, writes and emits **nothing**, in either 
 
 ### 5.1 `quiver_quest`, per call
 
-> **Amended by D-135** (ARC-03c): progress walks the player's held list, so its cost depends on
-> the held quests (H ≤ `MAX_HELD` = 4) and not on the quests of the tasks (N, Pg) or their
-> prerequisites (K). **These rows are measured**, not estimated: `packages/quest/GAS.md` and
-> `docs/BUDGETS.md`. Reads include the reporter check of the external ABI (1). "Changed" counts
-> the slots whose value the call changes, about 402 000 L2 gas each beyond the write.
+> **Amended by D-135** (ARC-03c, corrected in its fix loop 1). Progress walks the player's held
+> list, so its cost depends on the held quests (H ≤ `MAX_HELD` = 4). It does not depend on the
+> quests of the tasks (N, Pg) or on their prerequisites (K).
+>
+> **These rows are measured**, not estimated: `packages/quest/GAS.md` and `docs/BUDGETS.md`.
+> Reads include the reporter check of the external ABI (1). "Allocations" counts the cells the
+> call takes from zero to non-zero, each costing 402 000 L2 gas more than any other write (about
+> 57 000). Every figure is the call in a transaction of its own.
 
-| Case | Storage reads | Storage writes (changed slots) | Events | Hooks | Measured call (L2 gas) |
+| Case | Storage reads | Storage writes (allocations) | Events | Hooks | Measured call (L2 gas) |
 |---|---|---|---|---|---|
-| Event mode, `progress` | 1 (the reporter) | 0 | 1 (0 if `count == 0`) | 0 | 212 366 |
-| Event mode, `progress_many` | 1 | 0 | **E** (one per merged, non-zero entry) | 0 | 1 831 823 (16, slowest merge) |
-| Storage, nothing held | 1 + the list's first slot = **2** | 0 | 0 | 0 | 213 576 |
-| Storage, one held quest, not completing | 1 + list (1) + A + P + B = **5** | **1** (P) | 0 | 0 | 824 156 |
-| Same, completing | 5 + R = **6** | **2** (P, R) | 1 | 1 | 1 369 256 |
-| Storage, H held quests, per quest: completing / counting / not in the batch / completed earlier / expired | A + P + B + R / A + P + B / A + P + B / A + P / A; + 1 slot per quest after a hook | 2 / 1 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | ≤ 1 287 000 / 709 000 / 256 000 / 118 000 / 74 000 per quest |
-| **Worst case, `progress_many`**: 16 entries, slowest merge, every held quest completing, 3 tasks each; H = `MAX_HELD` = 4 | 1 + list 3 + 4 × 4 + 3 = **23** | **8** | 4 | 4 | **6 131 373** |
-| Same at H = 8 (the layout's limit; the list seeded) | 1 + 4 + 8 × 4 + 7 = **44** | **16** | 8 | 8 | **11 279 423** |
-| Same, with a hook that writes one slot, H = 4 / H = 8 | 23 / 44 | 12 / 24 | 4 / 8 | 4 / 8 | **7 946 293 / 14 909 263** |
-| Grim World: 16 entries, 3 quests and a daily contract held and completing, K ≤ 2 | 23 | 8 | 4 | 4 | 5 275 716 in a transaction of its own (4 471 716 measured) |
-| Claim | P + R = **2** | **2** | 1 | 1 | 1 168 020 in a transaction of its own |
-| Accept, common: no prerequisite, empty list | A + list + P = **3** | **1** (a list slot) | 0 | 0 | 745 970 |
-| **Accept, worst**: K = 7 not cached, 4 dead entries completed in this interval, all pruned | A + R + C + K + list 3 + P + 4 × (A + P) = **22** | **3** (2 list slots, R) | 0 | 0 | 2 091 300 in a transaction of its own |
-| Abandon, worst: the first of 4 | A + list 3 + P = **5** | **2** (both list slots) | 0 | 0 | 1 308 460 in a transaction of its own |
-| Retire (admin) | A + C + K prerequisite A: **≤ 9** | K prerequisite A + A: **≤ 8** | 1 | 0 | 4 219 240 in a transaction of its own |
-| Define (once) | A + K conditions' A: **≤ 8** | A, B, C + K prerequisite A: **≤ 10** | 1 | 0 | 5 404 440 in a transaction of its own |
-
-"In a transaction of its own" adds 402 000 per slot that the benchmark's setup had already
-changed in the same test, which snforge counts as one transaction (`GAS.md`).
+| Event mode, `progress` | 1 (the reporter) | 0 | 1 (0 if `count == 0`) | 0 | 213 166 |
+| Event mode, `progress_many` | 1 | 0 | **E** (one per merged, non-zero entry) | 0 | 1 832 623 (16, slowest merge) |
+| Storage, nothing held | 1 + the list's first slot = **2** | 0 | 0 | 0 | 226 236 |
+| Storage, one held quest, first count in the interval, not completing | 1 + list (1) + A + P + B = **5** | **1** (1: P) | 0 | 0 | 837 126 |
+| Same, completing, first completion | 5 + R = **6** | **2** (2: P, R) | 1 | 1 | 1 382 226 |
+| Storage, H held quests, per quest: completing / counting / not in the batch / completed earlier / expired | A + P + B + R / A + P + B / A + P + B / A + P / A; + 1 slot per quest after a hook | 2 / 1 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | ≤ 1 298 000 / 714 000 / 261 000 / 123 000 / 79 000 per quest, P and R allocated |
+| **Worst case, `progress_many`**: 16 entries, slowest merge, every held quest completing (P and R allocated), 3 tasks each; H = `MAX_HELD` = 4 | 1 + list 3 + 4 × 4 + 3 = **23** | **8** (8) | 4 | 4 | **6 187 453** |
+| Same at H = 8 (the layout's limit; the list seeded) | 1 + 4 + 8 × 4 + 7 = **44** | **16** (16) | 8 | 8 | **11 376 913** |
+| Same, with a hook that writes one new slot, H = 4 / H = 8 | 23 / 44 | 12 / 24 (12 / 24) | 4 / 8 | 4 / 8 | **8 002 373 / 15 006 753** |
+| Grim World: 16 entries, 3 quests and a daily contract held and completing, K ≤ 2 | 23 | 8 (6: the records cached by `accept` are updated) | 4 | 4 | 4 527 796 |
+| Claim | P + R = **2** | **2** (0); P changes alone when `claims` is saturated | 1 | 1 | 364 020 |
+| Accept, common: no prerequisite, empty list, first accept | A + list + P = **3** | **1** (1: slot 0) | 0 | 0 | 761 320 |
+| **Accept, worst**: the list grows into slot 1, K = 7 not cached | A + R + C + K + list 2 + P + 2 × (A + P) = **17** | **3** (2: slot 1, R) | 0 | 0 | **1 889 960** |
+| Accept on a mixed list: 2 live weekly and 2 stale daily entries, K = 7 | **20** | **3** (1: R) | 0 | 0 | 1 648 390 |
+| Accept pruning 4 dead entries completed now, K = 7 | **22** | **3** (1: R; slot 1 cleared) | 0 | 0 | 1 724 500 |
+| Abandon, worst: the first of 4 | A + list 3 + P = **5** | **2** (0) | 0 | 0 | 538 870 |
+| Retire (admin) | A + C + K prerequisite A: **≤ 9** | 1 + K: **≤ 8** (0) | 1 | 0 | 1 003 240 |
+| Define (once) | A + K conditions' A: **≤ 8** | 2 without conditions; 3 + K with K > 0: **≤ 10** (A, B, C: 3) | 1 | 0 | 2 590 440 |
 
 **The bound that makes the worst case.** A progress call completes at most `MAX_HELD` quests,
 the ones the player holds, whatever the number of quests on the reported tasks and their
-prerequisites. The worst call is therefore `0.99 M + 1.29 M × MAX_HELD` at most, well under the
-20 M of the A-G1 amendment at H = 4 and at H = 8, and 0.56 % of the network's 1.1 × 10⁹.
+prerequisites. The worst call is therefore at most `1.00 M + 1.30 M × MAX_HELD`, with every write
+an allocation. That is well under the 20 M of the A-G1 amendment at H = 4 and at H = 8, and
+0.56 % of the network's 1.1 × 10⁹ at H = 4.
 
 ### 5.2 `quiver_achievement`, per call
 
