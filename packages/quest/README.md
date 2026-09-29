@@ -15,18 +15,59 @@ The game reports progress on tasks. The component counts it on the quests the pl
 completes them, and lets the player claim them. Rewards are the game's: it grants them in its
 hooks.
 
-## Two layers
+## Layout
+
+Since 0.2.0 the package is organised as the owner's rule D-143 says (docs/CAIRO.md §7), the layout
+of the Arcade packages without Dojo:
 
 | Module | What |
 |---|---|
-| `quiver_quest::logic` | The pure library: types, their packing into one felt each, functions. State in, state out, no storage |
-| `quiver_quest::component::QuestComponent` | The Starknet component: storage, events, hooks, the trusted internal layer, the optional external ABI |
+| `quiver_quest::models` | One file per stored entity: its struct (all in `models::index`), its constructor and behaviour (`...Trait`), its checks (`...Assert`), its `errors`, its storage (the slot type and its packing), its `Tracked` impl when it has an event |
+| `quiver_quest::events` | One file per event (the structs in `events::index`), each with its `new` |
+| `quiver_quest::types` | The value types that are not stored on their own: `Mode`, `QuestSchedule`, `QuestTask`, `TaskProgress` and the batch, `QuestHeld` and the held list |
+| `quiver_quest::helpers` | What belongs to no entity: `bits`, the powers of two of the packings |
+| `quiver_quest::store` | The only access to storage: `get_x`, `set_x` per model on the component's state; `Tracked`, `QuestTracking` and its two ready choices |
+| `quiver_quest::component::QuestComponent` | The Starknet component: storage, hooks, the trusted internal layer, the optional external ABI with its access control |
 | `quiver_quest::interface` | `IQuest` and `IQuestView`, with their dispatchers |
 | `quiver_quest::errors`, `quiver_quest::constants` | The error strings (API) and the bounds |
 
+**The models.**
+
+| Model | Key | Slot | Tracked, with |
+|---|---|---|---|
+| `QuestDefinition { id, schedule, tasks, conditions }` | `id` | A (its schedule and counts), B, C | `QuestDefined` |
+| `QuestStatus { id, defined, retired, live_dependents }` | `id` | A (the status bits), shared with the definition: read with it in one read, written back as the whole of A | no |
+| `QuestProgress { player_id, quest_id, interval_id, c0, c1, c2, completed, claimed }` | `(player_id, quest_id, interval_id)` | P | no |
+| `QuestRecord { player_id, quest_id, completions, claims, unlocked }` | `(player_id, quest_id)` | R | no |
+| `QuestHeldSlot { player_id, index, e0, e1, counter, kept }` | `(player_id, index)` | H | no |
+| `QuestReporter { reporter, allowed }` | `reporter` | the registry | `QuestReporterSet` |
+
+The slots and their layouts are those of 0.1.0; the slot types are named for their slots:
+`HeadSlot` (A), `TasksSlot` (B), `ConditionsSlot` (C), `ProgressSlot` (P), `RecordSlot` (R),
+`HeldSlot` (H). `QuestCompleted`, `QuestClaimed`, `QuestRetired` and `QuestProgressed` are action
+events: the component emits them where 0.1.0 does, whatever the consumer tracks.
+
+## Tracking: the consumer's choice
+
+A tracked model's event is optional: whether a write emits it is **the consumer's choice, made at
+compile time**, by its impl of `quiver_quest::store::QuestTracking`, one constant per tracked
+model:
+
+| Choice | `define` emits `QuestDefined` | `set_reporter` emits `QuestReporterSet` |
+|---|---|---|
+| `quiver_quest::store::tracking::TrackAll` (as 0.1.0) | yes | yes |
+| `quiver_quest::store::tracking::TrackNone` | no | no |
+| An impl of its own (`const DEFINITION: bool = true; const REPORTER: bool = false;`) | as it says | as it says |
+
+The constant is folded by the compiler: a write the consumer does not track costs exactly the
+write with no event code, and a tracked one the write plus the event (measured to the unit,
+[GAS.md](GAS.md#optional-tracking)). An indexer that reads the definitions from `QuestDefined`
+(event mode, below) needs the definition tracked.
+
 ## Usage
 
-Embed the component, implement `QuestHooksTrait`, and choose what to expose. This consumer, like
+Embed the component, implement `QuestHooksTrait`, choose the tracked models' events
+(`QuestTracking`), and choose what to expose. This consumer, like
 Grim World's (ARC-01 §3.8), exposes only the views and calls the internal layer from its own
 entrypoints, after its own checks:
 
@@ -34,7 +75,8 @@ entrypoints, after its own checks:
 #[starknet::contract]
 mod Game {
     use quiver_quest::component::QuestComponent;
-    use quiver_quest::logic::{Mode, TaskProgress};
+    use quiver_quest::types::batch::TaskProgress;
+    use quiver_quest::types::mode::Mode;
     use starknet::storage::StoragePointerReadAccess;
     use starknet::{ContractAddress, get_caller_address};
 
@@ -43,6 +85,11 @@ mod Game {
     #[abi(embed_v0)]
     impl QuestViewImpl = QuestComponent::QuestViewImpl<ContractState>;
     impl QuestInternalImpl = QuestComponent::InternalImpl<ContractState>;
+
+    // The tracked models' events: every one, as 0.1.0 ...
+    impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;
+    // ... or none, the writes alone (the action events are emitted either way):
+    // impl QuestTracking = quiver_quest::store::tracking::TrackNone<ContractState>;
 
     #[storage]
     struct Storage {
@@ -159,7 +206,8 @@ A hook may re-enter the component, since the state is written first.
 | Completion, claim, views | Yes | No: `quest_progress` stays zero, a claim reverts `'Quest: not completed'` |
 
 Feed a quest in one mode only: progress in one mode is invisible to the other. Definitions are
-always stored and emitted.
+always stored, and emitted when the consumer tracks them (`TrackAll`): an indexer fed in event
+mode needs them.
 
 ## One call per player per transaction
 
@@ -253,17 +301,17 @@ World's worst tick is 5.1 × 10⁶ as a whole transaction.
 
 **The package's worst call.** It is `progress_many` with 16 entries (the slowest merge), every
 held quest completing, each quest with 3 tasks. Measured through a dispatcher with snforge
-([GAS.md](GAS.md#cost-model-of-quiver_quest-010-arc-03c-d-135)). The network's estimate reprices
+([GAS.md](GAS.md#quiver_quest-020-arc-07a); the cost model is 0.1.0's, [GAS.md](GAS.md#cost-model-of-quiver_quest-010-arc-03c-d-135)). The network's estimate reprices
 each written slot at the prices below. "Created" means the player's progress and record slots
 are new (the worst); "existing" means they are overwritten.
 
 | Case | Created: snforge / network | Existing: snforge / network |
 |---|---|---|
-| `MAX_HELD` = 4, hooks empty | **6 213 063** / 6 168 215 | 2 997 063 / 2 796 215 |
-| `MAX_HELD` = 4, `on_quest_complete` writing one new slot | **8 027 983** / 7 960 711 | 4 811 983 / 4 588 711 |
-| 8 held (the layout's limit), hooks empty | **11 430 213** / 11 340 517 | 4 998 213 / 4 596 517 |
-| 8 held, `on_quest_complete` writing one new slot | **15 060 053** / 14 925 509 | 8 628 053 / 8 181 509 |
-| Grim World's use: 16 entries, 3 quests and a daily contract completing, 0 to 2 prerequisites | 4 553 406 / 4 469 558 (6 slots created, 2 overwritten) | — |
+| `MAX_HELD` = 4, hooks empty | **6 205 843** / 6 160 995 | 2 989 843 / 2 788 995 |
+| `MAX_HELD` = 4, `on_quest_complete` writing one new slot | **8 020 763** / 7 953 491 | 4 804 763 / 4 581 491 |
+| 8 held (the layout's limit), hooks empty | **11 416 073** / 11 326 377 | 4 984 073 / 4 582 377 |
+| 8 held, `on_quest_complete` writing one new slot | **15 045 913** / 14 911 369 | 8 613 913 / 8 167 369 |
+| Grim World's use: 16 entries, 3 quests and a daily contract completing, 0 to 2 prerequisites | 4 546 186 / 4 462 338 (6 slots created, 2 overwritten) | — |
 
 **Each held quest adds at most 1.31 × 10⁶ L2 gas.** Most of that is its two storage writes, its
 progress and its record. A written slot costs, per transaction:
@@ -279,7 +327,7 @@ does not hold cost nothing, however many share the reported tasks. The worst cal
 of `MAX_HELD`, not of how many quests use a task.
 
 **The held list is never zeroed.** A slot of the held list keeps a marker once it has held an
-entry, so the list growing back into it overwrites the slot instead of creating it: 712 750
+entry, so the list growing back into it overwrites the slot instead of creating it: 703 980
 instead of 1 084 240 for that `accept`.
 
 The one slot the package zeroes is a reporter's, when `set_reporter(reporter, false)` revokes it.
@@ -288,9 +336,11 @@ The one slot the package zeroes is a reporter's, when `set_reporter(reporter, fa
 
 | Entrypoint | L2 gas |
 |---|---|
-| `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 1 921 540 / 1 885 222 |
-| `abandon` | 574 060 / 523 848 |
-| `claim` | 364 020 / 313 808 |
+| `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 1 917 170 / 1 880 852 |
+| `abandon` | 564 150 / 513 938 |
+| `claim` | 364 520 / 314 308 |
+| `define` (3 tasks, 7 conditions; `TrackAll`) | 2 583 680 / 2 391 120 |
+| `retire` (7 conditions) | 1 003 540 / 802 692 |
 
 **The consumer's transaction must fit.** The whole transaction counts: the consumer's own
 entrypoint and logic, the package's calls, the hooks (`on_quest_complete` runs once per completed
@@ -302,30 +352,37 @@ measures its own worst transaction, and in particular the cost of its `on_quest_
 read the reporter registry once (one storage read), in `Mode::Event` too, before emitting. Called
 through the internal layer, event mode reads and writes nothing.
 
-## Library
+## Types, models and their behaviour
 
-`quiver_quest::logic` is the pure library, without storage: state in, state out
-([ARC-01 §3.2](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-01-quest-achievement.md)). It holds:
+What was 0.1.0's `quiver_quest::logic` is scoped in the traits of the types and models
+([ARC-01 §3.2](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-01-quest-achievement.md),
+amended by ARC-07a, has the table from one to the other):
 
-- the types `Mode`, `QuestSchedule`, `QuestTask`, `QuestDefinition`, `QuestTasks`,
-  `QuestConditions`, `QuestProgress`, `QuestRecord`, `QuestHeld`, `QuestHeldSlot` and
-  `TaskProgress`;
-- their packing into one felt each (`StorePacking<T, felt252>`, layouts of §3.3);
-- the functions on schedules, definitions, batches, progress, records, claims and the held list.
+- `QuestSchedule`: `ScheduleTrait::is_active`, `interval_id`; `ScheduleAssert::assert_valid`;
+- a batch, `Span<TaskProgress>`: `BatchTrait::merge`, `count_of`, `first_position`;
+- the held list, `Span<QuestHeld>`: `HeldTrait::position`, `contains`, `remove`;
+- `QuestDefinition`: `DefinitionTrait::new` (the checks of 0.1.0, in order), `DefinitionStorage`;
+- `QuestProgress`: `ProgressTrait::add`, `is_complete`, `claim`;
+- `QuestRecord`: `RecordTrait::complete`, `claim`, `unlock`, `has_completed`, `all_completed`;
+- `QuestStatus`: `StatusTrait::retire`, `add_dependent`, `remove_dependent`; `StatusAssert`;
+- `QuestHeldSlot`: `HeldSlotTrait::new`;
+- each slot's packing into one felt (`StorePacking<T, felt252>`, layouts of ARC-01 §3.3).
 
-Error strings are in `quiver_quest::errors`.
+Error strings are in `quiver_quest::errors`; each model's `errors` module names the ones it uses.
 
-Every loop is bounded: `batch_merge` by `MAX_ENTRIES` (checked first; at most `MAX_ENTRIES²`
-comparisons when a task id repeats or two ids are equal modulo 128, one pass otherwise); the lookups of a merged batch
-(`batch_count_of`, `batch_first_position`, `progress_add`) by `MAX_ENTRIES`; the condition checks
-of `definition_new` by `MAX_CONDITIONS` (checked first); `prerequisites_met` by the one record per
-condition the caller passes, `MAX_CONDITIONS`; the held list's functions by the entries of the
-list, `MAX_HELD_LIMIT`. Tasks are unrolled, without loops.
+Every loop is bounded: `BatchTrait::merge` by `MAX_ENTRIES` (checked first; at most
+`MAX_ENTRIES²` comparisons when a task id repeats or two ids are equal modulo 128, one pass
+otherwise); the lookups of a merged batch (`count_of`, `first_position`, `ProgressTrait::add`) by
+`MAX_ENTRIES`; the condition checks of `DefinitionTrait::new` by `MAX_CONDITIONS` (checked
+first); `RecordTrait::all_completed` by the one record per condition the caller passes,
+`MAX_CONDITIONS`; the held list's functions by the entries of the list, `MAX_HELD_LIMIT`. Tasks
+are unrolled, without loops.
 
 ## Gas
 
-Every test has a budget; the figures are in [GAS.md](GAS.md): the library's benchmarks in
-`test_bench`, the component's in `test_component_bench`, one per entrypoint on the worst case of
+Every test has a budget; the figures are in [GAS.md](GAS.md): optional tracking in
+`test_tracking` and `test_store_models`, the store in `test_store` and `test_store_definition`,
+the types' and models' benchmarks in `test_bench`, the component's in `test_component_bench`, one per entrypoint on the worst case of
 ARC-01 §5.1; the grid over the held list in `test_component_grid`; Grim World's case in
 `test_component_game`. Per entrypoint, the measure and the budget are in
 [docs/BUDGETS.md](https://github.com/bal7hazar/quiver/blob/main/docs/BUDGETS.md).
