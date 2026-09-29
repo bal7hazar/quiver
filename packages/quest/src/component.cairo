@@ -16,7 +16,7 @@
 
 #[starknet::component]
 pub mod QuestComponent {
-    use core::num::traits::WrappingAdd;
+    use core::num::traits::{WrappingAdd, WrappingSub};
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use crate::constants::{HELD_SLOTS, MAX_HELD};
@@ -261,12 +261,12 @@ pub mod QuestComponent {
             // The held quests when the call starts. A hook may accept or abandon: once a hook
             // has run, each later entry is processed only if the list still holds it, the same
             // acceptance. An entry accepted by a hook, a renewed one included, is not in this walk
-            let held = self.held_entries(player_id);
+            let (held, start_counter) = self.held_entries_from(player_id);
             let mut hooked = false;
             let mut position: u32 = 0;
             for entry in held {
                 let entry = *entry;
-                if hooked && !self.still_held(player_id, entry, position) {
+                if hooked && !self.still_held(player_id, entry, position, start_counter) {
                     position += 1;
                     continue;
                 }
@@ -531,14 +531,33 @@ pub mod QuestComponent {
         /// Whether the list still holds `entry`, read at `position` of the list when the call
         /// started. One slot read when it is still there, as after a hook that did not touch the
         /// list; the whole list otherwise, since `abandon` moves the later entries up.
+        ///
+        /// The acceptance number wraps at 2^16 over a player's lifetime, so an entry renewed by a
+        /// hook can get the very number of the entry it replaces. Numbers issued during the call
+        /// are `start_counter + 1 ..= counter` (mod 2^16): an entry carrying one of them is a new
+        /// acceptance, made after the batch was reported, and is not processed. A collision would
+        /// need 65 536 acceptances within the call, which no transaction affords.
         fn still_held(
             self: @ComponentState<TContractState>,
             player_id: felt252,
             entry: QuestHeld,
             position: u32,
+            start_counter: u16,
         ) -> bool {
+            let first = self.Quest_held.read((player_id, 0));
+            let issued = first.counter.wrapping_sub(start_counter);
+            if issued != 0 {
+                let age = entry.acceptance.wrapping_sub(start_counter);
+                if age != 0 && age <= issued {
+                    return false;
+                }
+            }
             let slot: u8 = (position / 2).try_into().unwrap();
-            let pair = self.Quest_held.read((player_id, slot));
+            let pair = if slot == 0 {
+                first
+            } else {
+                self.Quest_held.read((player_id, slot))
+            };
             let found = if position % 2 == 0 {
                 pair.e0
             } else {
@@ -563,6 +582,35 @@ pub mod QuestComponent {
                 return false;
             }
             !self.Quest_progress.read((player_id, quest_id, interval_id)).completed
+        }
+
+        /// The held entries and the player's acceptance counter, read when a progress call starts:
+        /// the numbers issued after it are those of acceptances made during the call.
+        fn held_entries_from(
+            self: @ComponentState<TContractState>, player_id: felt252,
+        ) -> (Span<QuestHeld>, u16) {
+            let mut held: Array<QuestHeld> = array![];
+            let first = self.Quest_held.read((player_id, 0));
+            let counter = first.counter;
+            let mut pair = first;
+            let mut slot: u8 = 0;
+            loop {
+                let QuestHeldSlot { e0, e1, counter: _, kept: _ } = pair;
+                if e0.quest_id == 0 {
+                    break;
+                }
+                held.append(e0);
+                if e1.quest_id == 0 {
+                    break;
+                }
+                held.append(e1);
+                slot += 1;
+                if slot == HELD_SLOTS {
+                    break;
+                }
+                pair = self.Quest_held.read((player_id, slot));
+            }
+            (held.span(), counter)
         }
 
         /// The held entries alone, for the paths that do not write the list (progress, views):

@@ -1,15 +1,22 @@
-//! "One write per record" asserted on the writes themselves (fix loop 1, point 3).
+//! Gas guards on the writes of `progress_many` (fix loop 1, point 3; fix loop 3, point 3).
 //!
 //! snforge exposes no syscall count to a test. Each test therefore measures the Sierra gas of
 //! one `progress_many` call with `core::testing::get_available_gas()` around the dispatcher
 //! call: deterministic, and without the state-diff charges of the L2 gas. A storage write costs
 //! 58 820 of it (`write_costs_58_820_sierra_gas` below). Each call is checked against its
-//! reference within `TOLERANCE` = 20 000: one write more (or one less) than the rule allows
-//! fails the test. The consumer is `MockBench`, whose hooks do nothing, so that no hook's write
-//! is counted.
+//! reference within `TOLERANCE` = 20 000.
 //!
-//! References, and the writes they contain: completing, P and R; not completing, P only;
-//! duplicate entries merged, P once.
+//! **What the guards bound is the cost, not the count.** An extra write, with nothing else
+//! changed, moves the call by about 58 820 and fails the guard (shown in fix loop 1 with a write
+//! injected). But a change that adds a write and saves as much elsewhere would pass. The exact
+//! writes of each test are counted outside the test, with `snforge test test_component_writes
+//! --detailed-resources` (the `StorageWrite` syscalls, minus those of `baseline_writes_setup*`),
+//! and recorded in `GAS.md` beside the guards. The consumer is `MockBench`, whose hooks do
+//! nothing, so no hook's write is in them.
+//!
+//! The writes of each call: completing, P and R; not completing, P only; duplicate entries
+//! merged, P once; two tasks of one quest, P once, and R once on completion; duplicate entries
+//! with several positive counts on two quests' tasks, each quest's P once.
 
 use core::testing::get_available_gas;
 use quiver_quest::interface::{
@@ -23,10 +30,12 @@ use super::test_component_probe::{IProbeDispatcher, IProbeDispatcherTrait};
 
 const TOLERANCE: u128 = 20000;
 /// Sierra gas of the calls below, measured.
-const COMPLETING: u128 = 792086;
-const NOT_COMPLETING: u128 = 634056;
-const DUPLICATES: u128 = 674239;
-const TWO_TASKS_COMPLETING: u128 = 755152;
+const COMPLETING: u128 = 799006;
+const NOT_COMPLETING: u128 = 635696;
+const DUPLICATES: u128 = 675879;
+const TWO_TASKS_COMPLETING: u128 = 756792;
+const TWO_TASKS_NOT_COMPLETING: u128 = 649902;
+const DUPLICATES_SEVERAL: u128 = 768045;
 
 #[derive(Drop, Copy)]
 struct Bench {
@@ -68,7 +77,7 @@ fn assert_gas(used: u128, reference: u128) {
 }
 
 #[test]
-#[available_gas(l2_gas: 6628069)]
+#[available_gas(l2_gas: 6640112)]
 fn quest_progress_completing_writes_p_and_r() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 2)].span()), COMPLETING);
@@ -76,7 +85,7 @@ fn quest_progress_completing_writes_p_and_r() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6002962)]
+#[available_gas(l2_gas: 6009220)]
 fn quest_progress_not_completing_writes_p_only() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 1)].span()), NOT_COMPLETING);
@@ -84,7 +93,7 @@ fn quest_progress_not_completing_writes_p_only() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6045784)]
+#[available_gas(l2_gas: 6052042)]
 fn quest_progress_duplicate_entries_write_p_once() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 1), entry(7, 0), entry(7, 0)].span()), DUPLICATES);
@@ -93,7 +102,7 @@ fn quest_progress_duplicate_entries_write_p_once() {
 
 /// Two tasks of one quest in one call, completing: P once and R once.
 #[test]
-#[available_gas(l2_gas: 6589950)]
+#[available_gas(l2_gas: 6596208)]
 fn quest_progress_two_tasks_write_p_and_r_once() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(8, 1), entry(9, 1)].span()), TWO_TASKS_COMPLETING);
@@ -113,4 +122,60 @@ fn write_costs_58_820_sierra_gas() {
     probe.write_n(2);
     let g2 = get_available_gas();
     assert!((g1 - g2) - (g0 - g1) == 58820);
+}
+
+/// Fix loop 3: two tasks of one quest in one call, not completing: P once, no R.
+#[test]
+#[available_gas(l2_gas: 6025186)]
+fn quest_progress_two_tasks_not_completing_write_p_once() {
+    let bench = setup_totals_two();
+    assert_gas(call_gas(bench, array![entry(8, 1), entry(9, 1)].span()), TWO_TASKS_NOT_COMPLETING);
+    let progress = bench.view.quest_progress(PLAYER, 2, 0);
+    assert!(progress.c0 == 1 && progress.c1 == 1 && !progress.completed);
+}
+
+/// Fix loop 3: duplicate entries with several positive counts on two tasks, merged: each
+/// quest's P once, two writes in all, no R.
+#[test]
+#[available_gas(l2_gas: 6728353)]
+fn quest_progress_duplicates_several_counts_write_each_p_once() {
+    let bench = setup_totals_two();
+    assert_gas(
+        call_gas(bench, array![entry(7, 1), entry(8, 1), entry(7, 2), entry(8, 1)].span()),
+        DUPLICATES_SEVERAL,
+    );
+    // quest 1: 1 + 2 on task 7; quest 2: 1 + 1 on task 8
+    assert!(bench.view.quest_progress(PLAYER, 1, 0).c0 == 3);
+    assert!(bench.view.quest_progress(PLAYER, 2, 0).c0 == 2);
+}
+
+/// The setup alone, for the write counts of `snforge test --detailed-resources`: a test's
+/// `StorageWrite` minus this baseline's is its call's writes.
+#[test]
+#[available_gas(l2_gas: 4674747)]
+fn baseline_writes_setup() {
+    setup();
+}
+
+/// The setup of the fix loop 3 fixtures alone.
+#[test]
+#[available_gas(l2_gas: 4674747)]
+fn baseline_writes_setup_totals_two() {
+    setup_totals_two();
+}
+
+/// `MockBench`, quest 1 on task 7 (total 5) and quest 2 on tasks 8 and 9 (totals 5), both held.
+fn setup_totals_two() -> Bench {
+    let class = declare("MockBench").unwrap().contract_class();
+    let (address, _) = class.deploy(@array![]).unwrap();
+    let bench = Bench {
+        quest: IQuestDispatcher { contract_address: address },
+        view: IQuestViewDispatcher { contract_address: address },
+    };
+    bench.quest.set_reporter(test_address(), true);
+    bench.quest.define(1, one_off(), array![task(7, 5)].span(), array![].span());
+    bench.quest.define(2, one_off(), array![task(8, 5), task(9, 5)].span(), array![].span());
+    bench.quest.accept(PLAYER, 1);
+    bench.quest.accept(PLAYER, 2);
+    bench
 }

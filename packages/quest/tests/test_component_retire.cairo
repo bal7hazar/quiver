@@ -43,7 +43,7 @@ fn quest_retire_frees_slot() {
 
 /// Meaning changed by D-135: the retired quest is held, and skipped when the walk reaches it.
 #[test]
-#[available_gas(l2_gas: 9106751)]
+#[available_gas(l2_gas: 9113009)]
 fn quest_retired_not_progressed() {
     let q = deploy();
     define_held(q, 1, one_off(), T, 5);
@@ -55,7 +55,7 @@ fn quest_retired_not_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13974425)]
+#[available_gas(l2_gas: 13980337)]
 fn quest_retired_completed_still_claimable() {
     let q = deploy();
     define_held(q, 1, one_off(), T, 1);

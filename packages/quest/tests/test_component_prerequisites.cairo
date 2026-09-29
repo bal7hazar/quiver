@@ -23,7 +23,7 @@ const T_C: u32 = 13;
 /// count.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15806556)]
+#[available_gas(l2_gas: 15818379)]
 fn quest_prerequisites_all_required() {
     let q = deploy();
     define_held(q, A, one_off(), T_A, 1);
@@ -44,7 +44,7 @@ fn quest_prerequisites_all_required() {
 
 /// Meaning changed by D-135: the unlock is cached by `accept`, not by the first progress.
 #[test]
-#[available_gas(l2_gas: 22670055)]
+#[available_gas(l2_gas: 22694268)]
 fn quest_prerequisites_unlock_after_last() {
     let q = deploy();
     define_held(q, A, one_off(), T_A, 1);
@@ -60,7 +60,7 @@ fn quest_prerequisites_unlock_after_last() {
 }
 
 #[test]
-#[available_gas(l2_gas: 12840026)]
+#[available_gas(l2_gas: 12845938)]
 fn quest_inactive_dependent_does_not_revert() {
     let q = deploy();
     let t0: u64 = 1000;
@@ -78,7 +78,7 @@ fn quest_inactive_dependent_does_not_revert() {
 /// progress on its task counts nothing; once the window opens it is accepted and counts.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15861099)]
+#[available_gas(l2_gas: 15878833)]
 fn quest_dependent_unlocks_when_window_opens() {
     let q = deploy();
     let t0: u64 = 1000;
@@ -120,7 +120,7 @@ fn complete_a(q: super::setup::Quest) {
 }
 
 #[test]
-#[available_gas(l2_gas: 23522739)]
+#[available_gas(l2_gas: 23540473)]
 fn quest_recurring_prerequisite_completes_every_interval() {
     let q = weekly_prerequisite_and_one_off_dependent();
     complete_a(q);
@@ -134,7 +134,7 @@ fn quest_recurring_prerequisite_completes_every_interval() {
 }
 
 #[test]
-#[available_gas(l2_gas: 23671377)]
+#[available_gas(l2_gas: 23689111)]
 fn quest_recurring_prerequisite_after_dependent_completed() {
     let q = weekly_prerequisite_and_one_off_dependent();
     complete_a(q);
@@ -149,7 +149,7 @@ fn quest_recurring_prerequisite_after_dependent_completed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 24135897)]
+#[available_gas(l2_gas: 24153631)]
 fn quest_recurring_dependent_stays_unlocked() {
     let q = deploy();
     at(q, 0);
@@ -168,7 +168,7 @@ fn quest_recurring_dependent_stays_unlocked() {
 }
 
 #[test]
-#[available_gas(l2_gas: 14690920)]
+#[available_gas(l2_gas: 14702743)]
 fn quest_prerequisite_completed_before_definition() {
     let q = deploy();
     define_held(q, A, one_off(), T_A, 1);
@@ -180,7 +180,7 @@ fn quest_prerequisite_completed_before_definition() {
 }
 
 #[test]
-#[available_gas(l2_gas: 14773146)]
+#[available_gas(l2_gas: 14784969)]
 fn quest_recurring_prerequisite_completed_before_definition() {
     let q = deploy();
     at(q, 0);
@@ -193,7 +193,7 @@ fn quest_recurring_prerequisite_completed_before_definition() {
 }
 
 #[test]
-#[available_gas(l2_gas: 12643603)]
+#[available_gas(l2_gas: 12649514)]
 fn quest_is_unlocked_evaluates_uncached() {
     let q = deploy();
     define_held(q, A, one_off(), T_A, 1);
@@ -215,7 +215,7 @@ fn quest_without_conditions_is_unlocked() {
 /// caches the unlock and the quest counts.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15600063)]
+#[available_gas(l2_gas: 15611886)]
 fn quest_unlock_cached_by_accept() {
     let q = deploy();
     define_held(q, A, one_off(), T_A, 1);

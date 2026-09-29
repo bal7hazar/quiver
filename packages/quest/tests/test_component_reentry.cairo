@@ -9,11 +9,12 @@ use quiver_quest::interface::{
 };
 use quiver_quest::logic::{Mode, QuestProgress, QuestRecord};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpy, EventSpyTrait, declare, spy_events,
-    test_address,
+    ContractClassTrait, DeclareResultTrait, EventSpy, EventSpyTrait, declare, map_entry_address,
+    spy_events, store, test_address,
 };
 use starknet::ContractAddress;
-use super::helpers::{held, no_progress, one_off, task, unstamped};
+use starknet::storage_access::StorePacking;
+use super::helpers::{held, held_slot0, no_progress, one_off, stamped, task, unstamped};
 use super::mock_reentrant::{IMockReentrantDispatcher, IMockReentrantDispatcherTrait, Reentry};
 use super::mocks::HookCall;
 use super::setup::{PLAYER, assert_error};
@@ -101,7 +102,7 @@ fn hook_calls(r: Reentrant) -> Array<HookCall> {
 /// second, which the call read from the held list before.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 14310520)]
+#[available_gas(l2_gas: 14322563)]
 fn quest_retired_by_hook_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -125,7 +126,7 @@ fn quest_retired_by_hook_not_progressed() {
 /// Progress from `on_quest_complete` on the same quest, same interval: no second completion, no
 /// second hook call.
 #[test]
-#[available_gas(l2_gas: 11527323)]
+#[available_gas(l2_gas: 11539041)]
 fn quest_reentrant_progress_same_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, true);
@@ -147,7 +148,7 @@ fn quest_reentrant_progress_same_quest_completes_once() {
 /// Progress from the first quest's hook on the same task completes the second quest inside the
 /// hook; the outer call then reaches the second quest, finds it completed, and skips it.
 #[test]
-#[available_gas(l2_gas: 18800557)]
+#[available_gas(l2_gas: 18818754)]
 fn quest_reentrant_progress_later_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, true);
@@ -168,7 +169,7 @@ fn quest_reentrant_progress_later_quest_completes_once() {
 /// reverts the outer claim; nothing is claimed twice.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 12545795)]
+#[available_gas(l2_gas: 12551707)]
 fn quest_reentrant_claim_same_quest_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -199,7 +200,7 @@ fn quest_reentrant_claim_same_quest_refused() {
 /// which reverts the outer progress.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 7935130)]
+#[available_gas(l2_gas: 7941041)]
 fn quest_reentrant_accept_after_completion_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -293,28 +294,28 @@ fn assert_outer_unchanged(reentry: Reentry) -> Reentrant {
 }
 
 #[test]
-#[available_gas(l2_gas: 66406883)]
+#[available_gas(l2_gas: 66707130)]
 fn quest_reentrant_progress_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'progress', 0, 8));
     assert!(r.view.quest_progress(PLAYER, 3, 0).completed);
 }
 
 #[test]
-#[available_gas(l2_gas: 64424624)]
+#[available_gas(l2_gas: 64666817)]
 fn quest_reentrant_claim_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'claim', 4, 0));
     assert!(r.view.quest_progress(PLAYER, 4, 0).claimed);
 }
 
 #[test]
-#[available_gas(l2_gas: 62538278)]
+#[available_gas(l2_gas: 62784062)]
 fn quest_reentrant_accept_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'accept', 5, 0));
     assert!(r.view.quest_is_accepted(PLAYER, 5));
 }
 
 #[test]
-#[available_gas(l2_gas: 61726743)]
+#[available_gas(l2_gas: 61968936)]
 fn quest_reentrant_abandon_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'abandon', 6, 0));
     assert!(!r.view.quest_is_accepted(PLAYER, 6));
@@ -324,7 +325,7 @@ fn quest_reentrant_abandon_other_quest_leaves_outer_unchanged() {
 }
 
 #[test]
-#[available_gas(l2_gas: 61126353)]
+#[available_gas(l2_gas: 61368546)]
 fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'retire', 6, 0));
     let (definition, _, _) = r.view.quest_definition(6);
@@ -336,7 +337,7 @@ fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
 
 /// A hook of quest 1 abandons quest 2, later in the list: quest 2 is not progressed.
 #[test]
-#[available_gas(l2_gas: 21627508)]
+#[available_gas(l2_gas: 21691001)]
 fn quest_reentrant_abandon_later_quest_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -360,7 +361,7 @@ fn quest_reentrant_abandon_later_quest_not_progressed() {
 /// A hook of quest 1 accepts quest 2 on the same task: quest 2 is held from then on, but this
 /// call, whose batch was reported before the acceptance, does not progress it.
 #[test]
-#[available_gas(l2_gas: 17753077)]
+#[available_gas(l2_gas: 17764900)]
 fn quest_reentrant_accept_not_progressed_by_the_call() {
     let r = deploy();
     define(r, 1, T, true);
@@ -384,7 +385,7 @@ fn quest_reentrant_accept_not_progressed_by_the_call() {
 
 /// Quest 1's hook abandons quest 2, then accepts it again, in the same interval.
 #[test]
-#[available_gas(l2_gas: 18595965)]
+#[available_gas(l2_gas: 18614886)]
 fn quest_reentrant_abandon_then_accept_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -404,7 +405,7 @@ fn quest_reentrant_abandon_then_accept_not_progressed() {
 
 /// Quest 1's hook accepts quest 2, abandons it, and accepts it again.
 #[test]
-#[available_gas(l2_gas: 13156517)]
+#[available_gas(l2_gas: 13162429)]
 fn quest_reentrant_accept_abandon_accept_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -419,7 +420,7 @@ fn quest_reentrant_accept_abandon_accept_not_progressed() {
 /// Quest 2 held when the call starts, renewed by the hook of quest 1; quest 3, held throughout,
 /// still counts after it.
 #[test]
-#[available_gas(l2_gas: 20954164)]
+#[available_gas(l2_gas: 21019936)]
 fn quest_reentrant_renewed_not_progressed_others_are() {
     let r = deploy();
     define(r, 1, T, true);
@@ -430,4 +431,51 @@ fn quest_reentrant_renewed_not_progressed_others_are() {
     assert!(r.view.quest_progress(PLAYER, 3, 0).completed);
     assert!(r.view.quest_progress(PLAYER, 2, 0) == no_progress());
     assert!(r.view.quest_is_accepted(PLAYER, 2));
+}
+
+// Fix loop 3, point 2: the acceptance number is 16 bits and wraps over a player's lifetime. The
+// prehistory of the audit: Q1 (number 1) and Q2 (number 2) held; in earlier transactions the
+// player accepted and abandoned another quest 65 535 times, so the counter is back at 1. Seeded
+// with `store`: slot 0 holds the two entries and the counter 1.
+
+fn wrapped_prehistory() -> Reentrant {
+    let r = deploy();
+    define(r, 1, T, true);
+    define(r, 2, T, true);
+    assert!(r.view.quest_held(PLAYER) == array![stamped(1, 0, 1), stamped(2, 0, 2)].span());
+    store(
+        r.address,
+        map_entry_address(selector!("Quest_held"), array![PLAYER, 0].span()),
+        array![StorePacking::pack(held_slot0(stamped(1, 0, 1), stamped(2, 0, 2), 1))].span(),
+    );
+    r
+}
+
+/// Q1's hook abandons Q2 and accepts it again: the new acceptance gets number 2 again, the same
+/// tuple as the entry the call started with. It is still a new acceptance, and the call must not
+/// progress it.
+#[test]
+#[available_gas(l2_gas: 18668950)]
+fn quest_reentrant_renewal_after_counter_wrap_not_progressed() {
+    let r = wrapped_prehistory();
+    r.mock.set_reentry(on_complete(1, 'abandon_accept', 2, 0));
+    r.quest.progress(PLAYER, T, 1, Mode::Storage);
+    assert!(r.view.quest_progress(PLAYER, 1, 0).completed);
+    // the identity was reused: same quest, interval and number
+    assert!(r.view.quest_held(PLAYER) == array![stamped(2, 0, 2)].span());
+    assert!(r.view.quest_progress(PLAYER, 2, 0) == no_progress());
+    assert!(r.mock.hook_count() == 1);
+    // the next call progresses it
+    r.quest.progress(PLAYER, T, 1, Mode::Storage);
+    assert!(r.view.quest_progress(PLAYER, 2, 0).completed);
+}
+
+/// Without a renewal, the wrapped counter changes nothing: both held quests count.
+#[test]
+#[available_gas(l2_gas: 14805836)]
+fn quest_counter_wrap_without_renewal_progresses_both() {
+    let r = wrapped_prehistory();
+    r.quest.progress(PLAYER, T, 1, Mode::Storage);
+    assert!(r.view.quest_progress(PLAYER, 1, 0).completed);
+    assert!(r.view.quest_progress(PLAYER, 2, 0).completed);
 }

@@ -31,7 +31,7 @@ fn daily() -> quiver_quest::logic::QuestSchedule {
 /// Meaning changed by D-135: every quest needs acceptance, not only one defined with an accept
 /// step.
 #[test]
-#[available_gas(l2_gas: 7175934)]
+#[available_gas(l2_gas: 7187547)]
 fn quest_accept_required() {
     let q = with_quest(one_off(), 10);
     report(q, PLAYER, T, 1, Mode::Storage);
@@ -45,7 +45,7 @@ fn quest_accept_required() {
 /// Meaning changed by D-135: the acceptance is the held entry, which completion makes dead (the
 /// record has no `active` bit any more); the entry stays until the next accept prunes it.
 #[test]
-#[available_gas(l2_gas: 10843504)]
+#[available_gas(l2_gas: 10849415)]
 fn quest_completion_releases_acceptance() {
     let q = with_quest(one_off(), 2);
     accept(q, PLAYER, Q);
@@ -56,7 +56,7 @@ fn quest_completion_releases_acceptance() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9363625)]
+#[available_gas(l2_gas: 9381360)]
 fn quest_acceptance_expires_at_rollover() {
     let q = with_quest(daily(), 10);
     accept(q, PLAYER, Q);
@@ -94,7 +94,7 @@ fn quest_accept_twice_same_interval_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 10767190)]
+#[available_gas(l2_gas: 10773101)]
 fn quest_accept_after_completion_reverts() {
     let q = with_quest(one_off(), 1);
     accept(q, PLAYER, Q);
@@ -106,7 +106,7 @@ fn quest_accept_after_completion_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 11700241)]
+#[available_gas(l2_gas: 11706152)]
 fn quest_accept_after_daily_completion() {
     let q = with_quest(daily(), 1);
     accept(q, PLAYER, Q);
@@ -132,7 +132,7 @@ fn quest_abandon_expired_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9031017)]
+#[available_gas(l2_gas: 9048541)]
 fn quest_abandon_keeps_counts() {
     let q = with_quest(one_off(), 10);
     accept(q, PLAYER, Q);
@@ -186,7 +186,7 @@ fn quest_abandon_refusals() {
 
 /// `accept` evaluates the prerequisites and caches the unlock.
 #[test]
-#[available_gas(l2_gas: 15102919)]
+#[available_gas(l2_gas: 15114742)]
 fn quest_accept_caches_unlock() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -304,7 +304,7 @@ fn quest_expired_acceptance_pruned() {
 /// A completed quest leaves the list at the next accept; the live ones keep their order.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 22560139)]
+#[available_gas(l2_gas: 22669538)]
 fn quest_completed_leaves_list() {
     let q = five_quests();
     accept_first_four(q);
@@ -371,7 +371,7 @@ fn quest_abandon_removes_from_list() {
 /// A completed quest cannot be abandoned: its acceptance ended with the completion.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 16548416)]
+#[available_gas(l2_gas: 16554328)]
 fn quest_abandon_completed_reverts() {
     let q = five_quests();
     accept(q, PLAYER, 1);
@@ -430,7 +430,7 @@ fn quest_held_slot_kept_after_shrink() {
 
 /// Pruning at accept keeps the slots too: four dead entries pruned leave slot 1 marked.
 #[test]
-#[available_gas(l2_gas: 36790377)]
+#[available_gas(l2_gas: 37080041)]
 fn quest_held_slot_kept_after_pruning() {
     let q = five_quests();
     accept_first_four(q);

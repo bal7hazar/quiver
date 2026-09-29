@@ -71,7 +71,7 @@ fn quest_set_reporter_admin_only() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6027578)]
+#[available_gas(l2_gas: 6159437)]
 fn quest_progress_rejects_unregistered_caller() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -87,7 +87,7 @@ fn quest_progress_rejects_unregistered_caller() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 2993876)]
+#[available_gas(l2_gas: 3037829)]
 fn quest_progress_many_rejects_unregistered_caller() {
     let q = deploy();
     caller(q, stranger());
@@ -99,7 +99,7 @@ fn quest_progress_many_rejects_unregistered_caller() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7741915)]
+#[available_gas(l2_gas: 7753738)]
 fn quest_progress_accepts_registered_reporter() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -127,7 +127,7 @@ fn quest_progress_accepts_registered_reporter() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5533353)]
+#[available_gas(l2_gas: 5577306)]
 fn quest_reporter_revoked() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -142,7 +142,7 @@ fn quest_reporter_revoked() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15149764)]
+#[available_gas(l2_gas: 15155675)]
 fn quest_claim_requires_player_authorization() {
     let q = completed();
     caller(q, stranger());
@@ -216,7 +216,7 @@ fn quest_internal_layer_not_reachable_from_abi() {
 /// The consumer's own entrypoints reach the internal layer after the consumer's checks.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6142559)]
+#[available_gas(l2_gas: 6193684)]
 fn quest_consumer_calls_the_internal_layer() {
     let (address, consumer, view) = deploy_consumer();
     let safe = IMockConsumerSafeDispatcher { contract_address: address };
