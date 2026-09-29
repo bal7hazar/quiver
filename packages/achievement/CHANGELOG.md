@@ -6,7 +6,7 @@ events and error strings are named.
 
 ## [Unreleased]
 
-## [0.1.0]
+## [0.1.0] - 2026-09-29
 
 The first release, **in event mode only**
 ([decision of 2026-09-29](https://github.com/bal7hazar/quiver/blob/main/docs/decisions/2026-09-29-achievement-event-only.md)):
