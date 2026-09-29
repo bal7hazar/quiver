@@ -47,7 +47,7 @@ fn slots(store: IMockDefinitionStoreDispatcher, quest_id: u32) -> (felt252, felt
 
 // gas: raised, the test now writes a second definition, to show one event per write (fix loop 1)
 #[test]
-#[available_gas(l2_gas: 3256575)]
+#[available_gas(l2_gas: 3255431)]
 fn store_set_definition_emits_quest_defined_once() {
     let store = deploy();
     let mut spy = spy_events();
@@ -70,7 +70,7 @@ fn store_set_definition_emits_quest_defined_once() {
 /// The storage layout of 0.1.0: the store writes the felts the hand-written code writes, C only
 /// with conditions.
 #[test]
-#[available_gas(l2_gas: 6613394)]
+#[available_gas(l2_gas: 6612249)]
 fn store_set_definition_writes_the_slots_of_0_1_0() {
     let store = deploy();
     store.hand_set_definition(1, worst_schedule(), worst_tasks(), worst_conditions());
@@ -90,7 +90,7 @@ fn store_set_definition_writes_the_slots_of_0_1_0() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4702866)]
+#[available_gas(l2_gas: 4701722)]
 fn store_get_definition_reads_the_model_back() {
     let store = deploy();
     assert!(!store.store_has_definition(1));
@@ -124,7 +124,7 @@ fn bench_hand_set_definition_worst() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2093385)]
+#[available_gas(l2_gas: 2092965)]
 fn bench_store_set_definition_worst() {
     deploy().store_set_definition(1, worst_schedule(), worst_tasks(), worst_conditions());
 }

@@ -22,19 +22,29 @@
 //! `if Tracking::X { HasComponent::emit(ref self, Tracked::event(@x)) }`, once; that no other
 //! `set_x` emits. Tests, per tracked model under `TrackAll` and `TrackNone`, and per untracked
 //! model: `tests/test_store_models.cairo`.
+//!
+//! **Reads and writes across several slots** (fix loop 1) also live here, since they are storage
+//! access: the held list as a whole (`get_held`, `get_held_list`, `set_held_list`,
+//! `is_still_held`), whether a held entry is live (`is_held_live`, A then P) and whether a quest's
+//! prerequisites are met (`prerequisites_met`, C then R). They keep 0.1.0's reads, writes and
+//! order; unlike the one-model methods they are not `#[inline]`, as they were not in 0.1.0's
+//! component, so that every call costs what it cost (measured, `GAS.md`).
 
 use starknet::ContractAddress;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::component::QuestComponent::{ComponentState, HasComponent};
+use crate::constants::HELD_SLOTS;
 use crate::models::definition::{
     ConditionsSlotTrait, DefinitionStorage, DefinitionTracked, HeadSlot, NO_CONDITIONS, NO_TASKS,
     QuestDefinition, TasksSlot,
 };
-use crate::models::held::{HeldSlotStorage, QuestHeldSlot};
+use crate::models::held::{HeldSlotStorage, HeldSlotTrait, QuestHeldSlot};
 use crate::models::progress::{ProgressStorage, QuestProgress};
-use crate::models::record::{QuestRecord, RecordStorage};
+use crate::models::record::{QuestRecord, RecordStorage, RecordTrait};
 use crate::models::reporter::{QuestReporter, ReporterTracked};
 use crate::models::status::{QuestStatus, StatusStorage};
+use crate::types::held::{HeldList, HeldTrait, QuestHeld};
+use crate::types::schedule::ScheduleTrait;
 
 /// A model the indexer tracks: `Event` is what `Store::set_x` emits on every write of it, with the
 /// model's keys and new values, when the consumer tracks it. The list of the impls of this trait
@@ -210,6 +220,148 @@ pub impl StoreImpl<
     #[inline]
     fn set_held_slot(ref self: ComponentState<TContractState>, slot: QuestHeldSlot) {
         self.Quest_held.write((slot.player_id, slot.index), slot.into_slot());
+    }
+
+    // The held list as a whole, and its entries' liveness
+
+    /// The held entries alone, for the paths that do not write the list (progress, views):
+    /// slots read in order while full, at most `HELD_SLOTS`.
+    fn get_held(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
+        let mut held: Array<QuestHeld> = array![];
+        let mut index: u8 = 0;
+        while index < HELD_SLOTS {
+            let QuestHeldSlot {
+                player_id: _, index: _, e0, e1, counter: _, kept: _,
+            } = self.get_held_slot(player_id, index);
+            if e0.quest_id == 0 {
+                break;
+            }
+            held.append(e0);
+            if e1.quest_id == 0 {
+                break;
+            }
+            held.append(e1);
+            index += 1;
+        }
+        held.span()
+    }
+
+    /// The held list as a writing path needs it: the entries, the player's acceptance counter,
+    /// and the `kept` bit of each slot read. Slots read in order while full, at most
+    /// `HELD_SLOTS`; a slot whose `e1` is empty ends the list.
+    fn get_held_list(self: @ComponentState<TContractState>, player_id: felt252) -> HeldList {
+        let mut held: Array<QuestHeld> = array![];
+        let mut kept: Array<bool> = array![];
+        let first = self.get_held_slot(player_id, 0);
+        let counter = first.counter;
+        let mut pair = first;
+        let mut index: u8 = 0;
+        loop {
+            let QuestHeldSlot {
+                player_id: _, index: _, e0, e1, counter: _, kept: slot_kept,
+            } = pair;
+            kept.append(slot_kept);
+            if e0.quest_id == 0 {
+                break;
+            }
+            held.append(e0);
+            if e1.quest_id == 0 {
+                break;
+            }
+            held.append(e1);
+            index += 1;
+            if index == HELD_SLOTS {
+                break;
+            }
+            pair = self.get_held_slot(player_id, index);
+        }
+        HeldList { entries: held.span(), counter, kept: kept.span() }
+    }
+
+    /// Writes the slots of `after` (with `after_counter` in slot 0) that differ from those of
+    /// `before`, the list as `get_held_list` read it. A slot that held an entry before or after
+    /// keeps its `kept` bit, so it is never zeroed; a slot that was never used and stays empty is
+    /// not written. Untracked: emits nothing.
+    fn set_held_list(
+        ref self: ComponentState<TContractState>,
+        player_id: felt252,
+        before: HeldList,
+        after: Span<QuestHeld>,
+        after_counter: u32,
+    ) {
+        let HeldList { entries: before, counter: before_counter, kept: before_kept } = before;
+        let len = if before.len() > after.len() {
+            before.len()
+        } else {
+            after.len()
+        };
+        let mut slot: u32 = 0;
+        while slot == 0 || 2 * slot < len {
+            let was_kept = match before_kept.get(slot) {
+                Option::Some(kept) => *kept.unbox(),
+                Option::None => false,
+            };
+            let used = was_kept || 2 * slot < len;
+            let index: u8 = slot.try_into().unwrap();
+            let value = HeldSlotTrait::new(player_id, index, after, after_counter, used);
+            if HeldSlotTrait::new(player_id, index, before, before_counter, was_kept) != value {
+                self.set_held_slot(value);
+            }
+            slot += 1;
+        }
+    }
+
+    /// Whether the list still holds `entry`, the whole entry (quest, interval and acceptance
+    /// number), read at `position` of the list when a call started. One slot read when it is still
+    /// there; the whole list otherwise, since `abandon` moves the later entries up.
+    fn is_still_held(
+        self: @ComponentState<TContractState>, player_id: felt252, entry: QuestHeld, position: u32,
+    ) -> bool {
+        let index: u8 = (position / 2).try_into().unwrap();
+        let pair = self.get_held_slot(player_id, index);
+        let found = if position % 2 == 0 {
+            pair.e0
+        } else {
+            pair.e1
+        };
+        if found == entry {
+            return true;
+        }
+        self.get_held(player_id).contains(entry)
+    }
+
+    /// Whether a held entry is live at `time`: its quest is not retired, `time` is in the entry's
+    /// interval, and that interval is not completed. Reads A, then P only when the interval
+    /// matches.
+    fn is_held_live(
+        self: @ComponentState<TContractState>, player_id: felt252, entry: QuestHeld, time: u64,
+    ) -> bool {
+        let QuestHeld { quest_id, interval_id, acceptance: _ } = entry;
+        let head = self.get_definition_head(quest_id);
+        if head.status(quest_id).retired
+            || head.schedule.interval_id(time) != Option::Some(interval_id) {
+            return false;
+        }
+        !self.get_progress(player_id, quest_id, interval_id).completed
+    }
+
+    // Prerequisites: C, then R of each condition
+
+    /// Reads C, then the record of each prerequisite in order (at most `MAX_CONDITIONS`),
+    /// stopping at the first one never completed: `RecordTrait::all_completed` over all of them,
+    /// without reading the rest.
+    fn prerequisites_met(
+        self: @ComponentState<TContractState>,
+        player_id: felt252,
+        quest_id: u32,
+        condition_count: u8,
+    ) -> bool {
+        for condition in self.get_definition_conditions(quest_id, condition_count) {
+            if !self.get_record(player_id, *condition).has_completed() {
+                return false;
+            }
+        }
+        true
     }
 
     // Reporter. Tracked

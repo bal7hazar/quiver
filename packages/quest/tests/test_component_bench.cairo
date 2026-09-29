@@ -256,7 +256,7 @@ fn all(value: bool, n: u32) -> Array<bool> {
 }
 
 #[test]
-#[available_gas(l2_gas: 10442628)]
+#[available_gas(l2_gas: 10439730)]
 fn baseline_progress_many_worst_held4() {
     let bench = worst_setup(deploy(), 4);
     let _entries = fifteen_then(129);
@@ -264,7 +264,7 @@ fn baseline_progress_many_worst_held4() {
 }
 
 #[test]
-#[available_gas(l2_gas: 16958764)]
+#[available_gas(l2_gas: 16955866)]
 fn bench_progress_many_worst_held4() {
     let bench = worst_setup(deploy(), 4);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -272,7 +272,7 @@ fn bench_progress_many_worst_held4() {
 }
 
 #[test]
-#[available_gas(l2_gas: 17299160)]
+#[available_gas(l2_gas: 17293364)]
 fn baseline_progress_many_worst_held8() {
     let bench = worst_setup(deploy(), 8);
     let _entries = fifteen_then(129);
@@ -280,7 +280,7 @@ fn baseline_progress_many_worst_held8() {
 }
 
 #[test]
-#[available_gas(l2_gas: 29286037)]
+#[available_gas(l2_gas: 29280241)]
 fn bench_progress_many_worst_held8() {
     let bench = worst_setup(deploy(), 8);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -288,7 +288,7 @@ fn bench_progress_many_worst_held8() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10442628)]
+#[available_gas(l2_gas: 10439730)]
 fn baseline_progress_many_worst_held4_hook() {
     let bench = worst_setup(deploy_hook(), 4);
     let _entries = fifteen_then(129);
@@ -296,7 +296,7 @@ fn baseline_progress_many_worst_held4_hook() {
 }
 
 #[test]
-#[available_gas(l2_gas: 18864430)]
+#[available_gas(l2_gas: 18861532)]
 fn bench_progress_many_worst_held4_hook() {
     let bench = worst_setup(deploy_hook(), 4);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -304,7 +304,7 @@ fn bench_progress_many_worst_held4_hook() {
 }
 
 #[test]
-#[available_gas(l2_gas: 17299160)]
+#[available_gas(l2_gas: 17293364)]
 fn baseline_progress_many_worst_held8_hook() {
     let bench = worst_setup(deploy_hook(), 8);
     let _entries = fifteen_then(129);
@@ -312,7 +312,7 @@ fn baseline_progress_many_worst_held8_hook() {
 }
 
 #[test]
-#[available_gas(l2_gas: 33097369)]
+#[available_gas(l2_gas: 33091573)]
 fn bench_progress_many_worst_held8_hook() {
     let bench = worst_setup(deploy_hook(), 8);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -369,7 +369,7 @@ fn existing_setup(bench: Bench, held_count: u32) -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 13978293)]
+#[available_gas(l2_gas: 13975395)]
 fn baseline_progress_many_worst_held4_existing() {
     let bench = existing_setup(deploy(), 4);
     let _entries = fifteen_then(129);
@@ -377,7 +377,7 @@ fn baseline_progress_many_worst_held4_existing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 17117629)]
+#[available_gas(l2_gas: 17114731)]
 fn bench_progress_many_worst_held4_existing() {
     let bench = existing_setup(deploy(), 4);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -385,7 +385,7 @@ fn bench_progress_many_worst_held4_existing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13978293)]
+#[available_gas(l2_gas: 13975395)]
 fn baseline_progress_many_worst_held4_existing_hook() {
     let bench = existing_setup(deploy_hook(), 4);
     let _entries = fifteen_then(129);
@@ -393,7 +393,7 @@ fn baseline_progress_many_worst_held4_existing_hook() {
 }
 
 #[test]
-#[available_gas(l2_gas: 19023295)]
+#[available_gas(l2_gas: 19020397)]
 fn bench_progress_many_worst_held4_existing_hook() {
     let bench = existing_setup(deploy_hook(), 4);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -401,7 +401,7 @@ fn bench_progress_many_worst_held4_existing_hook() {
 }
 
 #[test]
-#[available_gas(l2_gas: 24368568)]
+#[available_gas(l2_gas: 24362772)]
 fn baseline_progress_many_worst_held8_existing() {
     let bench = existing_setup(deploy(), 8);
     let _entries = fifteen_then(129);
@@ -409,7 +409,7 @@ fn baseline_progress_many_worst_held8_existing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 29601845)]
+#[available_gas(l2_gas: 29596049)]
 fn bench_progress_many_worst_held8_existing() {
     let bench = existing_setup(deploy(), 8);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -417,7 +417,7 @@ fn bench_progress_many_worst_held8_existing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 24368568)]
+#[available_gas(l2_gas: 24362772)]
 fn baseline_progress_many_worst_held8_existing_hook() {
     let bench = existing_setup(deploy_hook(), 8);
     let _entries = fifteen_then(129);
@@ -425,7 +425,7 @@ fn baseline_progress_many_worst_held8_existing_hook() {
 }
 
 #[test]
-#[available_gas(l2_gas: 33413177)]
+#[available_gas(l2_gas: 33407381)]
 fn bench_progress_many_worst_held8_existing_hook() {
     let bench = existing_setup(deploy_hook(), 8);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
@@ -461,7 +461,7 @@ fn bound_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 575200815)]
+#[available_gas(l2_gas: 574873341)]
 fn baseline_batch_bound_accepted() {
     let bench = bound_setup();
     let _entries = distinct_entries(1, MAX_ENTRIES, 1);
@@ -471,7 +471,7 @@ fn baseline_batch_bound_accepted() {
 
 /// Meaning changed by D-135: what the call reaches is the held list, not the quests of the tasks.
 #[test]
-#[available_gas(l2_gas: 581105623)]
+#[available_gas(l2_gas: 580778149)]
 fn quest_batch_bound_accepted() {
     let bench = bound_setup();
     bench.quest.progress_many(PLAYER, distinct_entries(1, MAX_ENTRIES, 1), Mode::Storage);
@@ -516,26 +516,26 @@ fn accept_worst_setup(expired: bool) -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 35170656)]
+#[available_gas(l2_gas: 35162266)]
 fn baseline_accept_worst_expired() {
     accept_worst_setup(true);
 }
 
 #[test]
-#[available_gas(l2_gas: 36844282)]
+#[available_gas(l2_gas: 36835893)]
 fn bench_accept_worst_expired() {
     let bench = accept_worst_setup(true);
     bench.quest.accept(PLAYER, D);
 }
 
 #[test]
-#[available_gas(l2_gas: 40471879)]
+#[available_gas(l2_gas: 40463489)]
 fn baseline_accept_worst_completed() {
     accept_worst_setup(false);
 }
 
 #[test]
-#[available_gas(l2_gas: 42315353)]
+#[available_gas(l2_gas: 42306964)]
 fn bench_accept_worst_completed() {
     let bench = accept_worst_setup(false);
     bench.quest.accept(PLAYER, D);
@@ -573,13 +573,13 @@ fn accept_mixed_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 35246980)]
+#[available_gas(l2_gas: 35238591)]
 fn baseline_accept_mixed() {
     accept_mixed_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 37011274)]
+#[available_gas(l2_gas: 37002885)]
 fn bench_accept_mixed() {
     let bench = accept_mixed_setup();
     bench.quest.accept(PLAYER, D);
@@ -603,13 +603,13 @@ fn accept_growth_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 29826334)]
+#[available_gas(l2_gas: 29819394)]
 fn baseline_accept_growth() {
     accept_growth_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 31839363)]
+#[available_gas(l2_gas: 31832422)]
 fn bench_accept_growth() {
     let bench = accept_growth_setup();
     bench.quest.accept(PLAYER, D);
@@ -635,13 +635,13 @@ fn accept_regrow_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 8885940)]
+#[available_gas(l2_gas: 8883042)]
 fn baseline_accept_regrow() {
     accept_regrow_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 9625119)]
+#[available_gas(l2_gas: 9622221)]
 fn bench_accept_regrow() {
     let bench = accept_regrow_setup();
     bench.quest.accept(PLAYER, 4);
@@ -661,13 +661,13 @@ fn three_held_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 7152306)]
+#[available_gas(l2_gas: 7150133)]
 fn baseline_three_held() {
     three_held_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 7625709)]
+#[available_gas(l2_gas: 7623536)]
 fn bench_abandon_shrink() {
     let bench = three_held_setup();
     bench.quest.abandon(PLAYER, 3);
@@ -682,13 +682,13 @@ fn plain_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 2167400)]
+#[available_gas(l2_gas: 2166675)]
 fn baseline_plain() {
     plain_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 2975364)]
+#[available_gas(l2_gas: 2974640)]
 fn bench_accept_plain() {
     let bench = plain_setup();
     bench.quest.accept(PLAYER, D);
@@ -702,20 +702,20 @@ fn prerequisites_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 40471879)]
+#[available_gas(l2_gas: 40463489)]
 fn baseline_prerequisites() {
     prerequisites_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 40993508)]
+#[available_gas(l2_gas: 40985119)]
 fn bench_view_is_unlocked_worst() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_is_unlocked(PLAYER, D));
 }
 
 #[test]
-#[available_gas(l2_gas: 40791604)]
+#[available_gas(l2_gas: 40783214)]
 fn bench_view_definition_worst() {
     let bench = prerequisites_setup();
     let (_, tasks, conditions) = bench.view.quest_definition(D);
@@ -723,28 +723,28 @@ fn bench_view_definition_worst() {
 }
 
 #[test]
-#[available_gas(l2_gas: 40821896)]
+#[available_gas(l2_gas: 40813507)]
 fn bench_view_is_accepted() {
     let bench = prerequisites_setup();
     assert!(!bench.view.quest_is_accepted(PLAYER, D));
 }
 
 #[test]
-#[available_gas(l2_gas: 40785503)]
+#[available_gas(l2_gas: 40777114)]
 fn bench_view_held_full() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_held(PLAYER).len() == MAX_HELD.into());
 }
 
 #[test]
-#[available_gas(l2_gas: 40640540)]
+#[available_gas(l2_gas: 40632151)]
 fn bench_view_current_interval() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_current_interval(D) == Option::Some(0));
 }
 
 #[test]
-#[available_gas(l2_gas: 40775423)]
+#[available_gas(l2_gas: 40767034)]
 fn bench_view_progress_and_record() {
     let bench = prerequisites_setup();
     assert!(!bench.view.quest_progress(PLAYER, D, 0).completed);
@@ -752,7 +752,7 @@ fn bench_view_progress_and_record() {
 }
 
 #[test]
-#[available_gas(l2_gas: 40602803)]
+#[available_gas(l2_gas: 40594414)]
 fn bench_view_is_reporter() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_is_reporter(test_address()));
@@ -774,13 +774,13 @@ fn full_list_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 9256191)]
+#[available_gas(l2_gas: 9253293)]
 fn baseline_full_list() {
     full_list_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 9848549)]
+#[available_gas(l2_gas: 9845651)]
 fn bench_abandon_worst() {
     let bench = full_list_setup();
     bench.quest.abandon(PLAYER, 1);
@@ -788,7 +788,7 @@ fn bench_abandon_worst() {
 
 /// A full list, one live quest progressed and not completing: the common case of a call.
 #[test]
-#[available_gas(l2_gas: 10717945)]
+#[available_gas(l2_gas: 10715047)]
 fn bench_progress_full_list_one_counts() {
     let bench = full_list_setup();
     bench.quest.progress(PLAYER, 11, 1, Mode::Storage);
@@ -796,7 +796,7 @@ fn bench_progress_full_list_one_counts() {
 
 /// A full list, one live quest completing.
 #[test]
-#[available_gas(l2_gas: 11466511)]
+#[available_gas(l2_gas: 11463613)]
 fn bench_progress_full_list_one_completes() {
     let bench = full_list_setup();
     bench.quest.progress(PLAYER, 11, 2, Mode::Storage);
@@ -804,7 +804,7 @@ fn bench_progress_full_list_one_completes() {
 
 /// A full list, every quest completing: 16 entries, 4 of them the quests' tasks.
 #[test]
-#[available_gas(l2_gas: 14698776)]
+#[available_gas(l2_gas: 14695878)]
 fn bench_progress_full_list_all_complete() {
     let bench = full_list_setup();
     bench
@@ -818,7 +818,7 @@ fn bench_progress_full_list_all_complete() {
 
 /// A full list, the batch on none of its tasks: the list and each quest read, nothing written.
 #[test]
-#[available_gas(l2_gas: 10233349)]
+#[available_gas(l2_gas: 10230451)]
 fn bench_progress_full_list_none_counts() {
     let bench = full_list_setup();
     bench.quest.progress(PLAYER, 99, 1, Mode::Storage);
@@ -833,20 +833,20 @@ fn accepted_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 2975364)]
+#[available_gas(l2_gas: 2974640)]
 fn baseline_accepted() {
     accepted_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 3852593)]
+#[available_gas(l2_gas: 3851869)]
 fn bench_progress_plain() {
     let bench = accepted_setup();
     bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
 }
 
 #[test]
-#[available_gas(l2_gas: 4425851)]
+#[available_gas(l2_gas: 4425127)]
 fn bench_progress_plain_completing() {
     let bench = accepted_setup();
     bench.quest.progress(PLAYER, 1, 2, Mode::Storage);
@@ -854,7 +854,7 @@ fn bench_progress_plain_completing() {
 
 /// No quest held: one slot of the list read, nothing else.
 #[test]
-#[available_gas(l2_gas: 2405494)]
+#[available_gas(l2_gas: 2405294)]
 fn bench_progress_nothing_held() {
     let bench = plain_setup();
     bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
@@ -871,13 +871,13 @@ fn two_held_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 4721556)]
+#[available_gas(l2_gas: 4720107)]
 fn baseline_two_held() {
     two_held_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 5165045)]
+#[available_gas(l2_gas: 5163596)]
 fn bench_abandon() {
     let bench = two_held_setup();
     bench.quest.abandon(PLAYER, D);
@@ -890,13 +890,13 @@ fn completed_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 4425851)]
+#[available_gas(l2_gas: 4425127)]
 fn baseline_completed() {
     completed_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 4808597)]
+#[available_gas(l2_gas: 4807873)]
 fn bench_claim() {
     let bench = completed_setup();
     assert!(bench.quest.claim(PLAYER, D, 0) == 0);
@@ -912,13 +912,13 @@ fn retire_worst_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 26325109)]
+#[available_gas(l2_gas: 26319618)]
 fn baseline_retire_worst() {
     retire_worst_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 27378826)]
+#[available_gas(l2_gas: 27373335)]
 fn bench_retire_worst() {
     let bench = retire_worst_setup();
     bench.quest.retire(D);
@@ -931,13 +931,13 @@ fn define_worst_setup() -> (Bench, Span<u32>) {
 }
 
 #[test]
-#[available_gas(l2_gas: 23611846)]
+#[available_gas(l2_gas: 23606775)]
 fn baseline_define_worst() {
     define_worst_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 26324710)]
+#[available_gas(l2_gas: 26319219)]
 fn bench_define_worst() {
     let (bench, conditions) = define_worst_setup();
     bench.quest.define(D, one_off(), array![task(1, 1), task(2, 1), task(3, 1)].span(), conditions);

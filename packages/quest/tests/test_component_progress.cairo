@@ -28,7 +28,7 @@ fn completed_events(ref spy: snforge_std::EventSpy) -> u32 {
 /// D-135: a quest is held only once accepted, so a quest not active cannot be held. The held
 /// quest that is inactive is one whose window closed within the interval of its acceptance.
 #[test]
-#[available_gas(l2_gas: 8819849)]
+#[available_gas(l2_gas: 8818400)]
 fn quest_inactive_quest_skipped_not_reverted() {
     let q = deploy();
     at(q, 50);
@@ -42,7 +42,7 @@ fn quest_inactive_quest_skipped_not_reverted() {
 }
 
 #[test]
-#[available_gas(l2_gas: 11098471)]
+#[available_gas(l2_gas: 11097747)]
 fn quest_count_saturates_at_total() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -56,7 +56,7 @@ fn quest_count_saturates_at_total() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10968870)]
+#[available_gas(l2_gas: 10968145)]
 fn quest_count_max_value() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, U32_MAX);
@@ -68,7 +68,7 @@ fn quest_count_max_value() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10943145)]
+#[available_gas(l2_gas: 10942420)]
 fn quest_one_off_completes_once() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 2);
@@ -81,7 +81,7 @@ fn quest_one_off_completes_once() {
 }
 
 #[test]
-#[available_gas(l2_gas: 22639118)]
+#[available_gas(l2_gas: 22638393)]
 fn quest_recurring_completes_each_interval() {
     let q = deploy();
     at(q, 0);
@@ -109,7 +109,7 @@ fn quest_recurring_completes_each_interval() {
 }
 
 #[test]
-#[available_gas(l2_gas: 8550447)]
+#[available_gas(l2_gas: 8549722)]
 fn quest_daily_interval_aligned_on_utc_midnight() {
     let q = deploy();
     define_simple(q, 1, schedule(0, 0, DAY, DAY), 7, 10);
@@ -127,7 +127,7 @@ fn quest_daily_interval_aligned_on_utc_midnight() {
 }
 
 #[test]
-#[available_gas(l2_gas: 8369437)]
+#[available_gas(l2_gas: 8368713)]
 fn quest_daily_rollover_starts_from_zero() {
     let q = deploy();
     at(q, 0);
@@ -142,7 +142,7 @@ fn quest_daily_rollover_starts_from_zero() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6525400)]
+#[available_gas(l2_gas: 6524675)]
 fn quest_interval_id_is_u64() {
     let q = deploy();
     define_simple(q, 1, schedule(0, 0, 1, 1), 7, 10);
@@ -155,7 +155,7 @@ fn quest_interval_id_is_u64() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10588150)]
+#[available_gas(l2_gas: 10587426)]
 fn quest_batch_two_tasks_one_quest_one_write() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span());
@@ -182,7 +182,7 @@ fn quest_batch_two_tasks_one_quest_one_write() {
 /// Setup of `quest_batch_two_tasks_one_quest_one_write` without the call: the difference of
 /// their syscall counts (`snforge test --detailed-resources`) is the call's reads and writes.
 #[test]
-#[available_gas(l2_gas: 5394449)]
+#[available_gas(l2_gas: 5393724)]
 fn baseline_batch_two_tasks_one_quest() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span());
@@ -196,7 +196,7 @@ fn baseline_batch_two_tasks_one_quest() {
 
 /// Not completing: one write, P.
 #[test]
-#[available_gas(l2_gas: 6328258)]
+#[available_gas(l2_gas: 6327534)]
 fn quest_batch_two_tasks_one_quest_one_write_not_completing() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span());
@@ -208,7 +208,7 @@ fn quest_batch_two_tasks_one_quest_one_write_not_completing() {
 
 /// Setup of `quest_batch_two_tasks_one_quest_one_write_not_completing` without the call.
 #[test]
-#[available_gas(l2_gas: 5262947)]
+#[available_gas(l2_gas: 5262222)]
 fn baseline_batch_two_tasks_one_quest_not_completing() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span());
@@ -218,7 +218,7 @@ fn baseline_batch_two_tasks_one_quest_not_completing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6312179)]
+#[available_gas(l2_gas: 6311455)]
 fn quest_batch_duplicate_entries_merged() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -276,7 +276,7 @@ fn quest_batch_rejects_task_zero() {
 
 /// A quest with two tasks reached through both entries of a batch counts both, once.
 #[test]
-#[available_gas(l2_gas: 9298372)]
+#[available_gas(l2_gas: 9296923)]
 fn quest_batch_quest_on_two_entries_handled_once() {
     let q = deploy();
     define(q, 1, one_off(), array![task(1, 5), task(2, 5)].span(), array![].span());
@@ -290,7 +290,7 @@ fn quest_batch_quest_on_two_entries_handled_once() {
 
 /// Players are separate: progress of one is not the other's.
 #[test]
-#[available_gas(l2_gas: 6432590)]
+#[available_gas(l2_gas: 6431866)]
 fn quest_progress_is_per_player() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -302,7 +302,7 @@ fn quest_progress_is_per_player() {
 /// D-135: a quest held by one player is not progressed by a call for another, who does not hold
 /// it; each player's call walks that player's own list.
 #[test]
-#[available_gas(l2_gas: 10532889)]
+#[available_gas(l2_gas: 10531440)]
 fn quest_held_by_one_player_not_progressed_by_another() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -322,7 +322,7 @@ fn quest_held_by_one_player_not_progressed_by_another() {
 /// D-135: a quest is progressed only while held; before `accept`, or when not accepted at all,
 /// progress on its task counts nothing.
 #[test]
-#[available_gas(l2_gas: 6840669)]
+#[available_gas(l2_gas: 6839944)]
 fn quest_not_held_not_progressed() {
     let q = deploy();
     define_simple(q, 1, one_off(), 7, 5);
@@ -338,7 +338,7 @@ fn quest_not_held_not_progressed() {
 /// Meaning changed by D-135: many quests may share a task (28 here, the old page bound, and no
 /// cap now); one progress counts on the `MAX_HELD` the player holds, and on no other.
 #[test]
-#[available_gas(l2_gas: 70020464)]
+#[available_gas(l2_gas: 70000178)]
 fn quest_task_shared_by_max_quests() {
     let q = deploy();
     let defined: u32 = 28;

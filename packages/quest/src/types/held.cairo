@@ -23,6 +23,16 @@ pub struct QuestHeld {
     pub acceptance: u32,
 }
 
+/// The held list as a writing path reads it (`Store::get_held_list`): its entries, the player's
+/// acceptance counter (slot 0), and the `kept` bit of each slot read. `Store::set_held_list`
+/// compares a new list against it, to write only the slots that change.
+#[derive(Drop, Copy)]
+pub struct HeldList {
+    pub entries: Span<QuestHeld>,
+    pub counter: u32,
+    pub kept: Span<bool>,
+}
+
 // Constants
 
 /// The empty entry: quest id 0 is never valid.

@@ -45,7 +45,7 @@ fn seeded() -> Quest {
 }
 
 #[test]
-#[available_gas(l2_gas: 8294580)]
+#[available_gas(l2_gas: 8293026)]
 fn quest_define_reaches_max_dependents() {
     let q = seeded();
     define(q, B, one_off(), one(7), array![P].span());
@@ -54,7 +54,7 @@ fn quest_define_reaches_max_dependents() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 9438240)]
+#[available_gas(l2_gas: 9436476)]
 fn quest_define_rejects_too_many_dependents() {
     let q = seeded();
     define(q, B, one_off(), one(7), array![P].span());
@@ -71,7 +71,7 @@ fn quest_define_rejects_too_many_dependents() {
 }
 
 #[test]
-#[available_gas(l2_gas: 11808458)]
+#[available_gas(l2_gas: 11807114)]
 fn quest_retire_dependent_frees_max_dependents() {
     let q = seeded();
     define(q, B, one_off(), one(7), array![P].span());

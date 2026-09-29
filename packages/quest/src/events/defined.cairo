@@ -11,11 +11,7 @@ pub impl DefinedImpl of DefinedTrait {
     /// `QuestDefinition` is valid once built (`DefinitionTrait::new`).
     #[inline]
     fn new(definition: @QuestDefinition) -> QuestDefined {
-        QuestDefined {
-            quest_id: *definition.id,
-            schedule: *definition.schedule,
-            tasks: *definition.tasks,
-            conditions: *definition.conditions,
-        }
+        let QuestDefinition { id, schedule, tasks, conditions } = *definition;
+        QuestDefined { quest_id: id, schedule, tasks, conditions }
     }
 }

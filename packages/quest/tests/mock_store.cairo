@@ -11,6 +11,7 @@ use quiver_quest::models::progress::QuestProgress;
 use quiver_quest::models::record::QuestRecord;
 use quiver_quest::models::status::QuestStatus;
 use quiver_quest::store::Tracked;
+use quiver_quest::types::held::QuestHeld;
 use quiver_quest::types::schedule::QuestSchedule;
 use quiver_quest::types::task::QuestTask;
 use starknet::ContractAddress;
@@ -292,6 +293,16 @@ pub trait IMockDefinitionStore<TState> {
         tasks: Span<QuestTask>,
         conditions: Span<u32>,
     );
+    /// `DefinitionTrait::new`, as `store_set_definition`, then by hand: its slots written, then
+    /// `emit` of its event. The only difference from `store_set_definition` is the tracking path
+    /// (ARC-07a fix loop 1).
+    fn hand_set_model_definition(
+        ref self: TState,
+        quest_id: u32,
+        schedule: QuestSchedule,
+        tasks: Span<QuestTask>,
+        conditions: Span<u32>,
+    );
     /// 0.1.0's reads of the view `definition`: A, B, C (with conditions), the spans.
     fn hand_get_definition(
         self: @TState, quest_id: u32,
@@ -321,6 +332,14 @@ pub trait IMockDefinitionStore<TState> {
     fn store_get_record(self: @TState, player_id: felt252, quest_id: u32) -> QuestRecord;
     fn store_set_held_slot(ref self: TState, slot: QuestHeldSlot);
     fn store_get_held_slot(self: @TState, player_id: felt252, index: u8) -> QuestHeldSlot;
+    /// The held list through the store (ARC-07a fix loop 1): its entries; the list read, then
+    /// written as `after` with `counter`, only the slots that change.
+    fn store_get_held(self: @TState, player_id: felt252) -> Span<QuestHeld>;
+    fn store_set_held(ref self: TState, player_id: felt252, after: Span<QuestHeld>, counter: u32);
+    /// Whether the prerequisites of `quest_id` are met for the player: C, then each record.
+    fn store_prerequisites_met(
+        self: @TState, player_id: felt252, quest_id: u32, condition_count: u8,
+    ) -> bool;
     fn noop_reporter(ref self: TState, reporter: ContractAddress, allowed: bool);
     /// 0.1.0's `set_reporter`: the write, then `emit`.
     fn hand_set_reporter(ref self: TState, reporter: ContractAddress, allowed: bool);
@@ -332,13 +351,14 @@ pub trait IMockDefinitionStore<TState> {
 pub mod MockDefinitionStore {
     use quiver_quest::component::QuestComponent;
     use quiver_quest::component::QuestComponent::{QuestDefined, QuestReporterSet};
-    use quiver_quest::models::definition::{DefinitionTrait, QuestDefinition};
+    use quiver_quest::models::definition::{DefinitionStorage, DefinitionTrait, QuestDefinition};
     use quiver_quest::models::held::QuestHeldSlot;
     use quiver_quest::models::progress::QuestProgress;
     use quiver_quest::models::record::QuestRecord;
     use quiver_quest::models::reporter::QuestReporter;
     use quiver_quest::models::status::QuestStatus;
     use quiver_quest::store::StoreTrait;
+    use quiver_quest::types::held::QuestHeld;
     use quiver_quest::types::schedule::QuestSchedule;
     use quiver_quest::types::task::QuestTask;
     use starknet::ContractAddress;
@@ -406,6 +426,32 @@ pub mod MockDefinitionStore {
         ) {
             let definition = DefinitionTrait::new(quest_id, schedule, tasks, conditions);
             self.quest.set_definition(definition);
+        }
+
+        fn hand_set_model_definition(
+            ref self: ContractState,
+            quest_id: u32,
+            schedule: QuestSchedule,
+            tasks: Span<QuestTask>,
+            conditions: Span<u32>,
+        ) {
+            let definition = DefinitionTrait::new(quest_id, schedule, tasks, conditions);
+            let (slot_a, slot_b, slot_c) = definition.into_slots();
+            self.quest.Quest_definitions.write(definition.id, slot_a);
+            self.quest.Quest_tasks.write(definition.id, slot_b);
+            if slot_a.condition_count != 0 {
+                self.quest.Quest_conditions.write(definition.id, slot_c);
+            }
+            // The component's own emit, as 0.1.0's `define` did (`self.emit(..)` in the component)
+            QuestComponent::HasComponent::emit(
+                ref self.quest,
+                QuestDefined {
+                    quest_id: definition.id,
+                    schedule: definition.schedule,
+                    tasks: definition.tasks,
+                    conditions: definition.conditions,
+                },
+            );
         }
 
         fn hand_get_definition(
@@ -503,6 +549,23 @@ pub mod MockDefinitionStore {
             self.quest.get_held_slot(player_id, index)
         }
 
+        fn store_get_held(self: @ContractState, player_id: felt252) -> Span<QuestHeld> {
+            self.quest.get_held(player_id)
+        }
+
+        fn store_set_held(
+            ref self: ContractState, player_id: felt252, after: Span<QuestHeld>, counter: u32,
+        ) {
+            let before = self.quest.get_held_list(player_id);
+            self.quest.set_held_list(player_id, before, after, counter);
+        }
+
+        fn store_prerequisites_met(
+            self: @ContractState, player_id: felt252, quest_id: u32, condition_count: u8,
+        ) -> bool {
+            self.quest.prerequisites_met(player_id, quest_id, condition_count)
+        }
+
         fn noop_reporter(ref self: ContractState, reporter: ContractAddress, allowed: bool) {}
 
         fn hand_set_reporter(ref self: ContractState, reporter: ContractAddress, allowed: bool) {
@@ -551,6 +614,15 @@ pub trait IMockSilentStore<TState> {
         tasks: Span<QuestTask>,
         conditions: Span<u32>,
     );
+    /// `DefinitionTrait::new`, as `store_set_definition`, then by hand: its slots written, with no
+    /// event code (ARC-07a fix loop 1).
+    fn hand_set_model_definition_silent(
+        ref self: TState,
+        quest_id: u32,
+        schedule: QuestSchedule,
+        tasks: Span<QuestTask>,
+        conditions: Span<u32>,
+    );
     fn noop_reporter(ref self: TState, reporter: ContractAddress, allowed: bool);
     /// 0.1.0's `set_reporter` without `emit`: the write.
     fn hand_set_reporter_silent(ref self: TState, reporter: ContractAddress, allowed: bool);
@@ -561,7 +633,7 @@ pub trait IMockSilentStore<TState> {
 #[starknet::contract]
 pub mod MockSilentStore {
     use quiver_quest::component::QuestComponent;
-    use quiver_quest::models::definition::DefinitionTrait;
+    use quiver_quest::models::definition::{DefinitionStorage, DefinitionTrait};
     use quiver_quest::models::reporter::QuestReporter;
     use quiver_quest::store::StoreTrait;
     use quiver_quest::types::schedule::QuestSchedule;
@@ -625,6 +697,22 @@ pub mod MockSilentStore {
         ) {
             let definition = DefinitionTrait::new(quest_id, schedule, tasks, conditions);
             self.quest.set_definition(definition);
+        }
+
+        fn hand_set_model_definition_silent(
+            ref self: ContractState,
+            quest_id: u32,
+            schedule: QuestSchedule,
+            tasks: Span<QuestTask>,
+            conditions: Span<u32>,
+        ) {
+            let definition = DefinitionTrait::new(quest_id, schedule, tasks, conditions);
+            let (slot_a, slot_b, slot_c) = definition.into_slots();
+            self.quest.Quest_definitions.write(definition.id, slot_a);
+            self.quest.Quest_tasks.write(definition.id, slot_b);
+            if slot_a.condition_count != 0 {
+                self.quest.Quest_conditions.write(definition.id, slot_c);
+            }
         }
 
         fn noop_reporter(ref self: ContractState, reporter: ContractAddress, allowed: bool) {}

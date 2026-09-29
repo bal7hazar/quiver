@@ -426,3 +426,66 @@ pub mod MockBench {
         ) {}
     }
 }
+
+/// `MockBench` under `TrackNone` (ARC-07a fix loop 1): the tracked models' events are not
+/// emitted, the action events are.
+#[starknet::contract]
+pub mod MockBenchSilent {
+    use quiver_quest::component::QuestComponent;
+    use starknet::ContractAddress;
+
+    component!(path: QuestComponent, storage: quest, event: QuestEvent);
+
+    /// No tracked model emits.
+    impl QuestTracking = quiver_quest::store::tracking::TrackNone<ContractState>;
+
+    #[abi(embed_v0)]
+    impl QuestImpl = QuestComponent::QuestImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl QuestViewImpl = QuestComponent::QuestViewImpl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        quest: QuestComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        QuestEvent: QuestComponent::Event,
+    }
+
+    impl QuestHooks of QuestComponent::QuestHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @QuestComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+
+        fn authorize_player(
+            self: @QuestComponent::ComponentState<ContractState>,
+            caller: ContractAddress,
+            player_id: felt252,
+        ) -> bool {
+            true
+        }
+
+        fn on_quest_complete(
+            ref self: QuestComponent::ComponentState<ContractState>,
+            player_id: felt252,
+            quest_id: u32,
+            interval_id: u64,
+            completions: u64,
+        ) {}
+
+        fn on_quest_claim(
+            ref self: QuestComponent::ComponentState<ContractState>,
+            player_id: felt252,
+            quest_id: u32,
+            interval_id: u64,
+            claim_index: u64,
+        ) {}
+    }
+}

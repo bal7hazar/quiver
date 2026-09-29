@@ -32,7 +32,7 @@ fn one(task_id: u32) -> Span<QuestTask> {
 }
 
 #[test]
-#[available_gas(l2_gas: 6646490)]
+#[available_gas(l2_gas: 6645450)]
 fn quest_define_stores_and_emits() {
     let q = deploy();
     define_simple(q, 1, one_off(), 5, 1);
@@ -74,7 +74,7 @@ fn quest_define_stores_and_emits() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 4567238)]
+#[available_gas(l2_gas: 4566093)]
 fn quest_define_twice_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), 5, 1);
@@ -83,7 +83,7 @@ fn quest_define_twice_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3124023)]
+#[available_gas(l2_gas: 3123603)]
 fn quest_define_rejects_self_condition() {
     let q = deploy();
     assert_error(try_define(q, 1, one(5), array![1].span()), errors::INVALID_CONDITION);
@@ -91,7 +91,7 @@ fn quest_define_rejects_self_condition() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 4582253)]
+#[available_gas(l2_gas: 4581108)]
 fn quest_define_rejects_duplicate_condition() {
     let q = deploy();
     define_simple(q, 1, one_off(), 5, 1);
@@ -100,7 +100,7 @@ fn quest_define_rejects_duplicate_condition() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3180797)]
+#[available_gas(l2_gas: 3180471)]
 fn quest_define_rejects_undefined_condition() {
     let q = deploy();
     assert_error(try_define(q, 2, one(5), array![99].span()), errors::INVALID_CONDITION);
@@ -108,7 +108,7 @@ fn quest_define_rejects_undefined_condition() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 14696577)]
+#[available_gas(l2_gas: 14690361)]
 fn quest_define_rejects_too_many_conditions() {
     let q = deploy();
     let mut id: u32 = 1;
@@ -124,7 +124,7 @@ fn quest_define_rejects_too_many_conditions() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5064129)]
+#[available_gas(l2_gas: 5063300)]
 fn quest_define_rejects_retired_condition() {
     let q = deploy();
     define_simple(q, 1, one_off(), 5, 1);
@@ -134,7 +134,7 @@ fn quest_define_rejects_retired_condition() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3919934)]
+#[available_gas(l2_gas: 3919094)]
 fn quest_define_rejects_invalid_input() {
     let q = deploy();
     assert_error(try_define(q, 0, one(5), array![].span()), errors::INVALID_ID);
@@ -147,7 +147,7 @@ fn quest_define_rejects_invalid_input() {
 }
 
 #[test]
-#[available_gas(l2_gas: 8401239)]
+#[available_gas(l2_gas: 8399780)]
 fn quest_define_counts_dependents() {
     let q = deploy();
     define_simple(q, 1, one_off(), 5, 1);
@@ -162,7 +162,7 @@ fn quest_define_counts_dependents() {
 /// whose overflow `accept` refuses (`'Quest: too many held'`).
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 49813103)]
+#[available_gas(l2_gas: 49792092)]
 fn quest_define_rejects_association_overflow() {
     let q = deploy();
     let old_cap: u32 = 28;
