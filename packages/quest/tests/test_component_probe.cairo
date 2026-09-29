@@ -18,6 +18,8 @@ pub trait IProbe<TState> {
     fn unpack_tasks_n(ref self: TState, n: u32) -> u32;
     fn unpack_record_n(ref self: TState, n: u32) -> u64;
     fn unpack_held_n(ref self: TState, n: u32) -> u64;
+    fn set_n(ref self: TState, n: u32, value: felt252);
+    fn set_twice_n(ref self: TState, n: u32, first: felt252, second: felt252);
 }
 
 #[starknet::contract]
@@ -78,6 +80,23 @@ pub mod Probe {
             let mut i = 0;
             while i < n {
                 self.values.write(('player', i), i.into() + 2);
+                i += 1;
+            }
+        }
+
+        fn set_n(ref self: ContractState, n: u32, value: felt252) {
+            let mut i = 0;
+            while i < n {
+                self.values.write(('player', i), value);
+                i += 1;
+            }
+        }
+
+        fn set_twice_n(ref self: ContractState, n: u32, first: felt252, second: felt252) {
+            let mut i = 0;
+            while i < n {
+                self.values.write(('player', i), first);
+                self.values.write(('player', i), second);
                 i += 1;
             }
         }
@@ -193,7 +212,7 @@ fn probe_unpack_record_100() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1434080)]
+#[available_gas(l2_gas: 2235230)]
 fn probe_unpack_held_100() {
     deploy().unpack_held_n(N);
 }
@@ -261,3 +280,92 @@ fn probe_write_then_change_100() {
 fn _types(
     _d: QuestDefinition, _t: QuestTasks, _r: QuestRecord, _h: QuestHeldSlot, _a: ContractAddress,
 ) {}
+
+// Fix loop 1, point 1: the cost of a write by the transition of its cell. Starknet charges the
+// allocation of a cell (zero at the start of the transaction, non-zero at its end) once, from the
+// final state diff; snforge does the same over a whole test. Each transition is its own test; the
+// tests with a first call that sets the cells to 1 are compared with
+// `probe_transition_baseline_set`, which makes that first call and then a call that writes
+// nothing, so that the allocations of the setup are the same on both sides.
+
+#[test]
+#[available_gas(l2_gas: 48967622)]
+fn probe_transition_baseline_set() {
+    let probe = deploy();
+    probe.set_n(N, 1);
+    probe.noop(N);
+}
+
+/// 0 → 1, one call: an allocation per cell.
+#[test]
+#[available_gas(l2_gas: 48967622)]
+fn probe_transition_zero_to_value() {
+    let probe = deploy();
+    probe.noop(N);
+    probe.set_n(N, 1);
+}
+
+/// 0 → 0: a write that changes nothing.
+#[test]
+#[available_gas(l2_gas: 6757622)]
+fn probe_transition_zero_unchanged() {
+    let probe = deploy();
+    probe.noop(N);
+    probe.set_n(N, 0);
+}
+
+/// 0 → 1 → 0 in one call: the cell is back to its initial value; no allocation.
+#[test]
+#[available_gas(l2_gas: 12657257)]
+fn probe_transition_zero_set_then_restored() {
+    let probe = deploy();
+    probe.noop(N);
+    probe.set_twice_n(N, 1, 0);
+}
+
+/// 1 → 2 (after the setup's 0 → 1): an update of a non-zero cell.
+#[test]
+#[available_gas(l2_gas: 54963752)]
+fn probe_transition_value_to_other() {
+    let probe = deploy();
+    probe.set_n(N, 1);
+    probe.set_n(N, 2);
+}
+
+/// 1 → 1: an unchanged non-zero cell.
+#[test]
+#[available_gas(l2_gas: 54963752)]
+fn probe_transition_value_unchanged() {
+    let probe = deploy();
+    probe.set_n(N, 1);
+    probe.set_n(N, 1);
+}
+
+/// 1 → 2 → 1 in one call: changed, then restored to its value at the start of the call.
+#[test]
+#[available_gas(l2_gas: 60863387)]
+fn probe_transition_value_changed_then_restored() {
+    let probe = deploy();
+    probe.set_n(N, 1);
+    probe.set_twice_n(N, 2, 1);
+}
+
+/// 1 → 0: a clear. Within one test it also undoes the setup's allocation, since the final diff
+/// no longer has the cell; the difference with the baseline is the clear minus the allocation.
+#[test]
+#[available_gas(l2_gas: 12753752)]
+fn probe_transition_value_to_zero() {
+    let probe = deploy();
+    probe.set_n(N, 1);
+    probe.set_n(N, 0);
+}
+
+/// The baseline of the one-call-then-write tests above: deploy, then two calls that write
+/// nothing.
+#[test]
+#[available_gas(l2_gas: 761492)]
+fn probe_transition_baseline_empty() {
+    let probe = deploy();
+    probe.noop(N);
+    probe.noop(N);
+}

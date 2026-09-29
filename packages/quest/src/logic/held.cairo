@@ -8,7 +8,7 @@
 use super::types::{QuestHeld, QuestHeldSlot};
 
 /// The empty entry: quest id 0 is never valid.
-pub const HELD_EMPTY: QuestHeld = QuestHeld { quest_id: 0, interval_id: 0 };
+pub const HELD_EMPTY: QuestHeld = QuestHeld { quest_id: 0, interval_id: 0, acceptance: 0 };
 
 /// The position of `quest_id` in `held`, if any. `accept` keeps a quest at most once in a list.
 pub fn held_position(held: Span<QuestHeld>, quest_id: u32) -> Option<u32> {
@@ -23,7 +23,7 @@ pub fn held_position(held: Span<QuestHeld>, quest_id: u32) -> Option<u32> {
     None
 }
 
-/// `entry` is in `held`, with the same interval.
+/// `entry` is in `held`: the same quest, interval and acceptance.
 pub fn held_contains(held: Span<QuestHeld>, entry: QuestHeld) -> bool {
     let mut held = held;
     while let Some(other) = held.pop_front() {
@@ -49,9 +49,15 @@ pub fn held_remove(held: Span<QuestHeld>, position: u32) -> Span<QuestHeld> {
     out.span()
 }
 
-/// Slot `slot` of the list: entries `2 × slot` and `2 × slot + 1`, empty past the end.
-pub fn held_slot(held: Span<QuestHeld>, slot: u32) -> QuestHeldSlot {
-    QuestHeldSlot { e0: entry_at(held, 2 * slot), e1: entry_at(held, 2 * slot + 1) }
+/// Slot `slot` of the list: entries `2 × slot` and `2 × slot + 1`, empty past the end, and
+/// `counter` in slot 0 (0 in the others).
+pub fn held_slot(held: Span<QuestHeld>, slot: u32, counter: u16) -> QuestHeldSlot {
+    let counter = if slot == 0 {
+        counter
+    } else {
+        0
+    };
+    QuestHeldSlot { e0: entry_at(held, 2 * slot), e1: entry_at(held, 2 * slot + 1), counter }
 }
 
 #[inline(always)]

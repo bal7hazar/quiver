@@ -234,27 +234,27 @@ fn bench_claim() {
 // held list, at its capacity
 
 #[test]
-#[available_gas(l2_gas: 38819)]
+#[available_gas(l2_gas: 40499)]
 fn bench_held_position_absent() {
     assert!(held_position(eight_held(), opaque(99)) == None);
 }
 
 #[test]
-#[available_gas(l2_gas: 40121)]
+#[available_gas(l2_gas: 43334)]
 fn bench_held_contains_absent() {
     assert!(!held_contains(eight_held(), opaque(held(8, 31))));
 }
 
 #[test]
-#[available_gas(l2_gas: 45560)]
+#[available_gas(l2_gas: 48720)]
 fn bench_held_remove_first() {
     assert!(held_remove(eight_held(), opaque(0)).len() == 7);
 }
 
 #[test]
-#[available_gas(l2_gas: 26618)]
+#[available_gas(l2_gas: 29873)]
 fn bench_held_slot_last() {
-    assert!(held_slot(eight_held(), opaque(3)) == slot(held(7, 30), held(8, 30)));
+    assert!(held_slot(eight_held(), opaque(3), opaque(9)) == slot(held(7, 30), held(8, 30)));
 }
 
 // packing: pack then unpack, every field at its maximum
@@ -294,7 +294,7 @@ fn bench_pack_unpack_conditions() {
 }
 
 #[test]
-#[available_gas(l2_gas: 27395)]
+#[available_gas(l2_gas: 37716)]
 fn bench_pack_unpack_held_slot() {
     let h: QuestHeldSlot = opaque(slot(held(U32_MAX, U64_MAX), held(U32_MAX, U64_MAX)));
     let packed = StorePacking::<QuestHeldSlot, felt252>::pack(h);

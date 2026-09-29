@@ -98,7 +98,8 @@ fn seed_quest(address: ContractAddress, quest_id: u32, state: u8) -> QuestHeld {
     } else {
         NOW_DAY
     };
-    QuestHeld { quest_id, interval_id }
+    // accepted as the player's `quest_id`-th acceptance
+    QuestHeld { quest_id, interval_id, acceptance: quest_id.try_into().unwrap() }
 }
 
 /// Grid point (h, state), seeded into `grid`: quests 1..=h and the held list.
@@ -110,10 +111,16 @@ pub fn seed(grid: Grid, h: u32, state: u8) {
         id += 1;
     }
     let entries = entries.span();
-    let none = QuestHeld { quest_id: 0, interval_id: 0 };
+    let none = QuestHeld { quest_id: 0, interval_id: 0, acceptance: 0 };
     let mut slot: u32 = 0;
     while 2 * slot < h {
         let e0 = *entries[2 * slot];
+        // the counter, in slot 0: the number of the last acceptance
+        let counter: u16 = if slot == 0 {
+            h.try_into().unwrap()
+        } else {
+            0
+        };
         let e1 = if 2 * slot + 1 < h {
             *entries[2 * slot + 1]
         } else {
@@ -123,7 +130,7 @@ pub fn seed(grid: Grid, h: u32, state: u8) {
             grid.address,
             selector!("Quest_held"),
             array![PLAYER, slot.into()].span(),
-            StorePacking::pack(QuestHeldSlot { e0, e1 }),
+            StorePacking::pack(QuestHeldSlot { e0, e1, counter }),
         );
         slot += 1;
     }

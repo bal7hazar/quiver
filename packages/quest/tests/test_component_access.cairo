@@ -71,7 +71,7 @@ fn quest_set_reporter_admin_only() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6005465)]
+#[available_gas(l2_gas: 6150701)]
 fn quest_progress_rejects_unregistered_caller() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -87,7 +87,7 @@ fn quest_progress_rejects_unregistered_caller() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 2993876)]
+#[available_gas(l2_gas: 3036915)]
 fn quest_progress_many_rejects_unregistered_caller() {
     let q = deploy();
     caller(q, stranger());
@@ -99,7 +99,7 @@ fn quest_progress_many_rejects_unregistered_caller() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7702351)]
+#[available_gas(l2_gas: 7745706)]
 fn quest_progress_accepts_registered_reporter() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -127,7 +127,7 @@ fn quest_progress_accepts_registered_reporter() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5511240)]
+#[available_gas(l2_gas: 5570397)]
 fn quest_reporter_revoked() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -142,7 +142,7 @@ fn quest_reporter_revoked() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15118925)]
+#[available_gas(l2_gas: 15148661)]
 fn quest_claim_requires_player_authorization() {
     let q = completed();
     caller(q, stranger());
@@ -158,7 +158,7 @@ fn quest_claim_requires_player_authorization() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 4824362)]
+#[available_gas(l2_gas: 4881954)]
 fn quest_accept_requires_player_authorization() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 1)].span(), array![].span());
@@ -170,7 +170,7 @@ fn quest_accept_requires_player_authorization() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5739563)]
+#[available_gas(l2_gas: 5813556)]
 fn quest_abandon_requires_player_authorization() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 5)].span(), array![].span());
@@ -184,7 +184,7 @@ fn quest_abandon_requires_player_authorization() {
 /// The owner of one player cannot act for another.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 4611663)]
+#[available_gas(l2_gas: 4655648)]
 fn quest_player_authorization_is_per_player() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 5)].span(), array![].span());
@@ -216,7 +216,7 @@ fn quest_internal_layer_not_reachable_from_abi() {
 /// The consumer's own entrypoints reach the internal layer after the consumer's checks.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6111721)]
+#[available_gas(l2_gas: 6185756)]
 fn quest_consumer_calls_the_internal_layer() {
     let (address, consumer, view) = deploy_consumer();
     let safe = IMockConsumerSafeDispatcher { contract_address: address };

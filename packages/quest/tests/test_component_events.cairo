@@ -8,7 +8,7 @@ use super::helpers::{one_off, schedule, task};
 use super::setup::{PLAYER, at, claim, define, define_held, define_simple, deploy, report, retire};
 
 #[test]
-#[available_gas(l2_gas: 16629220)]
+#[available_gas(l2_gas: 16659796)]
 fn quest_events_keys_and_data() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 2);
@@ -44,7 +44,7 @@ fn quest_events_keys_and_data() {
 
 /// Accept and abandon emit nothing (§3.4).
 #[test]
-#[available_gas(l2_gas: 5202624)]
+#[available_gas(l2_gas: 5656550)]
 fn quest_accept_and_abandon_emit_nothing() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 5)].span(), array![].span());

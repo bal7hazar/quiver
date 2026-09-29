@@ -11,7 +11,8 @@ pub struct Reentry {
     pub hook: felt252,
     /// Only when that hook is called for this quest.
     pub on_quest: u32,
-    /// `'progress'`, `'claim'`, `'accept'`, `'abandon'` or `'retire'`.
+    /// `'progress'`, `'claim'`, `'accept'`, `'abandon'`, `'retire'`, or the sequences
+    /// `'abandon_accept'` and `'accept_abandon_accept'` on one quest.
     pub action: felt252,
     pub quest_id: u32,
     pub task_id: u32,
@@ -92,6 +93,13 @@ pub mod MockReentrant {
             QuestInternalImpl::accept(ref self, player_id, reentry.quest_id);
         } else if reentry.action == 'abandon' {
             QuestInternalImpl::abandon(ref self, player_id, reentry.quest_id);
+        } else if reentry.action == 'abandon_accept' {
+            QuestInternalImpl::abandon(ref self, player_id, reentry.quest_id);
+            QuestInternalImpl::accept(ref self, player_id, reentry.quest_id);
+        } else if reentry.action == 'accept_abandon_accept' {
+            QuestInternalImpl::accept(ref self, player_id, reentry.quest_id);
+            QuestInternalImpl::abandon(ref self, player_id, reentry.quest_id);
+            QuestInternalImpl::accept(ref self, player_id, reentry.quest_id);
         } else if reentry.action == 'retire' {
             QuestInternalImpl::retire(ref self, reentry.quest_id);
         }

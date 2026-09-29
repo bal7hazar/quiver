@@ -95,7 +95,7 @@ fn completions(grid: Grid) -> Array<u64> {
 }
 
 #[test]
-#[available_gas(l2_gas: 80721514)]
+#[available_gas(l2_gas: 81005025)]
 fn baseline_game_case_three_per_task() {
     let grid = game(3);
     let _entries = distinct_entries(1, 16, 1);
@@ -103,7 +103,7 @@ fn baseline_game_case_three_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 85416816)]
+#[available_gas(l2_gas: 85759210)]
 fn game_case_three_per_task() {
     let grid = game(3);
     grid.quest.progress_many(PLAYER, distinct_entries(1, 16, 1), Mode::Storage);
@@ -111,7 +111,7 @@ fn game_case_three_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 56762194)]
+#[available_gas(l2_gas: 57045705)]
 fn baseline_game_case_two_per_task() {
     let grid = game(2);
     let _entries = distinct_entries(1, 16, 1);
@@ -119,7 +119,7 @@ fn baseline_game_case_two_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 61457496)]
+#[available_gas(l2_gas: 61799890)]
 fn game_case_two_per_task() {
     let grid = game(2);
     grid.quest.progress_many(PLAYER, distinct_entries(1, 16, 1), Mode::Storage);

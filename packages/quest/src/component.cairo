@@ -16,6 +16,7 @@
 
 #[starknet::component]
 pub mod QuestComponent {
+    use core::num::traits::WrappingAdd;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use crate::constants::{HELD_SLOTS, MAX_HELD};
@@ -258,9 +259,9 @@ pub mod QuestComponent {
             }
             let time = get_block_timestamp();
             // The held quests when the call starts. A hook may accept or abandon: once a hook
-            // has run, each later entry is processed only if the list still holds it. An entry
-            // accepted by a hook is not in this walk
-            let held = self.held_read(player_id);
+            // has run, each later entry is processed only if the list still holds it, the same
+            // acceptance. An entry accepted by a hook, a renewed one included, is not in this walk
+            let (held, _) = self.held_read(player_id);
             let mut hooked = false;
             let mut position: u32 = 0;
             for entry in held {
@@ -306,7 +307,7 @@ pub mod QuestComponent {
                     unlock = Option::Some(QuestRecord { unlocked: true, ..record });
                 }
             }
-            let held = self.held_read(player_id);
+            let (held, counter) = self.held_read(player_id);
             let completed = self.Quest_progress.read((player_id, quest_id, interval_id)).completed;
             if let Option::Some(position) = held_position(held, quest_id) {
                 // Its own entry is live when it is of this interval and not completed: A is
@@ -326,8 +327,11 @@ pub mod QuestComponent {
                 }
             }
             assert(kept.len() < MAX_HELD.into(), errors::TOO_MANY_HELD);
-            kept.append(QuestHeld { quest_id, interval_id });
-            self.held_write(player_id, held, kept.span());
+            // A new acceptance number: a quest abandoned and accepted again, even in the same
+            // interval, is a different entry for a call that was running
+            let acceptance = counter.wrapping_add(1);
+            kept.append(QuestHeld { quest_id, interval_id, acceptance });
+            self.held_write(player_id, held, counter, kept.span(), acceptance);
             if let Option::Some(record) = unlock {
                 self.Quest_records.write(record_key, record);
             }
@@ -346,7 +350,7 @@ pub mod QuestComponent {
                 Option::Some(interval_id) => interval_id,
                 Option::None => core::panic_with_felt252(errors::NOT_ACTIVE),
             };
-            let held = self.held_read(player_id);
+            let (held, counter) = self.held_read(player_id);
             let position = match held_position(held, quest_id) {
                 Option::Some(position) => position,
                 Option::None => core::panic_with_felt252(errors::NOT_ACCEPTED),
@@ -356,7 +360,7 @@ pub mod QuestComponent {
                 !self.Quest_progress.read((player_id, quest_id, interval_id)).completed,
                 errors::NOT_ACCEPTED,
             );
-            self.held_write(player_id, held, held_remove(held, position));
+            self.held_write(player_id, held, counter, held_remove(held, position), counter);
         }
 
         /// Refuses `'Quest: not completed'`, `'Quest: already claimed'`. Writes the progress and
@@ -454,14 +458,18 @@ pub mod QuestComponent {
                 Option::Some(interval_id) => interval_id,
                 Option::None => { return false; },
             };
-            let entry = QuestHeld { quest_id, interval_id };
-            held_contains(self.held_read(player_id), entry)
-                && !self.Quest_progress.read((player_id, quest_id, interval_id)).completed
+            let (held, _) = self.held_read(player_id);
+            match held_position(held, quest_id) {
+                Option::Some(position) => *held[position].interval_id == interval_id
+                    && !self.Quest_progress.read((player_id, quest_id, interval_id)).completed,
+                Option::None => false,
+            }
         }
 
         /// The player's held entries, in the order of acceptance, live or dead (not yet pruned).
         fn held_of(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
-            self.held_read(player_id)
+            let (held, _) = self.held_read(player_id);
+            held
         }
     }
 
@@ -480,7 +488,7 @@ pub mod QuestComponent {
             batch: Span<TaskProgress>,
             time: u64,
         ) -> bool {
-            let QuestHeld { quest_id, interval_id } = entry;
+            let QuestHeld { quest_id, interval_id, acceptance: _ } = entry;
             // 1. A; skip a retired quest (a hook of an earlier quest of this call may retire it),
             // then an acceptance of another interval (expired at rollover) or outside the
             // schedule
@@ -537,7 +545,11 @@ pub mod QuestComponent {
             } else {
                 pair.e1
             };
-            found == entry || held_contains(self.held_read(player_id), entry)
+            if found == entry {
+                return true;
+            }
+            let (held, _) = self.held_read(player_id);
+            held_contains(held, entry)
         }
 
         /// Whether a held entry is live at `time`: its quest is not retired, `time` is in the
@@ -546,7 +558,7 @@ pub mod QuestComponent {
         fn held_is_live(
             self: @ComponentState<TContractState>, player_id: felt252, entry: QuestHeld, time: u64,
         ) -> bool {
-            let QuestHeld { quest_id, interval_id } = entry;
+            let QuestHeld { quest_id, interval_id, acceptance: _ } = entry;
             let definition = self.Quest_definitions.read(quest_id);
             if definition.retired
                 || schedule_interval_id(@definition.schedule, time) != Option::Some(interval_id) {
@@ -555,13 +567,18 @@ pub mod QuestComponent {
             !self.Quest_progress.read((player_id, quest_id, interval_id)).completed
         }
 
-        /// The held list: slots read in order while full, at most `HELD_SLOTS`. A slot whose
-        /// `e1` is empty ends the list.
-        fn held_read(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
+        /// The held list and the player's acceptance counter: slots read in order while full, at
+        /// most `HELD_SLOTS`. A slot whose `e1` is empty ends the list.
+        fn held_read(
+            self: @ComponentState<TContractState>, player_id: felt252,
+        ) -> (Span<QuestHeld>, u16) {
             let mut held: Array<QuestHeld> = array![];
+            let first = self.Quest_held.read((player_id, 0));
+            let counter = first.counter;
+            let mut pair = first;
             let mut slot: u8 = 0;
-            while slot < HELD_SLOTS {
-                let QuestHeldSlot { e0, e1 } = self.Quest_held.read((player_id, slot));
+            loop {
+                let QuestHeldSlot { e0, e1, counter: _ } = pair;
                 if e0.quest_id == 0 {
                     break;
                 }
@@ -571,17 +588,23 @@ pub mod QuestComponent {
                 }
                 held.append(e1);
                 slot += 1;
+                if slot == HELD_SLOTS {
+                    break;
+                }
+                pair = self.Quest_held.read((player_id, slot));
             }
-            held.span()
+            (held.span(), counter)
         }
 
-        /// Writes the slots of `after` that differ from those of `before`, the list as read: an
-        /// unchanged slot is not written.
+        /// Writes the slots of `after` (with `after_counter` in slot 0) that differ from those of
+        /// `before`, the list as read: an unchanged slot is not written.
         fn held_write(
             ref self: ComponentState<TContractState>,
             player_id: felt252,
             before: Span<QuestHeld>,
+            before_counter: u16,
             after: Span<QuestHeld>,
+            after_counter: u16,
         ) {
             let len = if before.len() > after.len() {
                 before.len()
@@ -589,9 +612,9 @@ pub mod QuestComponent {
                 after.len()
             };
             let mut slot: u32 = 0;
-            while 2 * slot < len {
-                let value = held_slot(after, slot);
-                if held_slot(before, slot) != value {
+            while slot == 0 || 2 * slot < len {
+                let value = held_slot(after, slot, after_counter);
+                if held_slot(before, slot, before_counter) != value {
                     self.Quest_held.write((player_id, slot.try_into().unwrap()), value);
                 }
                 slot += 1;

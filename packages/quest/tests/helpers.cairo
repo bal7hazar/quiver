@@ -45,12 +45,33 @@ pub fn no_ids() -> QuestConditions {
     ids(0, 0, 0, 0, 0, 0, 0)
 }
 
+/// An entry with acceptance number 0.
 pub fn held(quest_id: u32, interval_id: u64) -> QuestHeld {
-    QuestHeld { quest_id, interval_id }
+    QuestHeld { quest_id, interval_id, acceptance: 0 }
 }
 
+/// An entry with its acceptance number.
+pub fn stamped(quest_id: u32, interval_id: u64, acceptance: u16) -> QuestHeld {
+    QuestHeld { quest_id, interval_id, acceptance }
+}
+
+/// The entries without their acceptance numbers, to compare quests and intervals only.
+pub fn unstamped(entries: Span<QuestHeld>) -> Span<QuestHeld> {
+    let mut out = array![];
+    for entry in entries {
+        out.append(QuestHeld { acceptance: 0, ..*entry });
+    }
+    out.span()
+}
+
+/// A slot of the held list with counter 0.
 pub fn held_slot(e0: QuestHeld, e1: QuestHeld) -> QuestHeldSlot {
-    QuestHeldSlot { e0, e1 }
+    QuestHeldSlot { e0, e1, counter: 0 }
+}
+
+/// Slot 0 of a held list, with the player's acceptance counter.
+pub fn held_slot0(e0: QuestHeld, e1: QuestHeld, counter: u16) -> QuestHeldSlot {
+    QuestHeldSlot { e0, e1, counter }
 }
 
 pub fn progress(c0: u32, c1: u32, c2: u32, completed: bool, claimed: bool) -> QuestProgress {
