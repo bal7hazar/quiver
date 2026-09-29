@@ -1,7 +1,7 @@
 # quiver_quest
 
 Quests for Starknet games: tasks, intervals, prerequisites, acceptance, claim. Pure Cairo and
-Starknet, no Dojo. The accepted API is [ARC-01 §3](../../docs/research/ARC-01-quest-achievement.md),
+Starknet, no Dojo. The accepted API is [ARC-01 §3](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-01-quest-achievement.md),
 as amended by D-135.
 
 A quest has:
@@ -248,7 +248,7 @@ gas per transaction", docs.starknet.io, Learn > Cheatsheets > Chain info,
 <https://docs.starknet.io/learn/cheatsheets/chain-info>, read on 2026-09-28; the page gives it for
 Mainnet 0.14.2 and Sepolia 0.14.3, and 6 × 10⁹ per block). The project's own cap is far lower:
 the worst call the package allows must stay **under 20 × 10⁶ L2 gas**
-([A-G1 amendment](../../docs/decisions/2026-09-28-A-G1-amendment-cost-cap.md)). For scale, Grim
+([A-G1 amendment](https://github.com/bal7hazar/quiver/blob/main/docs/decisions/2026-09-28-A-G1-amendment-cost-cap.md)). For scale, Grim
 World's worst tick is 5.1 × 10⁶ as a whole transaction.
 
 **The package's worst call.** It is `progress_many` with 16 entries (the slowest merge), every
@@ -305,7 +305,7 @@ through the internal layer, event mode reads and writes nothing.
 ## Library
 
 `quiver_quest::logic` is the pure library, without storage: state in, state out
-([ARC-01 §3.2](../../docs/research/ARC-01-quest-achievement.md)). It holds:
+([ARC-01 §3.2](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-01-quest-achievement.md)). It holds:
 
 - the types `Mode`, `QuestSchedule`, `QuestTask`, `QuestDefinition`, `QuestTasks`,
   `QuestConditions`, `QuestProgress`, `QuestRecord`, `QuestHeld`, `QuestHeldSlot` and
@@ -328,4 +328,4 @@ Every test has a budget; the figures are in [GAS.md](GAS.md): the library's benc
 `test_bench`, the component's in `test_component_bench`, one per entrypoint on the worst case of
 ARC-01 §5.1; the grid over the held list in `test_component_grid`; Grim World's case in
 `test_component_game`. Per entrypoint, the measure and the budget are in
-[docs/BUDGETS.md](../../docs/BUDGETS.md).
+[docs/BUDGETS.md](https://github.com/bal7hazar/quiver/blob/main/docs/BUDGETS.md).
