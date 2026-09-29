@@ -1,8 +1,8 @@
 //! Builders shared by the tests: they keep each test to its given, when and then.
 
 use quiver_quest::logic::{
-    QuestConditions, QuestIdPage, QuestProgress, QuestRecord, QuestSchedule, QuestTask, QuestTasks,
-    TaskProgress,
+    QuestConditions, QuestHeld, QuestHeldSlot, QuestProgress, QuestRecord, QuestSchedule, QuestTask,
+    QuestTasks, TaskProgress,
 };
 
 pub const DAY: u32 = 86400;
@@ -45,8 +45,39 @@ pub fn no_ids() -> QuestConditions {
     ids(0, 0, 0, 0, 0, 0, 0)
 }
 
-pub fn page(len: u8, ids: QuestConditions) -> QuestIdPage {
-    QuestIdPage { len, ids }
+/// An entry with acceptance number 0.
+pub fn held(quest_id: u32, interval_id: u64) -> QuestHeld {
+    QuestHeld { quest_id, interval_id, acceptance: 0 }
+}
+
+/// An entry with its acceptance number.
+pub fn stamped(quest_id: u32, interval_id: u64, acceptance: u32) -> QuestHeld {
+    QuestHeld { quest_id, interval_id, acceptance }
+}
+
+/// The entries without their acceptance numbers, to compare quests and intervals only.
+pub fn unstamped(entries: Span<QuestHeld>) -> Span<QuestHeld> {
+    let mut out = array![];
+    for entry in entries {
+        out.append(QuestHeld { acceptance: 0, ..*entry });
+    }
+    out.span()
+}
+
+/// A slot of the held list with counter 0, `kept` when it holds an entry.
+pub fn held_slot(e0: QuestHeld, e1: QuestHeld) -> QuestHeldSlot {
+    QuestHeldSlot { e0, e1, counter: 0, kept: e0.quest_id != 0 }
+}
+
+/// Slot 0 of a held list, with the player's acceptance counter; `kept`, as slot 0 always is
+/// once the player has accepted.
+pub fn held_slot0(e0: QuestHeld, e1: QuestHeld, counter: u32) -> QuestHeldSlot {
+    QuestHeldSlot { e0, e1, counter, kept: true }
+}
+
+/// A slot with every field given.
+pub fn held_slot_k(e0: QuestHeld, e1: QuestHeld, counter: u32, kept: bool) -> QuestHeldSlot {
+    QuestHeldSlot { e0, e1, counter, kept }
 }
 
 pub fn progress(c0: u32, c1: u32, c2: u32, completed: bool, claimed: bool) -> QuestProgress {
@@ -57,14 +88,12 @@ pub fn no_progress() -> QuestProgress {
     progress(0, 0, 0, false, false)
 }
 
-pub fn record(
-    completions: u64, claims: u64, unlocked: bool, active: bool, accepted_interval: u64,
-) -> QuestRecord {
-    QuestRecord { completions, claims, unlocked, active, accepted_interval }
+pub fn record(completions: u64, claims: u64, unlocked: bool) -> QuestRecord {
+    QuestRecord { completions, claims, unlocked }
 }
 
 pub fn no_record() -> QuestRecord {
-    record(0, 0, false, false, 0)
+    record(0, 0, false)
 }
 
 /// `value`, hidden from the compiler: a benchmark's input is not folded into a constant.

@@ -15,9 +15,8 @@ fn quest_error_strings_are_the_accepted_ones() {
     assert!(errors::HAS_LIVE_DEPENDENTS == 'Quest: has live dependents');
     assert!(errors::TOO_MANY_DEPENDENTS == 'Quest: too many dependents');
     assert!(errors::INVALID_TASK == 'Quest: invalid task');
-    assert!(errors::TASK_FULL == 'Quest: task full');
     assert!(errors::TOO_MANY_ENTRIES == 'Quest: too many entries');
-    assert!(errors::NO_ACCEPT_STEP == 'Quest: no accept step');
+    assert!(errors::TOO_MANY_HELD == 'Quest: too many held');
     assert!(errors::NOT_ACTIVE == 'Quest: not active');
     assert!(errors::LOCKED == 'Quest: locked');
     assert!(errors::ALREADY_ACCEPTED == 'Quest: already accepted');
