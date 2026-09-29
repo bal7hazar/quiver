@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 01:17 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 02:07 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -48,7 +48,12 @@ one-write tests assert state, not writes. **Fix loop 1** done (00:43 to 01:15 UT
 probes confirm the allocation charge (402 000, a new cell only; updates 57 106); claim 0.36M,
 abandon 0.54M, the game's case 4.53M, worst accept 1.89M; worst calls 6.19M, 8.00M (H = 4),
 11.38M, 15.01M (H = 8), all fresh slots; acceptance numbers in held entries close the renewal
-hole; the writes of progress asserted by gas. **Fix loop 2** runs since 01:16 UTC. The project manager
+hole; the writes of progress asserted by gas. **Fix loop 2** done (01:16 to 02:05 UTC): the
+worst call measured with the player's slots created (6.18M at H = 4; 15.00M at H = 8 with a
+one-slot hook) and existing (2.97M; 8.57M), each with the network's estimate (453 500 per created
+slot, 32 000 per overwritten); created and overwritten slots per entrypoint documented; held-list
+slots kept instead of zeroed, so no entrypoint zeroes a slot. The `[GPT-6-Astra]` re-audit runs
+since 02:06 UTC. The project manager
 corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
 about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
 what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
@@ -88,8 +93,8 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
 | ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
-| ARC-03c quest held list | `quiver-ARC-03c-*` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 2 since 01:16 UTC |
-| ARC-03c audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 00:39 UTC; to resume on the fixes |
+| ARC-03c quest held list | `quiver-ARC-03c-*` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 2 done |
+| ARC-03c audit | setsid (codex), `quiver-1` | `gpt-6-astra` / `gpt-6-astra` | audit | Re-audit since 02:06 UTC |
 | PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | FAIL (findings in the shared code, inherited); #8 merged by decision |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
