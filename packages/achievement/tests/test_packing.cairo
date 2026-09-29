@@ -146,11 +146,15 @@ fn achievement_unpacking_rejects_bit_196() {
     let _: AchievementDefinition = StorePacking::unpack(to_felt(pow2(196)));
 }
 
+/// Exactly 2^251: bit 251 alone, every lower reserved bit clear. A felt literal, since `to_felt`
+/// requires values below 2^251 (2^251 is below the field prime, so it is a valid felt).
+const TWO_POW_251: felt252 = 0x800000000000000000000000000000000000000000000000000000000000000;
+
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
-#[available_gas(l2_gas: 460110)]
+#[available_gas(l2_gas: 30933)]
 fn achievement_unpacking_rejects_bit_251() {
-    let _: AchievementDefinition = StorePacking::unpack(to_felt(pow2(251) - 1));
+    let _: AchievementDefinition = StorePacking::unpack(TWO_POW_251);
 }
 
 #[test]
