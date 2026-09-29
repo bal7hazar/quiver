@@ -191,6 +191,26 @@ pub fn held_slots(quest: Quest, player_id: felt252) -> Span<QuestHeldSlot> {
     out.span()
 }
 
+/// The raw felts of the held list of `player_id`, slot by slot.
+pub fn held_felts(quest: Quest, player_id: felt252) -> Span<felt252> {
+    let mut out = array![];
+    let mut slot: u8 = 0;
+    while slot < HELD_SLOTS {
+        out
+            .append(
+                *load(
+                    quest.address,
+                    map_entry_address(
+                        selector!("Quest_held"), array![player_id, slot.into()].span(),
+                    ),
+                    1,
+                )[0],
+            );
+        slot += 1;
+    }
+    out.span()
+}
+
 /// The panic data of a failed call starts with `error`.
 pub fn assert_error<T, +Drop<T>>(result: Result<T, Array<felt252>>, error: felt252) {
     match result {

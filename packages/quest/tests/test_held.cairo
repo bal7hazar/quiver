@@ -39,12 +39,12 @@ fn held_remove_keeps_the_order() {
 }
 
 #[test]
-#[available_gas(l2_gas: 21672)]
+#[available_gas(l2_gas: 23373)]
 fn held_slot_pairs_entries_and_pads_with_empty() {
     let list = array![held(1, 10), held(2, 20), held(3, 30)].span();
-    assert!(held_slot(list, 0, 7) == slot0(held(1, 10), held(2, 20), 7));
+    assert!(held_slot(list, 0, 7, true) == slot0(held(1, 10), held(2, 20), 7));
     // the counter is slot 0's only
-    assert!(held_slot(list, 1, 7) == slot(held(3, 30), HELD_EMPTY));
-    assert!(held_slot(list, 2, 7) == slot(HELD_EMPTY, HELD_EMPTY));
+    assert!(held_slot(list, 1, 7, true) == slot(held(3, 30), HELD_EMPTY));
+    assert!(held_slot(list, 2, 7, false) == slot(HELD_EMPTY, HELD_EMPTY));
     assert!(HELD_EMPTY == held(0, 0));
 }

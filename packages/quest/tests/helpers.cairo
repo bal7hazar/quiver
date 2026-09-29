@@ -64,14 +64,20 @@ pub fn unstamped(entries: Span<QuestHeld>) -> Span<QuestHeld> {
     out.span()
 }
 
-/// A slot of the held list with counter 0.
+/// A slot of the held list with counter 0, `kept` when it holds an entry.
 pub fn held_slot(e0: QuestHeld, e1: QuestHeld) -> QuestHeldSlot {
-    QuestHeldSlot { e0, e1, counter: 0 }
+    QuestHeldSlot { e0, e1, counter: 0, kept: e0.quest_id != 0 }
 }
 
-/// Slot 0 of a held list, with the player's acceptance counter.
+/// Slot 0 of a held list, with the player's acceptance counter; `kept`, as slot 0 always is
+/// once the player has accepted.
 pub fn held_slot0(e0: QuestHeld, e1: QuestHeld, counter: u16) -> QuestHeldSlot {
-    QuestHeldSlot { e0, e1, counter }
+    QuestHeldSlot { e0, e1, counter, kept: true }
+}
+
+/// A slot with every field given.
+pub fn held_slot_k(e0: QuestHeld, e1: QuestHeld, counter: u16, kept: bool) -> QuestHeldSlot {
+    QuestHeldSlot { e0, e1, counter, kept }
 }
 
 pub fn progress(c0: u32, c1: u32, c2: u32, completed: bool, claimed: bool) -> QuestProgress {

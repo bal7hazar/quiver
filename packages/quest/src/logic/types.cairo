@@ -4,8 +4,8 @@ use starknet::storage_access::StorePacking;
 use crate::constants::{MAX_CONDITIONS, MAX_TASKS};
 use super::bits::{
     NZ_2, NZ_2_16, NZ_2_32, NZ_2_64, NZ_4, NZ_8, TWO_POW_112, TWO_POW_128, TWO_POW_160, TWO_POW_192,
-    TWO_POW_194, TWO_POW_197, TWO_POW_198, TWO_POW_199, TWO_POW_224, TWO_POW_32, TWO_POW_64,
-    TWO_POW_96, TWO_POW_97, split,
+    TWO_POW_194, TWO_POW_197, TWO_POW_198, TWO_POW_199, TWO_POW_224, TWO_POW_240, TWO_POW_32,
+    TWO_POW_64, TWO_POW_96, TWO_POW_97, split,
 };
 
 /// Where a progress call goes: stored records, or events only.
@@ -114,16 +114,19 @@ pub struct QuestHeld {
 /// One slot of a player's held list: two entries, and in slot 0 the player's acceptance counter.
 /// Layout: `e0.quest_id` [0, 32) · `e0.interval_id` [32, 96) · `e0.acceptance` [96, 112) ·
 /// `counter` [112, 128) · `e1.quest_id` [128, 160) · `e1.interval_id` [160, 224) ·
-/// `e1.acceptance` [224, 240).
+/// `e1.acceptance` [224, 240) · `kept` [240].
 ///
 /// The list is contiguous: entries fill slot 0 first, `e0` before `e1`, with no empty entry
 /// before a non-empty one; so a slot whose `e1` is empty ends the list. `counter` is the number
-/// of the player's last acceptance (wrapping at 2^16); it is 0 in the other slots.
+/// of the player's last acceptance (wrapping at 2^16); it is 0 in the other slots. `kept` is set
+/// once the slot has held an entry and never cleared: a slot the list no longer uses stays
+/// non-zero, so that the next use overwrites it instead of creating it.
 #[derive(Drop, Copy, Serde, PartialEq, Debug)]
 pub struct QuestHeldSlot {
     pub e0: QuestHeld,
     pub e1: QuestHeld,
     pub counter: u16,
+    pub kept: bool,
 }
 
 /// One entry of a progress batch.
@@ -323,14 +326,15 @@ pub impl QuestHeldSlotPacking of StorePacking<QuestHeldSlot, felt252> {
             + value.e1.quest_id.into() * TWO_POW_128
             + value.e1.interval_id.into() * TWO_POW_160
             + value.e1.acceptance.into() * TWO_POW_224
+            + value.kept.into() * TWO_POW_240
     }
 
     fn unpack(value: felt252) -> QuestHeldSlot {
         let (low, high) = split(value);
         let (e0, counter) = unpack_held(low);
-        let (e1, reserved) = unpack_held(high);
-        // bits [240, 252) are reserved
-        assert(reserved == 0, RESERVED_BITS_SET);
-        QuestHeldSlot { e0, e1, counter: counter.try_into().unwrap() }
+        let (e1, kept) = unpack_held(high);
+        // bit 240 alone is `kept`; bits [241, 252) are reserved
+        assert(kept <= 1, RESERVED_BITS_SET);
+        QuestHeldSlot { e0, e1, counter: counter.try_into().unwrap(), kept: kept != 0 }
     }
 }

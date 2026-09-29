@@ -49,15 +49,15 @@ pub fn held_remove(held: Span<QuestHeld>, position: u32) -> Span<QuestHeld> {
     out.span()
 }
 
-/// Slot `slot` of the list: entries `2 × slot` and `2 × slot + 1`, empty past the end, and
-/// `counter` in slot 0 (0 in the others).
-pub fn held_slot(held: Span<QuestHeld>, slot: u32, counter: u16) -> QuestHeldSlot {
+/// Slot `slot` of the list: entries `2 × slot` and `2 × slot + 1`, empty past the end,
+/// `counter` in slot 0 (0 in the others), and `kept`.
+pub fn held_slot(held: Span<QuestHeld>, slot: u32, counter: u16, kept: bool) -> QuestHeldSlot {
     let counter = if slot == 0 {
         counter
     } else {
         0
     };
-    QuestHeldSlot { e0: entry_at(held, 2 * slot), e1: entry_at(held, 2 * slot + 1), counter }
+    QuestHeldSlot { e0: entry_at(held, 2 * slot), e1: entry_at(held, 2 * slot + 1), counter, kept }
 }
 
 #[inline(always)]

@@ -68,7 +68,7 @@ fn assert_gas(used: u128, reference: u128) {
 }
 
 #[test]
-#[available_gas(l2_gas: 6622084)]
+#[available_gas(l2_gas: 6628069)]
 fn quest_progress_completing_writes_p_and_r() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 2)].span()), COMPLETING);
@@ -76,7 +76,7 @@ fn quest_progress_completing_writes_p_and_r() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5996735)]
+#[available_gas(l2_gas: 6002962)]
 fn quest_progress_not_completing_writes_p_only() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 1)].span()), NOT_COMPLETING);
@@ -84,7 +84,7 @@ fn quest_progress_not_completing_writes_p_only() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6039557)]
+#[available_gas(l2_gas: 6045784)]
 fn quest_progress_duplicate_entries_write_p_once() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 1), entry(7, 0), entry(7, 0)].span()), DUPLICATES);
@@ -93,7 +93,7 @@ fn quest_progress_duplicate_entries_write_p_once() {
 
 /// Two tasks of one quest in one call, completing: P once and R once.
 #[test]
-#[available_gas(l2_gas: 6583723)]
+#[available_gas(l2_gas: 6589950)]
 fn quest_progress_two_tasks_write_p_and_r_once() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(8, 1), entry(9, 1)].span()), TWO_TASKS_COMPLETING);

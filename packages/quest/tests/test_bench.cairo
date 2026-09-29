@@ -252,9 +252,13 @@ fn bench_held_remove_first() {
 }
 
 #[test]
-#[available_gas(l2_gas: 29873)]
+#[available_gas(l2_gas: 31458)]
 fn bench_held_slot_last() {
-    assert!(held_slot(eight_held(), opaque(3), opaque(9)) == slot(held(7, 30), held(8, 30)));
+    assert!(
+        held_slot(
+            eight_held(), opaque(3), opaque(9), opaque(true),
+        ) == slot(held(7, 30), held(8, 30)),
+    );
 }
 
 // packing: pack then unpack, every field at its maximum
@@ -294,7 +298,7 @@ fn bench_pack_unpack_conditions() {
 }
 
 #[test]
-#[available_gas(l2_gas: 37716)]
+#[available_gas(l2_gas: 39375)]
 fn bench_pack_unpack_held_slot() {
     let h: QuestHeldSlot = opaque(slot(held(U32_MAX, U64_MAX), held(U32_MAX, U64_MAX)));
     let packed = StorePacking::<QuestHeldSlot, felt252>::pack(h);

@@ -161,7 +161,7 @@ fn quest_define_counts_dependents() {
 /// whose overflow `accept` refuses (`'Quest: too many held'`).
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 50029844)]
+#[available_gas(l2_gas: 50062698)]
 fn quest_define_rejects_association_overflow() {
     let q = deploy();
     let old_cap: u32 = 28;

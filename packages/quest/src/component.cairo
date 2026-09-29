@@ -261,7 +261,7 @@ pub mod QuestComponent {
             // The held quests when the call starts. A hook may accept or abandon: once a hook
             // has run, each later entry is processed only if the list still holds it, the same
             // acceptance. An entry accepted by a hook, a renewed one included, is not in this walk
-            let (held, _) = self.held_read(player_id);
+            let held = self.held_entries(player_id);
             let mut hooked = false;
             let mut position: u32 = 0;
             for entry in held {
@@ -307,7 +307,7 @@ pub mod QuestComponent {
                     unlock = Option::Some(QuestRecord { unlocked: true, ..record });
                 }
             }
-            let (held, counter) = self.held_read(player_id);
+            let (held, counter, kept) = self.held_read(player_id);
             let completed = self.Quest_progress.read((player_id, quest_id, interval_id)).completed;
             if let Option::Some(position) = held_position(held, quest_id) {
                 // Its own entry is live when it is of this interval and not completed: A is
@@ -319,19 +319,19 @@ pub mod QuestComponent {
             }
             assert(!completed, errors::ALREADY_COMPLETED);
             // Keep the live entries of the other quests, in order
-            let mut kept: Array<QuestHeld> = array![];
+            let mut kept_after: Array<QuestHeld> = array![];
             for entry in held {
                 let entry = *entry;
                 if entry.quest_id != quest_id && self.held_is_live(player_id, entry, time) {
-                    kept.append(entry);
+                    kept_after.append(entry);
                 }
             }
-            assert(kept.len() < MAX_HELD.into(), errors::TOO_MANY_HELD);
+            assert(kept_after.len() < MAX_HELD.into(), errors::TOO_MANY_HELD);
             // A new acceptance number: a quest abandoned and accepted again, even in the same
             // interval, is a different entry for a call that was running
             let acceptance = counter.wrapping_add(1);
-            kept.append(QuestHeld { quest_id, interval_id, acceptance });
-            self.held_write(player_id, held, counter, kept.span(), acceptance);
+            kept_after.append(QuestHeld { quest_id, interval_id, acceptance });
+            self.held_write(player_id, held, counter, kept, kept_after.span(), acceptance);
             if let Option::Some(record) = unlock {
                 self.Quest_records.write(record_key, record);
             }
@@ -350,7 +350,7 @@ pub mod QuestComponent {
                 Option::Some(interval_id) => interval_id,
                 Option::None => core::panic_with_felt252(errors::NOT_ACTIVE),
             };
-            let (held, counter) = self.held_read(player_id);
+            let (held, counter, kept) = self.held_read(player_id);
             let position = match held_position(held, quest_id) {
                 Option::Some(position) => position,
                 Option::None => core::panic_with_felt252(errors::NOT_ACCEPTED),
@@ -360,7 +360,7 @@ pub mod QuestComponent {
                 !self.Quest_progress.read((player_id, quest_id, interval_id)).completed,
                 errors::NOT_ACCEPTED,
             );
-            self.held_write(player_id, held, counter, held_remove(held, position), counter);
+            self.held_write(player_id, held, counter, kept, held_remove(held, position), counter);
         }
 
         /// Refuses `'Quest: not completed'`, `'Quest: already claimed'`. Writes the progress and
@@ -458,7 +458,7 @@ pub mod QuestComponent {
                 Option::Some(interval_id) => interval_id,
                 Option::None => { return false; },
             };
-            let (held, _) = self.held_read(player_id);
+            let held = self.held_entries(player_id);
             match held_position(held, quest_id) {
                 Option::Some(position) => *held[position].interval_id == interval_id
                     && !self.Quest_progress.read((player_id, quest_id, interval_id)).completed,
@@ -468,8 +468,7 @@ pub mod QuestComponent {
 
         /// The player's held entries, in the order of acceptance, live or dead (not yet pruned).
         fn held_of(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
-            let (held, _) = self.held_read(player_id);
-            held
+            self.held_entries(player_id)
         }
     }
 
@@ -548,8 +547,7 @@ pub mod QuestComponent {
             if found == entry {
                 return true;
             }
-            let (held, _) = self.held_read(player_id);
-            held_contains(held, entry)
+            held_contains(self.held_entries(player_id), entry)
         }
 
         /// Whether a held entry is live at `time`: its quest is not retired, `time` is in the
@@ -567,18 +565,45 @@ pub mod QuestComponent {
             !self.Quest_progress.read((player_id, quest_id, interval_id)).completed
         }
 
-        /// The held list and the player's acceptance counter: slots read in order while full, at
-        /// most `HELD_SLOTS`. A slot whose `e1` is empty ends the list.
+        /// The held entries alone, for the paths that do not write the list (progress, views):
+        /// slots read in order while full, at most `HELD_SLOTS`.
+        fn held_entries(
+            self: @ComponentState<TContractState>, player_id: felt252,
+        ) -> Span<QuestHeld> {
+            let mut held: Array<QuestHeld> = array![];
+            let mut slot: u8 = 0;
+            while slot < HELD_SLOTS {
+                let QuestHeldSlot {
+                    e0, e1, counter: _, kept: _,
+                } = self.Quest_held.read((player_id, slot));
+                if e0.quest_id == 0 {
+                    break;
+                }
+                held.append(e0);
+                if e1.quest_id == 0 {
+                    break;
+                }
+                held.append(e1);
+                slot += 1;
+            }
+            held.span()
+        }
+
+        /// The held list, the player's acceptance counter, and the `kept` bit of each slot read:
+        /// slots read in order while full, at most `HELD_SLOTS`. A slot whose `e1` is empty ends
+        /// the list.
         fn held_read(
             self: @ComponentState<TContractState>, player_id: felt252,
-        ) -> (Span<QuestHeld>, u16) {
+        ) -> (Span<QuestHeld>, u16, Span<bool>) {
             let mut held: Array<QuestHeld> = array![];
+            let mut kept: Array<bool> = array![];
             let first = self.Quest_held.read((player_id, 0));
             let counter = first.counter;
             let mut pair = first;
             let mut slot: u8 = 0;
             loop {
-                let QuestHeldSlot { e0, e1, counter: _ } = pair;
+                let QuestHeldSlot { e0, e1, counter: _, kept: slot_kept } = pair;
+                kept.append(slot_kept);
                 if e0.quest_id == 0 {
                     break;
                 }
@@ -593,16 +618,19 @@ pub mod QuestComponent {
                 }
                 pair = self.Quest_held.read((player_id, slot));
             }
-            (held.span(), counter)
+            (held.span(), counter, kept.span())
         }
 
         /// Writes the slots of `after` (with `after_counter` in slot 0) that differ from those of
-        /// `before`, the list as read: an unchanged slot is not written.
+        /// `before`, the list as read with the `kept` bits of the slots read. A slot that held an
+        /// entry before or after keeps its `kept` bit, so it is never zeroed; a slot that was
+        /// never used and stays empty is not written.
         fn held_write(
             ref self: ComponentState<TContractState>,
             player_id: felt252,
             before: Span<QuestHeld>,
             before_counter: u16,
+            before_kept: Span<bool>,
             after: Span<QuestHeld>,
             after_counter: u16,
         ) {
@@ -613,8 +641,13 @@ pub mod QuestComponent {
             };
             let mut slot: u32 = 0;
             while slot == 0 || 2 * slot < len {
-                let value = held_slot(after, slot, after_counter);
-                if held_slot(before, slot, before_counter) != value {
+                let was_kept = match before_kept.get(slot) {
+                    Option::Some(kept) => *kept.unbox(),
+                    Option::None => false,
+                };
+                let used = was_kept || 2 * slot < len;
+                let value = held_slot(after, slot, after_counter, used);
+                if held_slot(before, slot, before_counter, was_kept) != value {
                     self.Quest_held.write((player_id, slot.try_into().unwrap()), value);
                 }
                 slot += 1;

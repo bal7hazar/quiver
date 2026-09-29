@@ -18,7 +18,7 @@ const T: u32 = 5;
 /// Meaning changed by D-135: tasks have no pages; what retirement frees is the slot of the
 /// players who hold the quest, at their next `accept`.
 #[test]
-#[available_gas(l2_gas: 15843870)]
+#[available_gas(l2_gas: 15877313)]
 fn quest_retire_frees_slot() {
     let q = deploy();
     let mut id: u32 = 1;
@@ -43,7 +43,7 @@ fn quest_retire_frees_slot() {
 
 /// Meaning changed by D-135: the retired quest is held, and skipped when the walk reaches it.
 #[test]
-#[available_gas(l2_gas: 9100525)]
+#[available_gas(l2_gas: 9106751)]
 fn quest_retired_not_progressed() {
     let q = deploy();
     define_held(q, 1, one_off(), T, 5);
@@ -55,7 +55,7 @@ fn quest_retired_not_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13973323)]
+#[available_gas(l2_gas: 13974425)]
 fn quest_retired_completed_still_claimable() {
     let q = deploy();
     define_held(q, 1, one_off(), T, 1);
@@ -67,7 +67,7 @@ fn quest_retired_completed_still_claimable() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5106455)]
+#[available_gas(l2_gas: 5108418)]
 fn quest_retired_accept_reverts() {
     let q = deploy();
     define_simple(q, 1, one_off(), T, 1);
@@ -108,7 +108,7 @@ fn quest_redefine_retired_reverts() {
 /// The held entry of a retired quest is inert, not removed: it is dead until the next accept.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6325746)]
+#[available_gas(l2_gas: 6328182)]
 fn quest_retired_is_not_accepted() {
     let q = deploy();
     define_held(q, 1, one_off(), T, 5);
@@ -161,7 +161,7 @@ fn quest_retired_definition_readable() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6406649)]
+#[available_gas(l2_gas: 6412098)]
 fn quest_retire_abandon_before_is_kept() {
     let q = deploy();
     define_held(q, 1, one_off(), T, 5);

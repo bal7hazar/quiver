@@ -14,7 +14,7 @@ use super::setup::{
 };
 
 #[test]
-#[available_gas(l2_gas: 23610796)]
+#[available_gas(l2_gas: 23611878)]
 fn quest_claim_index_counts_claims() {
     let q = deploy();
     at(q, 0);
@@ -35,7 +35,7 @@ fn quest_claim_index_counts_claims() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 14033435)]
+#[available_gas(l2_gas: 14034538)]
 fn quest_claim_twice_reverts() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 1);
@@ -48,7 +48,7 @@ fn quest_claim_twice_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 7283573)]
+#[available_gas(l2_gas: 7284676)]
 fn quest_claim_uncompleted_reverts() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -61,7 +61,7 @@ fn quest_claim_uncompleted_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13763333)]
+#[available_gas(l2_gas: 13764436)]
 fn quest_claim_emits_and_writes() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 1);
@@ -86,7 +86,7 @@ fn quest_claim_emits_and_writes() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10555835)]
+#[available_gas(l2_gas: 10556938)]
 fn quest_complete_hook_after_state_written() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 3);
@@ -110,7 +110,7 @@ fn quest_complete_hook_after_state_written() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13758304)]
+#[available_gas(l2_gas: 13759406)]
 fn quest_claim_hook_after_state_written() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 3);
@@ -136,7 +136,7 @@ fn quest_claim_hook_after_state_written() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 9406411)]
+#[available_gas(l2_gas: 9412637)]
 fn quest_complete_hook_panic_reverts_progress() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 3);
@@ -154,7 +154,7 @@ fn quest_complete_hook_panic_reverts_progress() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 11966468)]
+#[available_gas(l2_gas: 11967571)]
 fn quest_claim_hook_panic_reverts_claim() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 3);

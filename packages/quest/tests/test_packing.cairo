@@ -10,8 +10,8 @@ use quiver_quest::logic::{
 };
 use starknet::storage_access::StorePacking;
 use super::helpers::{
-    U32_MAX, U64_MAX, held, held_slot, held_slot0, ids, progress, record, schedule, stamped, task,
-    tasks,
+    U32_MAX, U64_MAX, held, held_slot, held_slot0, held_slot_k, ids, progress, record, schedule,
+    stamped, task, tasks,
 };
 
 // The oracle
@@ -99,7 +99,8 @@ fn oracle_held_slot(h: QuestHeldSlot) -> felt252 {
     put(ref acc, h.e1.quest_id.into(), 128, 32);
     put(ref acc, h.e1.interval_id.into(), 160, 64);
     put(ref acc, h.e1.acceptance.into(), 224, 16);
-    assert!(acc < pow2(240), "held slot wider than 240 bits");
+    put(ref acc, bit(h.kept), 240, 1);
+    assert!(acc < pow2(241), "held slot wider than 241 bits");
     to_felt(acc)
 }
 
@@ -289,7 +290,7 @@ fn quest_packing_round_trip_conditions() {
 // QuestHeldSlot
 
 #[test]
-#[available_gas(l2_gas: 24795750)]
+#[available_gas(l2_gas: 31913837)]
 fn quest_packing_round_trip_held_slot() {
     let none = held(0, 0);
     check_held_slot(held_slot(none, none));
@@ -307,6 +308,9 @@ fn quest_packing_round_trip_held_slot() {
         held_slot0(stamped(U32_MAX, U64_MAX, 0xffff), stamped(U32_MAX, U64_MAX, 0xffff), 0xffff),
     );
     check_held_slot(held_slot0(stamped(3, 20000, 41), stamped(9, 20000, 42), 42));
+    // the kept bit alone, on an empty slot, and with nothing else
+    check_held_slot(held_slot_k(none, none, 0, true));
+    check_held_slot(held_slot_k(stamped(3, 1, 1), none, 0, false));
     assert!(StorePacking::<QuestHeldSlot, felt252>::pack(held_slot(none, none)) == 0);
 }
 
@@ -406,15 +410,15 @@ fn quest_unpacking_rejects_conditions_bit_224() {
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
-#[available_gas(l2_gas: 411107)]
-fn quest_unpacking_rejects_held_bit_240() {
-    // bits [240, 252) are above the second entry
-    StorePacking::<QuestHeldSlot, felt252>::unpack(to_felt(pow2(240)));
+#[available_gas(l2_gas: 429062)]
+fn quest_unpacking_rejects_held_bit_241() {
+    // bit 240 is `kept`; bits [241, 252) are reserved
+    StorePacking::<QuestHeldSlot, felt252>::unpack(to_felt(pow2(241)));
 }
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
-#[available_gas(l2_gas: 441725)]
+#[available_gas(l2_gas: 442218)]
 fn quest_unpacking_rejects_held_bit_251() {
     StorePacking::<QuestHeldSlot, felt252>::unpack(to_felt(pow2(250)));
 }
@@ -450,7 +454,7 @@ fn quest_unpacking_progress_reads_bit_97_alone() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4572519)]
+#[available_gas(l2_gas: 4785722)]
 fn quest_packing_accepts_the_bounds() {
     check_definition(definition(0, 0, 0, 0, 3, 7, true, false, 0));
     check_held_slot(held_slot(held(1, 2), held(3, 4)));

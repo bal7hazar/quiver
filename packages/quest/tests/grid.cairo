@@ -130,7 +130,7 @@ pub fn seed(grid: Grid, h: u32, state: u8) {
             grid.address,
             selector!("Quest_held"),
             array![PLAYER, slot.into()].span(),
-            StorePacking::pack(QuestHeldSlot { e0, e1, counter }),
+            StorePacking::pack(QuestHeldSlot { e0, e1, counter, kept: true }),
         );
         slot += 1;
     }
