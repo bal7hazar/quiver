@@ -6,7 +6,30 @@ events and error strings are named.
 
 ## [Unreleased]
 
-Nothing yet.
+The pattern of the owner's rule D-143 (docs/CAIRO.md §7), on one model: the quest definition
+(ARC-06, [docs/research/ARC-06-model-store.md](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-06-model-store.md)).
+Results, storage layout, events and error strings are unchanged.
+
+### Added
+
+- `quiver_quest::models::definition`: the model `QuestDefinition { id, schedule, tasks,
+  conditions }` (struct in `models::index`), with `DefinitionTrait::new`, `is_active`,
+  `interval_id`, `DefinitionAssert`, `errors` (the strings of `quiver_quest::errors`),
+  `DefinitionStorage` (the model over the slots A, B, C of 0.1.0) and `DefinitionTracked`. Not to
+  be confused with `quiver_quest::logic::QuestDefinition`, slot A, unchanged.
+- `quiver_quest::store`: the trait `Tracked<M>` (a tracked model and its event) and `StoreTrait`
+  on the component's state: `get_definition`, `has_definition`, `set_definition`, which emits
+  `QuestDefined`.
+- `quiver_quest::events`: `QuestDefined` is declared in `events::index`, and
+  `DefinedTrait::new` builds it from the model. It is still exported as
+  `quiver_quest::component::QuestComponent::QuestDefined`, with the same selector, keys and data.
+
+### Changed
+
+- `define` validates with `DefinitionTrait::new` and writes through `Store::set_definition`. The
+  checks, their order, the writes and the event are those of 0.1.0. The worst case costs 2 583 680
+  L2 gas instead of 2 590 440. Every test that defines a quest is cheaper, and the others are
+  unchanged.
 
 ## [0.1.0] - 2026-09-29
 
