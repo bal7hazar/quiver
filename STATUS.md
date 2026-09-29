@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 00:41 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 00:47 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -49,8 +49,10 @@ one-write tests assert state, not writes. **Fix loop 1** waits for a slot. After
 `quiver_quest` 0.1.0.
 
 **Launcher**: the budget is now **slot locks** ([#9](https://github.com/bal7hazar/quiver/pull/9),
-`1d61843`, then [#11](https://github.com/bal7hazar/quiver/pull/11), synced with the game's
-`scripts/agent.sh` at `033043a` by the project manager's decision: slot files opened read-only,
+`1d61843`, then [#11](https://github.com/bal7hazar/quiver/pull/11) and
+[#12](https://github.com/bal7hazar/quiver/pull/12), synced with the game's `scripts/agent.sh` at
+`2628b21` by the project manager's decision (`slots-init` under the launch lock and only with every
+slot free; every slot checked for errors before one is chosen): slot files opened read-only,
 never created by a probe, the slot directory read-only, only `slots-init` creating missing ones): an agent holds `~/orchestrator/slots/total-N` and
 `quiver-1` by a kernel lock for as long as it lives; a launch takes both or refuses, and refuses
 while the game's waiting marker is fresh. This replaces #8's process count, and with it the four
