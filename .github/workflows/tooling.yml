@@ -142,7 +142,13 @@ jobs:
             out=$(HOME=$fake PATH="$fake/bin:$PATH" scripts/agent.sh slottest codex gpt-6-sol new "x" audit 2>&1)
             echo "$out"; grep -qF 'slottest: holds slots total-1 and quiver-1' <<< "$out"
             st=$(HOME=$fake scripts/agent.sh status); grep -q '^slot total-1 held slottest' <<< "$st"
-            sleep 5; held=$(HOME=$fake scripts/agent.sh slots); grep -q '^total-1 *free' <<< "$held"; grep -q '^quiver-1 *free' <<< "$held"
+            # The stub ends after about 3 s; a slow runner may take longer to start node: poll up to 30 s.
+            for _ in $(seq 1 30); do
+              held=$(HOME=$fake scripts/agent.sh slots)
+              if grep -q '^total-1 *free' <<< "$held" && grep -q '^quiver-1 *free' <<< "$held"; then break; fi
+              sleep 1
+            done
+            echo "$held"; grep -q '^total-1 *free' <<< "$held"; grep -q '^quiver-1 *free' <<< "$held"
           else
             echo "end-to-end slot fixture skipped (no /usr/bin/node, or a local run)"
           fi
