@@ -1,27 +1,25 @@
-//! Definitions: validation and the three slots A, B, C (ARC-01 §3.2).
+//! 0.1.0's functions of `quiver_quest::logic` that the models of 0.2.0 replace, kept verbatim in
+//! the tests (ARC-07a) as oracles (docs/CAIRO.md §2) and as the hand-written baseline of the
+//! store's benchmarks (ARC-06): the definition's slots, the schedule, and the reads of slots B and
+//! C. Only the names of the slot types changed.
 
-use crate::constants::{MAX_CONDITIONS, MAX_TASKS};
-use crate::errors;
-use super::schedule::schedule_validate;
-use super::types::{QuestConditions, QuestDefinition, QuestSchedule, QuestTask, QuestTasks};
+use quiver_quest::constants::{MAX_CONDITIONS, MAX_TASKS};
+use quiver_quest::errors;
+use quiver_quest::models::definition::{ConditionsSlot, HeadSlot, TasksSlot};
+use quiver_quest::types::schedule::QuestSchedule;
+use quiver_quest::types::task::QuestTask;
 
 const NO_TASK: QuestTask = QuestTask { task_id: 0, total: 0 };
 
-/// Validates a quest and builds its slots A, B and C; unused entries of B and C are zero.
-///
-/// Panics, in this order: `'Quest: invalid id'` (`quest_id == 0`); those of
-/// `schedule_validate`; `'Quest: invalid tasks'` (none, more than `MAX_TASKS`, a task id 0, a
-/// total 0, a task id repeated); `'Quest: too many conditions'` (more than `MAX_CONDITIONS`);
-/// `'Quest: invalid condition'` (a condition 0, `== quest_id`, or repeated). That each
-/// condition exists is checked by the component, which has storage.
+/// 0.1.0's `definition_new`: validates a quest and builds its slots A, B and C.
 pub fn definition_new(
     quest_id: u32, schedule: QuestSchedule, tasks: Span<QuestTask>, conditions: Span<u32>,
-) -> (QuestDefinition, QuestTasks, QuestConditions) {
+) -> (HeadSlot, TasksSlot, ConditionsSlot) {
     assert(quest_id != 0, errors::INVALID_ID);
     schedule_validate(@schedule);
     let quest_tasks = tasks_new(tasks);
     let quest_conditions = conditions_new(quest_id, conditions);
-    let definition = QuestDefinition {
+    let definition = HeadSlot {
         schedule,
         task_count: tasks.len().try_into().unwrap(),
         condition_count: conditions.len().try_into().unwrap(),
@@ -37,30 +35,27 @@ fn assert_task(task: QuestTask) {
     assert(task.task_id != 0 && task.total != 0, errors::INVALID_TASKS);
 }
 
-/// Slot B from 1 to 3 tasks, unrolled: at most 3 comparisons for repeats.
-fn tasks_new(tasks: Span<QuestTask>) -> QuestTasks {
+fn tasks_new(tasks: Span<QuestTask>) -> TasksSlot {
     let len = tasks.len();
     assert(len != 0 && len <= MAX_TASKS.into(), errors::INVALID_TASKS);
     let t0 = *tasks[0];
     assert_task(t0);
     if len == 1 {
-        return QuestTasks { t0, t1: NO_TASK, t2: NO_TASK };
+        return TasksSlot { t0, t1: NO_TASK, t2: NO_TASK };
     }
     let t1 = *tasks[1];
     assert_task(t1);
     assert(t1.task_id != t0.task_id, errors::INVALID_TASKS);
     if len == 2 {
-        return QuestTasks { t0, t1, t2: NO_TASK };
+        return TasksSlot { t0, t1, t2: NO_TASK };
     }
     let t2 = *tasks[2];
     assert_task(t2);
     assert(t2.task_id != t0.task_id && t2.task_id != t1.task_id, errors::INVALID_TASKS);
-    QuestTasks { t0, t1, t2 }
+    TasksSlot { t0, t1, t2 }
 }
 
-/// Slot C from 0 to 7 conditions. Repeats are found by comparing each id with those before it:
-/// at most 21 comparisons, bounded by `MAX_CONDITIONS` (checked first).
-fn conditions_new(quest_id: u32, conditions: Span<u32>) -> QuestConditions {
+fn conditions_new(quest_id: u32, conditions: Span<u32>) -> ConditionsSlot {
     let len = conditions.len();
     assert(len <= MAX_CONDITIONS.into(), errors::TOO_MANY_CONDITIONS);
     let mut i = 0;
@@ -74,7 +69,7 @@ fn conditions_new(quest_id: u32, conditions: Span<u32>) -> QuestConditions {
         }
         i += 1;
     }
-    QuestConditions {
+    ConditionsSlot {
         q0: id_at(conditions, 0),
         q1: id_at(conditions, 1),
         q2: id_at(conditions, 2),
@@ -93,23 +88,8 @@ fn id_at(ids: Span<u32>, index: u32) -> u32 {
     }
 }
 
-/// The index among the first `task_count` tasks of `task_id`, if any.
-pub fn tasks_index_of(tasks: @QuestTasks, task_count: u8, task_id: u32) -> Option<u8> {
-    let tasks = *tasks;
-    if task_count > 0 && tasks.t0.task_id == task_id {
-        return Some(0);
-    }
-    if task_count > 1 && tasks.t1.task_id == task_id {
-        return Some(1);
-    }
-    if task_count > 2 && tasks.t2.task_id == task_id {
-        return Some(2);
-    }
-    None
-}
-
-/// The first `task_count` tasks (at most 3).
-pub fn tasks_span(tasks: @QuestTasks, task_count: u8) -> Span<QuestTask> {
+/// 0.1.0's `tasks_span`: the first `task_count` tasks.
+pub fn tasks_span(tasks: @TasksSlot, task_count: u8) -> Span<QuestTask> {
     let tasks = *tasks;
     let mut out = array![];
     if task_count > 0 {
@@ -124,8 +104,8 @@ pub fn tasks_span(tasks: @QuestTasks, task_count: u8) -> Span<QuestTask> {
     out.span()
 }
 
-/// The first `count` ids (at most 7).
-pub fn conditions_span(conditions: @QuestConditions, count: u8) -> Span<u32> {
+/// 0.1.0's `conditions_span`: the first `count` ids.
+pub fn conditions_span(conditions: @ConditionsSlot, count: u8) -> Span<u32> {
     let ids = *conditions;
     let mut out = array![];
     if count == 0 {
@@ -157,4 +137,52 @@ pub fn conditions_span(conditions: @QuestConditions, count: u8) -> Span<u32> {
     }
     out.append(ids.q6);
     out.span()
+}
+
+/// 0.1.0's `schedule_validate`.
+pub fn schedule_validate(schedule: @QuestSchedule) {
+    let schedule = *schedule;
+    assert(schedule.end == 0 || schedule.end > schedule.start, errors::INVALID_WINDOW);
+    let valid_interval = if schedule.duration == 0 {
+        schedule.interval == 0
+    } else {
+        schedule.duration <= schedule.interval
+    };
+    assert(valid_interval, errors::INVALID_INTERVAL);
+}
+
+/// 0.1.0's `schedule_is_active`.
+pub fn schedule_is_active(schedule: @QuestSchedule, time: u64) -> bool {
+    let schedule = *schedule;
+    if time < schedule.start || (schedule.end != 0 && time >= schedule.end) {
+        return false;
+    }
+    let interval: u64 = schedule.interval.into();
+    match interval.try_into() {
+        Option::None => true,
+        Option::Some(interval) => {
+            let (_, offset) = DivRem::div_rem(time - schedule.start, interval);
+            offset < schedule.duration.into()
+        },
+    }
+}
+
+/// 0.1.0's `schedule_interval_id`.
+pub fn schedule_interval_id(schedule: @QuestSchedule, time: u64) -> Option<u64> {
+    let schedule = *schedule;
+    if time < schedule.start || (schedule.end != 0 && time >= schedule.end) {
+        return None;
+    }
+    let interval: u64 = schedule.interval.into();
+    match interval.try_into() {
+        Option::None => Some(0),
+        Option::Some(interval) => {
+            let (id, offset) = DivRem::div_rem(time - schedule.start, interval);
+            if offset < schedule.duration.into() {
+                Some(id)
+            } else {
+                None
+            }
+        },
+    }
 }

@@ -7,7 +7,7 @@ use quiver_quest::interface::{
     IQuestDispatcherTrait, IQuestSafeDispatcher, IQuestSafeDispatcherTrait,
     IQuestViewDispatcherTrait,
 };
-use quiver_quest::logic::Mode;
+use quiver_quest::types::mode::Mode;
 use snforge_std::{
     EventSpyAssertionsTrait, EventSpyTrait, spy_events, start_cheat_caller_address,
     stop_cheat_caller_address,
@@ -32,7 +32,7 @@ fn completed() -> Quest {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3119204)]
+#[available_gas(l2_gas: 3118784)]
 fn quest_define_admin_only() {
     let q = deploy();
     caller(q, stranger());
@@ -71,7 +71,7 @@ fn quest_set_reporter_admin_only() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6029520)]
+#[available_gas(l2_gas: 6021404)]
 fn quest_progress_rejects_unregistered_caller() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -87,7 +87,7 @@ fn quest_progress_rejects_unregistered_caller() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 2993876)]
+#[available_gas(l2_gas: 2993666)]
 fn quest_progress_many_rejects_unregistered_caller() {
     let q = deploy();
     caller(q, stranger());
@@ -99,7 +99,7 @@ fn quest_progress_many_rejects_unregistered_caller() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7754526)]
+#[available_gas(l2_gas: 7739290)]
 fn quest_progress_accepts_registered_reporter() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -127,7 +127,7 @@ fn quest_progress_accepts_registered_reporter() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5535296)]
+#[available_gas(l2_gas: 5525394)]
 fn quest_reporter_revoked() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 5);
@@ -142,7 +142,7 @@ fn quest_reporter_revoked() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 15157040)]
+#[available_gas(l2_gas: 15147317)]
 fn quest_claim_requires_player_authorization() {
     let q = completed();
     caller(q, stranger());
@@ -170,7 +170,7 @@ fn quest_accept_requires_player_authorization() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 5829338)]
+#[available_gas(l2_gas: 5819016)]
 fn quest_abandon_requires_player_authorization() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 5)].span(), array![].span());
@@ -184,7 +184,7 @@ fn quest_abandon_requires_player_authorization() {
 /// The owner of one player cannot act for another.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 4653726)]
+#[available_gas(l2_gas: 4653422)]
 fn quest_player_authorization_is_per_player() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 5)].span(), array![].span());
@@ -216,7 +216,7 @@ fn quest_internal_layer_not_reachable_from_abi() {
 /// The consumer's own entrypoints reach the internal layer after the consumer's checks.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6149836)]
+#[available_gas(l2_gas: 6139063)]
 fn quest_consumer_calls_the_internal_layer() {
     let (address, consumer, view) = deploy_consumer();
     let safe = IMockConsumerSafeDispatcher { contract_address: address };

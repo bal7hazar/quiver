@@ -2,13 +2,13 @@
 //! And the views that are not covered elsewhere.
 
 use quiver_quest::interface::IQuestViewDispatcherTrait;
-use quiver_quest::logic::Mode;
+use quiver_quest::types::mode::Mode;
 use snforge_std::{EventSpyTrait, spy_events};
 use super::helpers::{one_off, schedule, task};
 use super::setup::{PLAYER, at, claim, define, define_held, define_simple, deploy, report, retire};
 
 #[test]
-#[available_gas(l2_gas: 16658526)]
+#[available_gas(l2_gas: 16647648)]
 fn quest_events_keys_and_data() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 2);
@@ -44,7 +44,7 @@ fn quest_events_keys_and_data() {
 
 /// Accept and abandon emit nothing (§3.4).
 #[test]
-#[available_gas(l2_gas: 5680416)]
+#[available_gas(l2_gas: 5660120)]
 fn quest_accept_and_abandon_emit_nothing() {
     let q = deploy();
     define(q, 1, one_off(), array![task(7, 5)].span(), array![].span());
@@ -55,7 +55,7 @@ fn quest_accept_and_abandon_emit_nothing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5221041)]
+#[available_gas(l2_gas: 5220317)]
 fn quest_current_interval_view() {
     let q = deploy();
     at(q, 100);

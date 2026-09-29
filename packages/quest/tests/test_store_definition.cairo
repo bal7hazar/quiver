@@ -3,8 +3,9 @@
 //! model back. The benchmarks set the store against 0.1.0's hand-written code: the cost of an
 //! operation is its benchmark minus its baseline.
 
-use quiver_quest::logic::{QuestSchedule, QuestTask};
 use quiver_quest::models::definition::{DefinitionTrait, QuestDefinition};
+use quiver_quest::types::schedule::QuestSchedule;
+use quiver_quest::types::task::QuestTask;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, load, map_entry_address,
     spy_events,
@@ -46,7 +47,7 @@ fn slots(store: IMockDefinitionStoreDispatcher, quest_id: u32) -> (felt252, felt
 
 // gas: raised, the test now writes a second definition, to show one event per write (fix loop 1)
 #[test]
-#[available_gas(l2_gas: 3256575)]
+#[available_gas(l2_gas: 3255431)]
 fn store_set_definition_emits_quest_defined_once() {
     let store = deploy();
     let mut spy = spy_events();
@@ -69,7 +70,7 @@ fn store_set_definition_emits_quest_defined_once() {
 /// The storage layout of 0.1.0: the store writes the felts the hand-written code writes, C only
 /// with conditions.
 #[test]
-#[available_gas(l2_gas: 6613394)]
+#[available_gas(l2_gas: 6612249)]
 fn store_set_definition_writes_the_slots_of_0_1_0() {
     let store = deploy();
     store.hand_set_definition(1, worst_schedule(), worst_tasks(), worst_conditions());
@@ -89,7 +90,7 @@ fn store_set_definition_writes_the_slots_of_0_1_0() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4702866)]
+#[available_gas(l2_gas: 4701722)]
 fn store_get_definition_reads_the_model_back() {
     let store = deploy();
     assert!(!store.store_has_definition(1));
@@ -123,7 +124,7 @@ fn bench_hand_set_definition_worst() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2093385)]
+#[available_gas(l2_gas: 2092965)]
 fn bench_store_set_definition_worst() {
     deploy().store_set_definition(1, worst_schedule(), worst_tasks(), worst_conditions());
 }
@@ -180,8 +181,8 @@ fn store_status_write_emits_nothing_and_keeps_the_definition() {
     let before = store.store_get_definition(1);
     let (slot_a, slot_b, slot_c) = slots(store, 1);
     let mut spy = spy_events();
-    store.store_set_definition_status(1, true, 0xffff);
-    store.store_set_definition_status(1, true, 3);
+    store.store_set_status(1, true, 0xffff);
+    store.store_set_status(1, true, 3);
     assert!(spy.get_events().events.len() == 0);
     let head = store.store_get_definition_head(1);
     assert!(head.retired && head.live_dependents == 3);

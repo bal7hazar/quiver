@@ -3,7 +3,9 @@
 //! like `QuestCompleted`, and the unpack of each packed type read on the path of `progress_many`. A
 //! probe's cost is its test minus `probe_baseline`, divided by its count (fix loop 2, point 2).
 
-use quiver_quest::logic::{QuestDefinition, QuestHeldSlot, QuestRecord, QuestTasks};
+use quiver_quest::models::definition::{HeadSlot, TasksSlot};
+use quiver_quest::models::held::HeldSlot;
+use quiver_quest::models::record::RecordSlot;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, map_entry_address, store};
 use starknet::ContractAddress;
 
@@ -24,7 +26,9 @@ pub trait IProbe<TState> {
 
 #[starknet::contract]
 pub mod Probe {
-    use quiver_quest::logic::{QuestDefinition, QuestHeldSlot, QuestRecord, QuestTasks};
+    use quiver_quest::models::definition::{HeadSlot, TasksSlot};
+    use quiver_quest::models::held::HeldSlot;
+    use quiver_quest::models::record::RecordSlot;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::storage_access::StorePacking;
     use super::IProbe;
@@ -114,7 +118,7 @@ pub mod Probe {
             let mut i: u32 = 0;
             while i < n {
                 let packed: felt252 = 0x1234567890abcdef + i.into() * 0x10000000000000000;
-                let d: QuestDefinition = StorePacking::unpack(packed);
+                let d: HeadSlot = StorePacking::unpack(packed);
                 acc += d.schedule.end;
                 i += 1;
             }
@@ -125,7 +129,7 @@ pub mod Probe {
             let mut acc = 0;
             let mut i: u32 = 0;
             while i < n {
-                let t: QuestTasks = StorePacking::unpack(i.into() + 0x100000000);
+                let t: TasksSlot = StorePacking::unpack(i.into() + 0x100000000);
                 acc += t.t0.total;
                 i += 1;
             }
@@ -136,7 +140,7 @@ pub mod Probe {
             let mut acc = 0;
             let mut i: u32 = 0;
             while i < n {
-                let r: QuestRecord = StorePacking::unpack(i.into());
+                let r: RecordSlot = StorePacking::unpack(i.into());
                 acc += r.completions;
                 i += 1;
             }
@@ -152,7 +156,7 @@ pub mod Probe {
                     + 20000 * 0x100000000
                     + (i.into() + 1) * 0x100000000000000000000000000000000
                     + 20000 * 0x10000000000000000000000000000000000000000;
-                let h: QuestHeldSlot = StorePacking::unpack(packed);
+                let h: HeldSlot = StorePacking::unpack(packed);
                 acc += h.e1.interval_id;
                 i += 1;
             }
@@ -277,9 +281,7 @@ fn probe_write_then_change_100() {
 }
 
 #[allow(unused_imports)]
-fn _types(
-    _d: QuestDefinition, _t: QuestTasks, _r: QuestRecord, _h: QuestHeldSlot, _a: ContractAddress,
-) {}
+fn _types(_d: HeadSlot, _t: TasksSlot, _r: RecordSlot, _h: HeldSlot, _a: ContractAddress) {}
 
 // Fix loop 1, point 1: the cost of a write by the transition of its cell. Starknet charges the
 // allocation of a cell (zero at the start of the transaction, non-zero at its end) once, from the

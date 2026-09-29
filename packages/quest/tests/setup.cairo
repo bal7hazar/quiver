@@ -1,10 +1,15 @@
 //! Deployment of the mock consumers and the actors of the component tests.
 
+use quiver_quest::constants::HELD_SLOTS;
 use quiver_quest::interface::{
     IQuestDispatcher, IQuestDispatcherTrait, IQuestSafeDispatcher, IQuestViewDispatcher,
     IQuestViewSafeDispatcher,
 };
-use quiver_quest::logic::{HELD_SLOTS, Mode, QuestHeldSlot, QuestSchedule, QuestTask, TaskProgress};
+use quiver_quest::models::held::HeldSlot;
+use quiver_quest::types::batch::TaskProgress;
+use quiver_quest::types::mode::Mode;
+use quiver_quest::types::schedule::QuestSchedule;
+use quiver_quest::types::task::QuestTask;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, load, map_entry_address,
     start_cheat_block_timestamp, start_cheat_caller_address, stop_cheat_caller_address,
@@ -176,7 +181,7 @@ pub fn one_entry(task_id: u32, count: u32) -> Span<TaskProgress> {
 }
 
 /// The raw held list of `player_id`, slot by slot, read straight from storage.
-pub fn held_slots(quest: Quest, player_id: felt252) -> Span<QuestHeldSlot> {
+pub fn held_slots(quest: Quest, player_id: felt252) -> Span<HeldSlot> {
     let mut out = array![];
     let mut slot: u8 = 0;
     while slot < HELD_SLOTS {

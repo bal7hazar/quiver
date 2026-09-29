@@ -1,55 +1,96 @@
-//! The store (D-143, ARC-06): the only access to the component's storage of a definition,
-//! `get_x` and `set_x` per model, and focused reads where a path needs less than the model.
-//! Arcade's `Store` wraps a Dojo world; here the component's own state is the store: `StoreTrait`
-//! is implemented on `ComponentState`, so a call is `self.get_definition(id)` inside the
-//! component, with nothing built and nothing looked up at run time.
+//! The store (D-143, ARC-06, ARC-07a): the only access to the component's storage, `get_x` and
+//! `set_x` per model, and focused reads where a path needs less than the model. Arcade's `Store`
+//! wraps a Dojo world; here the component's own state is the store: `StoreTrait` is implemented
+//! on `ComponentState`, so a call is `self.get_definition(id)` inside the component, with nothing
+//! built and nothing looked up at run time.
 //!
-//! `set_x` writes the model and, if the model is tracked, emits its event.
+//! **Tracked models** implement `Tracked`, which fixes their one event at compile time:
+//! `QuestDefinition` (`QuestDefined`) and `QuestReporter` (`QuestReporterSet`). The others,
+//! `QuestStatus`, `QuestProgress`, `QuestRecord` and `QuestHeldSlot`, are untracked: their
+//! `set_x` is the write alone.
 //!
-//! **What the compiler enforces**: a model is tracked when it implements `Tracked`, which fixes
-//! its one event type at compile time; `Tracked::event` does not compile for a model without the
-//! impl, so an untracked model's `set_x` cannot emit a model event through it.
+//! **Optional tracking** (ARC-07a, the owner's review D-147): whether a tracked model's `set_x`
+//! emits its event is the consumer's choice, made at compile time by its impl of `QuestTracking`,
+//! one constant per tracked model: `tracking::TrackAll` (every tracked model emits, as 0.1.0) or
+//! `tracking::TrackNone`, or its own. `set_x` emits `if Tracking::X`: the compiler folds the
+//! constant, so an untracked choice costs exactly the write with no event code, and a tracked one
+//! the write plus the event (measured, `tests/test_tracking.cairo`, `GAS.md`).
 //!
-//! **What it does not enforce, and the convention and tests do**: that a tracked model's `set_x`
-//! calls `HasComponent::emit(ref self, Tracked::event(@x))` once, after its writes; that it does
-//! not emit twice; that an untracked `set_x` does not emit some event by hand. Each package has,
-//! per tracked model, a test that its `set_x` emits exactly its event once per write, and per
-//! untracked model a test that its `set_x` emits nothing (`tests/test_store_definition.cairo`:
-//! `store_set_definition_emits_quest_defined_once`,
-//! `store_status_write_emits_nothing_and_keeps_the_definition`).
+//! **What the compiler enforces**: `Tracked::event` does not compile for a model without the
+//! impl, so an untracked model's `set_x` cannot emit a model event through it. **What it does not
+//! enforce, and the convention and tests do**: that a tracked model's `set_x` ends with
+//! `if Tracking::X { HasComponent::emit(ref self, Tracked::event(@x)) }`, once; that no other
+//! `set_x` emits. Tests, per tracked model under `TrackAll` and `TrackNone`, and per untracked
+//! model: `tests/test_store_models.cairo`.
 //!
-//! **The quest's status** (`defined`, `retired`, `live_dependents`) shares slot A with the
-//! definition and is not part of the definition model. It is read with the definition's head in
-//! one read (`get_definition_head`) and written by `set_definition_status`, untracked: its
-//! changes have their own action events (`QuestRetired`) or none (the prerequisites' counter).
-//! ARC-07 makes it a model of its own over slot A (docs/research/ARC-06-model-store.md §1.3).
+//! **Reads and writes across several slots** (fix loop 1) also live here, since they are storage
+//! access: the held list as a whole (`get_held`, `get_held_list`, `set_held_list`,
+//! `is_still_held`), whether a held entry is live (`is_held_live`, A then P) and whether a quest's
+//! prerequisites are met (`prerequisites_met`, C then R). They keep 0.1.0's reads, writes and
+//! order; unlike the one-model methods they are not `#[inline]`, as they were not in 0.1.0's
+//! component, so that every call costs what it cost (measured, `GAS.md`).
 
+use starknet::ContractAddress;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::component::QuestComponent::{ComponentState, HasComponent};
-use crate::logic::conditions_span;
-use crate::logic::types::{
-    QuestConditions, QuestDefinition as DefinitionHead, QuestTask, QuestTasks,
+use crate::constants::HELD_SLOTS;
+use crate::models::definition::{
+    ConditionsSlotTrait, DefinitionStorage, DefinitionTracked, HeadSlot, NO_CONDITIONS, NO_TASKS,
+    QuestDefinition, TasksSlot,
 };
-use crate::models::definition::{DefinitionStorage, DefinitionTracked, QuestDefinition};
+use crate::models::held::{HeldSlotStorage, HeldSlotTrait, QuestHeldSlot};
+use crate::models::progress::{ProgressStorage, QuestProgress};
+use crate::models::record::{QuestRecord, RecordStorage, RecordTrait};
+use crate::models::reporter::{QuestReporter, ReporterTracked};
+use crate::models::status::{QuestStatus, StatusStorage};
+use crate::types::held::{HeldList, HeldTrait, QuestHeld};
+use crate::types::schedule::ScheduleTrait;
 
 /// A model the indexer tracks: `Event` is what `Store::set_x` emits on every write of it, with the
-/// model's keys and new values. The list of the impls of this trait is the list of tracked
-/// models (D-130). It selects the event; it does not make `set_x` emit (see the module's doc).
+/// model's keys and new values, when the consumer tracks it. The list of the impls of this trait
+/// is the list of tracked models (D-130). It selects the event; it does not make `set_x` emit
+/// (see the module's doc).
 pub trait Tracked<M> {
     type Event;
     fn event(self: @M) -> Self::Event;
 }
 
-const NO_TASK: QuestTask = QuestTask { task_id: 0, total: 0 };
-const NO_TASKS: QuestTasks = QuestTasks { t0: NO_TASK, t1: NO_TASK, t2: NO_TASK };
-const NO_CONDITIONS: QuestConditions = QuestConditions {
-    q0: 0, q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0,
-};
+/// The consumer's choice of the tracked models whose writes emit their event: one constant per
+/// tracked model, known at compile time. The component's impls take it as an impl parameter,
+/// like the hooks: the consumer writes `impl QuestTracking = TrackAll<ContractState>;` (or
+/// `TrackNone`, or its own impl) in its contract.
+pub trait QuestTracking<TContractState> {
+    /// `QuestDefined` on `define`.
+    const DEFINITION: bool;
+    /// `QuestReporterSet` on `set_reporter`.
+    const REPORTER: bool;
+}
+
+/// The two ready choices. They sit in a module of their own, not next to `QuestTracking`: the
+/// compiler looks for impls in the trait's module, and would find them there as well as the
+/// consumer's own, and refuse the call as ambiguous.
+pub mod tracking {
+    use super::QuestTracking;
+
+    /// Every tracked model emits its event on every write, as 0.1.0.
+    pub impl TrackAll<TContractState> of QuestTracking<TContractState> {
+        const DEFINITION: bool = true;
+        const REPORTER: bool = true;
+    }
+
+    /// No model emits: the writes alone. The action events are emitted all the same.
+    pub impl TrackNone<TContractState> of QuestTracking<TContractState> {
+        const DEFINITION: bool = false;
+        const REPORTER: bool = false;
+    }
+}
 
 #[generate_trait]
 pub impl StoreImpl<
     TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
 > of StoreTrait<TContractState> {
+    // Definition: slots A, B, C. Tracked
+
     /// Reads A; then B, and C when the quest has conditions. A quest not defined reads with no
     /// task, from A alone.
     #[inline]
@@ -73,18 +114,18 @@ pub impl StoreImpl<
         self.Quest_definitions.read(id).defined
     }
 
-    /// Slot A alone, one read: the definition's schedule and counts, and the quest's status. What
-    /// the hot paths (`accept`, `progress_many`) and the checks of `retire` need. Zero for a quest
-    /// not defined.
+    /// Slot A alone, one read: the definition's schedule and counts, and the quest's status
+    /// (`head.status(id)`). What the hot paths (`accept`, `progress_many`) and `retire` need.
+    /// Zero for a quest not defined.
     #[inline]
-    fn get_definition_head(self: @ComponentState<TContractState>, id: u32) -> DefinitionHead {
+    fn get_definition_head(self: @ComponentState<TContractState>, id: u32) -> HeadSlot {
         self.Quest_definitions.read(id)
     }
 
     /// Slot B alone: the definition's tasks, packed, with unused entries zero; `head.task_count`
     /// says how many are used.
     #[inline]
-    fn get_definition_tasks(self: @ComponentState<TContractState>, id: u32) -> QuestTasks {
+    fn get_definition_tasks(self: @ComponentState<TContractState>, id: u32) -> TasksSlot {
         self.Quest_tasks.read(id)
     }
 
@@ -94,15 +135,18 @@ pub impl StoreImpl<
     fn get_definition_conditions(
         self: @ComponentState<TContractState>, id: u32, condition_count: u8,
     ) -> Span<u32> {
-        conditions_span(@self.Quest_conditions.read(id), condition_count)
+        self.Quest_conditions.read(id).ids(condition_count)
     }
 
-    /// Writes A, B, and C when the definition has conditions; emits `QuestDefined` (tracked), once.
-    /// A definition never changes once written: the caller writes one for a quest not defined
-    /// (`has_definition`), since A is written with the status of a new quest. The model is taken
-    /// by value, as every `set_x`: by snapshot costs 3 steps more (ARC-06).
+    /// Writes A, B, and C when the definition has conditions; then emits `QuestDefined`, once,
+    /// when the consumer tracks the definition. A definition never changes once written: the
+    /// caller writes one for a quest not defined (`has_definition`), since A is written with the
+    /// status of a new quest. The model is taken by value, as every `set_x`: by snapshot costs 3
+    /// steps more (ARC-06).
     #[inline]
-    fn set_definition(ref self: ComponentState<TContractState>, definition: QuestDefinition) {
+    fn set_definition<impl Tracking: QuestTracking<TContractState>>(
+        ref self: ComponentState<TContractState>, definition: QuestDefinition,
+    ) {
         let id = definition.id;
         let (slot_a, slot_b, slot_c) = definition.into_slots();
         self.Quest_definitions.write(id, slot_a);
@@ -110,16 +154,234 @@ pub impl StoreImpl<
         if slot_a.condition_count != 0 {
             self.Quest_conditions.write(id, slot_c);
         }
-        HasComponent::emit(ref self, Tracked::event(@definition));
+        if Tracking::DEFINITION {
+            HasComponent::emit(ref self, Tracked::event(@definition));
+        }
     }
 
-    /// Writes slot A with the status of `head` (`retired`, `live_dependents`), untracked: emits
-    /// nothing. `head` is the one `get_definition_head` read, changed in its status only: the
-    /// definition's fields are written back as they were, in the same single write.
+    // Status: slot A, shared with the definition. Untracked
+
+    /// The status alone, from A. The component's paths read A once with `get_definition_head`,
+    /// which gives the schedule as well.
     #[inline]
-    fn set_definition_status(
-        ref self: ComponentState<TContractState>, id: u32, head: DefinitionHead,
+    fn get_status(self: @ComponentState<TContractState>, id: u32) -> QuestStatus {
+        self.Quest_definitions.read(id).status(id)
+    }
+
+    /// Writes slot A with `status`, and the definition's bits of `head` unchanged, in one write;
+    /// untracked: emits nothing. `head` is the A that the path read (`get_definition_head`), so
+    /// that A is not read twice (docs/research/ARC-06-model-store.md §1.3).
+    #[inline]
+    fn set_status(ref self: ComponentState<TContractState>, status: QuestStatus, head: HeadSlot) {
+        self.Quest_definitions.write(status.id, status.into_slot(head));
+    }
+
+    // Progress: slot P. Untracked
+
+    #[inline]
+    fn get_progress(
+        self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32, interval_id: u64,
+    ) -> QuestProgress {
+        let slot = self.Quest_progress.read((player_id, quest_id, interval_id));
+        ProgressStorage::from_slot(player_id, quest_id, interval_id, slot)
+    }
+
+    #[inline]
+    fn set_progress(ref self: ComponentState<TContractState>, progress: QuestProgress) {
+        let key = (progress.player_id, progress.quest_id, progress.interval_id);
+        self.Quest_progress.write(key, progress.into_slot());
+    }
+
+    // Record: slot R. Untracked
+
+    #[inline]
+    fn get_record(
+        self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
+    ) -> QuestRecord {
+        RecordStorage::from_slot(
+            player_id, quest_id, self.Quest_records.read((player_id, quest_id)),
+        )
+    }
+
+    #[inline]
+    fn set_record(ref self: ComponentState<TContractState>, record: QuestRecord) {
+        self.Quest_records.write((record.player_id, record.quest_id), record.into_slot());
+    }
+
+    // Held list: slot H, per player and index. Untracked
+
+    #[inline]
+    fn get_held_slot(
+        self: @ComponentState<TContractState>, player_id: felt252, index: u8,
+    ) -> QuestHeldSlot {
+        HeldSlotStorage::from_slot(player_id, index, self.Quest_held.read((player_id, index)))
+    }
+
+    #[inline]
+    fn set_held_slot(ref self: ComponentState<TContractState>, slot: QuestHeldSlot) {
+        self.Quest_held.write((slot.player_id, slot.index), slot.into_slot());
+    }
+
+    // The held list as a whole, and its entries' liveness
+
+    /// The held entries alone, for the paths that do not write the list (progress, views):
+    /// slots read in order while full, at most `HELD_SLOTS`.
+    fn get_held(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
+        let mut held: Array<QuestHeld> = array![];
+        let mut index: u8 = 0;
+        while index < HELD_SLOTS {
+            let QuestHeldSlot {
+                player_id: _, index: _, e0, e1, counter: _, kept: _,
+            } = self.get_held_slot(player_id, index);
+            if e0.quest_id == 0 {
+                break;
+            }
+            held.append(e0);
+            if e1.quest_id == 0 {
+                break;
+            }
+            held.append(e1);
+            index += 1;
+        }
+        held.span()
+    }
+
+    /// The held list as a writing path needs it: the entries, the player's acceptance counter,
+    /// and the `kept` bit of each slot read. Slots read in order while full, at most
+    /// `HELD_SLOTS`; a slot whose `e1` is empty ends the list.
+    fn get_held_list(self: @ComponentState<TContractState>, player_id: felt252) -> HeldList {
+        let mut held: Array<QuestHeld> = array![];
+        let mut kept: Array<bool> = array![];
+        let first = self.get_held_slot(player_id, 0);
+        let counter = first.counter;
+        let mut pair = first;
+        let mut index: u8 = 0;
+        loop {
+            let QuestHeldSlot {
+                player_id: _, index: _, e0, e1, counter: _, kept: slot_kept,
+            } = pair;
+            kept.append(slot_kept);
+            if e0.quest_id == 0 {
+                break;
+            }
+            held.append(e0);
+            if e1.quest_id == 0 {
+                break;
+            }
+            held.append(e1);
+            index += 1;
+            if index == HELD_SLOTS {
+                break;
+            }
+            pair = self.get_held_slot(player_id, index);
+        }
+        HeldList { entries: held.span(), counter, kept: kept.span() }
+    }
+
+    /// Writes the slots of `after` (with `after_counter` in slot 0) that differ from those of
+    /// `before`, the list as `get_held_list` read it. A slot that held an entry before or after
+    /// keeps its `kept` bit, so it is never zeroed; a slot that was never used and stays empty is
+    /// not written. Untracked: emits nothing.
+    fn set_held_list(
+        ref self: ComponentState<TContractState>,
+        player_id: felt252,
+        before: HeldList,
+        after: Span<QuestHeld>,
+        after_counter: u32,
     ) {
-        self.Quest_definitions.write(id, head);
+        let HeldList { entries: before, counter: before_counter, kept: before_kept } = before;
+        let len = if before.len() > after.len() {
+            before.len()
+        } else {
+            after.len()
+        };
+        let mut slot: u32 = 0;
+        while slot == 0 || 2 * slot < len {
+            let was_kept = match before_kept.get(slot) {
+                Option::Some(kept) => *kept.unbox(),
+                Option::None => false,
+            };
+            let used = was_kept || 2 * slot < len;
+            let index: u8 = slot.try_into().unwrap();
+            let value = HeldSlotTrait::new(player_id, index, after, after_counter, used);
+            if HeldSlotTrait::new(player_id, index, before, before_counter, was_kept) != value {
+                self.set_held_slot(value);
+            }
+            slot += 1;
+        }
+    }
+
+    /// Whether the list still holds `entry`, the whole entry (quest, interval and acceptance
+    /// number), read at `position` of the list when a call started. One slot read when it is still
+    /// there; the whole list otherwise, since `abandon` moves the later entries up.
+    fn is_still_held(
+        self: @ComponentState<TContractState>, player_id: felt252, entry: QuestHeld, position: u32,
+    ) -> bool {
+        let index: u8 = (position / 2).try_into().unwrap();
+        let pair = self.get_held_slot(player_id, index);
+        let found = if position % 2 == 0 {
+            pair.e0
+        } else {
+            pair.e1
+        };
+        if found == entry {
+            return true;
+        }
+        self.get_held(player_id).contains(entry)
+    }
+
+    /// Whether a held entry is live at `time`: its quest is not retired, `time` is in the entry's
+    /// interval, and that interval is not completed. Reads A, then P only when the interval
+    /// matches.
+    fn is_held_live(
+        self: @ComponentState<TContractState>, player_id: felt252, entry: QuestHeld, time: u64,
+    ) -> bool {
+        let QuestHeld { quest_id, interval_id, acceptance: _ } = entry;
+        let head = self.get_definition_head(quest_id);
+        if head.status(quest_id).retired
+            || head.schedule.interval_id(time) != Option::Some(interval_id) {
+            return false;
+        }
+        !self.get_progress(player_id, quest_id, interval_id).completed
+    }
+
+    // Prerequisites: C, then R of each condition
+
+    /// Reads C, then the record of each prerequisite in order (at most `MAX_CONDITIONS`),
+    /// stopping at the first one never completed: `RecordTrait::all_completed` over all of them,
+    /// without reading the rest.
+    fn prerequisites_met(
+        self: @ComponentState<TContractState>,
+        player_id: felt252,
+        quest_id: u32,
+        condition_count: u8,
+    ) -> bool {
+        for condition in self.get_definition_conditions(quest_id, condition_count) {
+            if !self.get_record(player_id, *condition).has_completed() {
+                return false;
+            }
+        }
+        true
+    }
+
+    // Reporter. Tracked
+
+    #[inline]
+    fn get_reporter(
+        self: @ComponentState<TContractState>, reporter: ContractAddress,
+    ) -> QuestReporter {
+        QuestReporter { reporter, allowed: self.Quest_reporters.read(reporter) }
+    }
+
+    /// Writes the reporter; then emits `QuestReporterSet`, once, when the consumer tracks
+    /// reporters.
+    #[inline]
+    fn set_reporter<impl Tracking: QuestTracking<TContractState>>(
+        ref self: ComponentState<TContractState>, reporter: QuestReporter,
+    ) {
+        self.Quest_reporters.write(reporter.reporter, reporter.allowed);
+        if Tracking::REPORTER {
+            HasComponent::emit(ref self, Tracked::event(@reporter));
+        }
     }
 }

@@ -14,7 +14,10 @@
 //! (`MockBench`).
 
 use quiver_quest::interface::{IQuestDispatcherTrait, IQuestViewDispatcherTrait};
-use quiver_quest::logic::{Mode, QuestSchedule, QuestTask, TaskProgress};
+use quiver_quest::types::batch::TaskProgress;
+use quiver_quest::types::mode::Mode;
+use quiver_quest::types::schedule::QuestSchedule;
+use quiver_quest::types::task::QuestTask;
 use super::grid::{Grid, deploy};
 use super::helpers::{distinct_entries, one_off, task};
 use super::setup::PLAYER;
@@ -95,7 +98,7 @@ fn completions(grid: Grid) -> Array<u64> {
 }
 
 #[test]
-#[available_gas(l2_gas: 80655081)]
+#[available_gas(l2_gas: 80571217)]
 fn baseline_game_case_three_per_task() {
     let grid = game(3);
     let _entries = distinct_entries(1, 16, 1);
@@ -103,7 +106,7 @@ fn baseline_game_case_three_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 85436157)]
+#[available_gas(l2_gas: 85344712)]
 fn game_case_three_per_task() {
     let grid = game(3);
     grid.quest.progress_many(PLAYER, distinct_entries(1, 16, 1), Mode::Storage);
@@ -111,7 +114,7 @@ fn game_case_three_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 56864748)]
+#[available_gas(l2_gas: 56790649)]
 fn baseline_game_case_two_per_task() {
     let grid = game(2);
     let _entries = distinct_entries(1, 16, 1);
@@ -119,7 +122,7 @@ fn baseline_game_case_two_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 61645824)]
+#[available_gas(l2_gas: 61564144)]
 fn game_case_two_per_task() {
     let grid = game(2);
     grid.quest.progress_many(PLAYER, distinct_entries(1, 16, 1), Mode::Storage);

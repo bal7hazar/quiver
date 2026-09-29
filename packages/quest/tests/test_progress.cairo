@@ -1,8 +1,9 @@
-use quiver_quest::logic::{
-    QuestProgress, QuestTasks, TaskProgress, batch_merge, progress_add, progress_is_complete,
-};
+use quiver_quest::models::definition::TasksSlot;
+use quiver_quest::models::progress::ProgressSlot;
+use quiver_quest::types::batch::{BatchTrait, TaskProgress};
 use super::helpers::{
-    U32_MAX, distinct_entries, entry, no_progress, one_task, progress, task, tasks,
+    U32_MAX, add_counts, distinct_entries, entry, is_complete, no_progress, one_task, progress,
+    task, tasks,
 };
 
 #[test]
@@ -10,14 +11,14 @@ use super::helpers::{
 fn quest_count_saturates_at_total() {
     let b = one_task(1, 10);
     let batch = array![entry(1, 7)].span();
-    let (p, changed, completed) = progress_add(no_progress(), @b, 1, batch);
+    let (p, changed, completed) = add_counts(no_progress(), @b, 1, batch);
     assert!(p == progress(7, 0, 0, false, false));
     assert!(changed && !completed);
-    let (p, changed, completed) = progress_add(p, @b, 1, batch);
+    let (p, changed, completed) = add_counts(p, @b, 1, batch);
     assert!(p == progress(10, 0, 0, true, false));
     assert!(changed && completed);
     // Completed once: more progress changes nothing and does not complete again
-    let (p, changed, completed) = progress_add(p, @b, 1, batch);
+    let (p, changed, completed) = add_counts(p, @b, 1, batch);
     assert!(p == progress(10, 0, 0, true, false));
     assert!(!changed && !completed);
 }
@@ -27,10 +28,10 @@ fn quest_count_saturates_at_total() {
 fn quest_count_max_value() {
     let b = one_task(1, U32_MAX);
     let batch = array![entry(1, U32_MAX)].span();
-    let (p, changed, completed) = progress_add(progress(1, 0, 0, false, false), @b, 1, batch);
+    let (p, changed, completed) = add_counts(progress(1, 0, 0, false, false), @b, 1, batch);
     assert!(p == progress(U32_MAX, 0, 0, true, false));
     assert!(changed && completed);
-    let (p, changed, completed) = progress_add(p, @b, 1, batch);
+    let (p, changed, completed) = add_counts(p, @b, 1, batch);
     assert!(p == progress(U32_MAX, 0, 0, true, false));
     assert!(!changed && !completed);
 }
@@ -40,7 +41,7 @@ fn quest_count_max_value() {
 fn quest_count_max_value_below_total() {
     // c + count overflows u32 but stays below no total: saturates at the total, never panics
     let b = one_task(1, U32_MAX);
-    let (p, _, completed) = progress_add(
+    let (p, _, completed) = add_counts(
         progress(U32_MAX - 1, 0, 0, false, false), @b, 1, array![entry(1, U32_MAX)].span(),
     );
     assert!(p.c0 == U32_MAX);
@@ -48,13 +49,13 @@ fn quest_count_max_value_below_total() {
 }
 
 #[test]
-#[available_gas(l2_gas: 32550)]
+#[available_gas(l2_gas: 31490)]
 fn quest_one_off_completes_once() {
     let b = one_task(1, 1);
     let batch = array![entry(1, 1)].span();
-    let (p, _, completed) = progress_add(no_progress(), @b, 1, batch);
+    let (p, _, completed) = add_counts(no_progress(), @b, 1, batch);
     assert!(completed && p.completed);
-    let (p2, changed, completed) = progress_add(p, @b, 1, batch);
+    let (p2, changed, completed) = add_counts(p, @b, 1, batch);
     assert!(!completed && !changed);
     assert!(p2 == p);
 }
@@ -64,8 +65,8 @@ fn quest_one_off_completes_once() {
 fn quest_batch_two_tasks_one_quest_one_write_logic() {
     // Both tasks of the quest are applied by one call: one new state, one completion
     let b = tasks(task(1, 5), task(2, 5), task(0, 0));
-    let batch = batch_merge(array![entry(1, 5), entry(2, 5)].span());
-    let (p, changed, completed) = progress_add(no_progress(), @b, 2, batch);
+    let batch = BatchTrait::merge(array![entry(1, 5), entry(2, 5)].span());
+    let (p, changed, completed) = add_counts(no_progress(), @b, 2, batch);
     assert!(p == progress(5, 5, 0, true, false));
     assert!(changed && completed);
 }
@@ -74,8 +75,8 @@ fn quest_batch_two_tasks_one_quest_one_write_logic() {
 #[available_gas(l2_gas: 61771)]
 fn quest_batch_duplicate_entries_merged_progress() {
     let b = one_task(1, 10);
-    let batch = batch_merge(array![entry(1, 4), entry(1, 4)].span());
-    let (p, changed, completed) = progress_add(no_progress(), @b, 1, batch);
+    let batch = BatchTrait::merge(array![entry(1, 4), entry(1, 4)].span());
+    let (p, changed, completed) = add_counts(no_progress(), @b, 1, batch);
     assert!(p == progress(8, 0, 0, false, false));
     assert!(changed && !completed);
 }
@@ -84,12 +85,12 @@ fn quest_batch_duplicate_entries_merged_progress() {
 #[available_gas(l2_gas: 66612)]
 fn progress_add_three_tasks_partial_then_complete() {
     let b = tasks(task(1, 2), task(2, 3), task(3, 4));
-    let (p, changed, completed) = progress_add(
+    let (p, changed, completed) = add_counts(
         no_progress(), @b, 3, array![entry(3, 9), entry(1, 1)].span(),
     );
     assert!(p == progress(1, 0, 4, false, false));
     assert!(changed && !completed);
-    let (p, changed, completed) = progress_add(p, @b, 3, array![entry(2, 3), entry(1, 1)].span());
+    let (p, changed, completed) = add_counts(p, @b, 3, array![entry(2, 3), entry(1, 1)].span());
     assert!(p == progress(2, 3, 4, true, false));
     assert!(changed && completed);
 }
@@ -99,10 +100,10 @@ fn progress_add_three_tasks_partial_then_complete() {
 fn progress_add_ignores_other_tasks() {
     let b = tasks(task(1, 2), task(2, 3), task(0, 0));
     let start = progress(1, 1, 0, false, false);
-    let (p, changed, completed) = progress_add(start, @b, 2, array![entry(9, 1)].span());
+    let (p, changed, completed) = add_counts(start, @b, 2, array![entry(9, 1)].span());
     assert!(p == start);
     assert!(!changed && !completed);
-    let (p, changed, _) = progress_add(start, @b, 2, array![].span());
+    let (p, changed, _) = add_counts(start, @b, 2, array![].span());
     assert!(p == start && !changed);
 }
 
@@ -111,7 +112,7 @@ fn progress_add_ignores_other_tasks() {
 fn progress_add_touches_only_task_count_slots() {
     // A slot beyond task_count is left as it is, even if its task id is batched
     let b = tasks(task(1, 2), task(2, 3), task(3, 4));
-    let (p, _, completed) = progress_add(
+    let (p, _, completed) = add_counts(
         no_progress(), @b, 1, array![entry(1, 2), entry(2, 3), entry(3, 4)].span(),
     );
     assert!(p == progress(2, 0, 0, true, false));
@@ -122,7 +123,7 @@ fn progress_add_touches_only_task_count_slots() {
 #[available_gas(l2_gas: 17630)]
 fn progress_add_keeps_claimed() {
     let b = one_task(1, 2);
-    let (p, _, _) = progress_add(progress(2, 0, 0, true, true), @b, 1, array![entry(1, 1)].span());
+    let (p, _, _) = add_counts(progress(2, 0, 0, true, true), @b, 1, array![entry(1, 1)].span());
     assert!(p == progress(2, 0, 0, true, true));
 }
 
@@ -155,8 +156,8 @@ fn plain_count(count: u32, add: u32, total: u32) -> u32 {
 }
 
 fn plain_add(
-    p: QuestProgress, b: QuestTasks, task_count: u8, batch: Span<TaskProgress>,
-) -> (QuestProgress, bool, bool) {
+    p: ProgressSlot, b: TasksSlot, task_count: u8, batch: Span<TaskProgress>,
+) -> (ProgressSlot, bool, bool) {
     let mut next = p;
     if task_count >= 1 {
         next.c0 = plain_count(p.c0, plain_lookup(batch, b.t0.task_id), b.t0.total);
@@ -177,14 +178,12 @@ fn plain_add(
     (next, next != p, completed)
 }
 
-fn assert_matches_plain(
-    p: QuestProgress, b: QuestTasks, task_count: u8, batch: Span<TaskProgress>,
-) {
-    assert!(progress_add(p, @b, task_count, batch) == plain_add(p, b, task_count, batch));
+fn assert_matches_plain(p: ProgressSlot, b: TasksSlot, task_count: u8, batch: Span<TaskProgress>) {
+    assert!(add_counts(p, @b, task_count, batch) == plain_add(p, b, task_count, batch));
 }
 
 #[test]
-#[available_gas(l2_gas: 9848097)]
+#[available_gas(l2_gas: 9738267)]
 fn progress_add_matches_the_plain_formula() {
     let b = tasks(task(1, 10), task(2, 20), task(3, U32_MAX));
     let batches = array![
@@ -213,11 +212,11 @@ fn progress_add_matches_the_plain_formula() {
 #[available_gas(l2_gas: 16737)]
 fn progress_is_complete_per_task_count() {
     let b = tasks(task(1, 2), task(2, 3), task(3, 4));
-    assert!(!progress_is_complete(@no_progress(), @b, 1));
-    assert!(progress_is_complete(@progress(2, 0, 0, false, false), @b, 1));
-    assert!(!progress_is_complete(@progress(2, 0, 0, false, false), @b, 2));
-    assert!(progress_is_complete(@progress(2, 3, 0, false, false), @b, 2));
-    assert!(!progress_is_complete(@progress(2, 3, 3, false, false), @b, 3));
-    assert!(progress_is_complete(@progress(2, 3, 4, false, false), @b, 3));
-    assert!(!progress_is_complete(@progress(1, 3, 4, false, false), @b, 3));
+    assert!(!is_complete(@no_progress(), @b, 1));
+    assert!(is_complete(@progress(2, 0, 0, false, false), @b, 1));
+    assert!(!is_complete(@progress(2, 0, 0, false, false), @b, 2));
+    assert!(is_complete(@progress(2, 3, 0, false, false), @b, 2));
+    assert!(!is_complete(@progress(2, 3, 3, false, false), @b, 3));
+    assert!(is_complete(@progress(2, 3, 4, false, false), @b, 3));
+    assert!(!is_complete(@progress(1, 3, 4, false, false), @b, 3));
 }

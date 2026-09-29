@@ -12,10 +12,13 @@
 //! - `EXPIRED`: accepted in interval `NOW_DAY - 1` (a dead entry).
 
 use quiver_quest::interface::{IQuestDispatcher, IQuestDispatcherTrait};
-use quiver_quest::logic::{
-    QuestDefinition, QuestHeld, QuestHeldSlot, QuestProgress, QuestSchedule, QuestTask, QuestTasks,
-    TaskProgress,
-};
+use quiver_quest::models::definition::{HeadSlot, TasksSlot};
+use quiver_quest::models::held::HeldSlot;
+use quiver_quest::models::progress::ProgressSlot;
+use quiver_quest::types::batch::TaskProgress;
+use quiver_quest::types::held::QuestHeld;
+use quiver_quest::types::schedule::QuestSchedule;
+use quiver_quest::types::task::QuestTask;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, map_entry_address, start_cheat_block_timestamp,
     store, test_address,
@@ -60,7 +63,7 @@ fn daily() -> QuestSchedule {
 
 /// Quest `quest_id` in `state`, and its held entry.
 fn seed_quest(address: ContractAddress, quest_id: u32, state: u8) -> QuestHeld {
-    let definition = QuestDefinition {
+    let definition = HeadSlot {
         schedule: daily(),
         task_count: 3,
         condition_count: 0,
@@ -78,14 +81,14 @@ fn seed_quest(address: ContractAddress, quest_id: u32, state: u8) -> QuestHeld {
         ((129, 15, 14), 1)
     };
     let (a, b, c) = ids;
-    let tasks = QuestTasks {
+    let tasks = TasksSlot {
         t0: QuestTask { task_id: a, total },
         t1: QuestTask { task_id: b, total },
         t2: QuestTask { task_id: c, total },
     };
     put(address, selector!("Quest_tasks"), key, StorePacking::pack(tasks));
     if state == DONE {
-        let done = QuestProgress { c0: 1, c1: 1, c2: 1, completed: true, claimed: false };
+        let done = ProgressSlot { c0: 1, c1: 1, c2: 1, completed: true, claimed: false };
         put(
             address,
             selector!("Quest_progress"),
@@ -130,7 +133,7 @@ pub fn seed(grid: Grid, h: u32, state: u8) {
             grid.address,
             selector!("Quest_held"),
             array![PLAYER, slot.into()].span(),
-            StorePacking::pack(QuestHeldSlot { e0, e1, counter, kept: true }),
+            StorePacking::pack(HeldSlot { e0, e1, counter, kept: true }),
         );
         slot += 1;
     }

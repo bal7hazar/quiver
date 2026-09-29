@@ -4,36 +4,79 @@ All notable changes to `quiver_quest` are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Changes to results, storage layout,
 events and error strings are named.
 
-## [Unreleased]
+## [0.2.0] - Unreleased
 
-The pattern of the owner's rule D-143 (docs/CAIRO.md §7), on one model: the quest definition
-(ARC-06, [docs/research/ARC-06-model-store.md](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-06-model-store.md)).
-Results, storage layout, events and error strings are unchanged.
+Not yet released. The package organised as the owner's rule D-143 says (docs/CAIRO.md §7) and as
+the owner's review of ARC-06 asks (D-147): no `logic`, every stored entity a model read and
+written only through the store, and each tracked model's event optional for the consumer
+(ARC-06, ARC-07a; [docs/research/ARC-06-model-store.md](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-06-model-store.md)).
+**Behaviour, events (selectors, keys, data), error strings and storage layouts are those of
+0.1.0**; the ABI's inputs and outputs serialise as in 0.1.0. The **Cairo** paths and names change,
+and the component's impls take a tracking choice: a consumer's code must be updated (below).
+
+### Breaking: paths and names
+
+- **`quiver_quest::logic` is removed.** Its items are now:
+
+  | 0.1.0 | 0.2.0 |
+  |---|---|
+  | `logic::Mode` | `types::mode::Mode` |
+  | `logic::QuestSchedule`, `schedule_validate`, `schedule_is_active`, `schedule_interval_id` | `types::schedule::QuestSchedule`, `ScheduleAssert::assert_valid`, `ScheduleTrait::is_active`, `ScheduleTrait::interval_id` |
+  | `logic::QuestTask` | `types::task::QuestTask` |
+  | `logic::TaskProgress`, `batch_merge`, `batch_count_of`, `batch_first_position` | `types::batch::TaskProgress`, `BatchTrait::merge`, `count_of`, `first_position` |
+  | `logic::QuestHeld`, `HELD_EMPTY`, `held_position`, `held_contains`, `held_remove` | `types::held::QuestHeld`, `HELD_EMPTY`, `HeldTrait::position`, `contains`, `remove` |
+  | `logic::QuestDefinition` (slot A) | `models::definition::HeadSlot` |
+  | `logic::QuestTasks`, `QuestConditions`, `tasks_span`, `tasks_index_of`, `conditions_span` | `models::definition::TasksSlot`, `ConditionsSlot`, `TasksSlotTrait::tasks`, `index_of`, `ConditionsSlotTrait::ids` |
+  | `logic::definition_new` | `models::definition::DefinitionTrait::new`, then `into_slots` |
+  | `logic::QuestProgress`, `progress_add`, `progress_is_complete` | `models::progress::ProgressSlot`; the model `QuestProgress`: `ProgressTrait::add`, `is_complete` |
+  | `logic::QuestRecord`, `record_complete`, `prerequisites_met` | `models::record::RecordSlot`; the model `QuestRecord`: `RecordTrait::complete`, `all_completed` |
+  | `logic::claim` | `ProgressTrait::claim`, then `RecordTrait::claim` |
+  | `logic::QuestHeldSlot`, `held_slot` | `models::held::HeldSlot`; the model `QuestHeldSlot`: `HeldSlotTrait::new` |
+  | `logic::QuestDefinitionPacking`, `QuestTasksPacking`, `QuestConditionsPacking`, `QuestProgressPacking`, `QuestRecordPacking`, `QuestHeldSlotPacking` | `HeadPacking`, `TasksPacking`, `ConditionsPacking`, `ProgressPacking`, `RecordPacking`, `HeldPacking` |
+  | `logic::MAX_*`, `HELD_SLOTS`, `HELD_INTERVAL_LIMIT`, `ACCEPTANCE_LIMIT` | `constants::` (as in 0.1.0) |
+
+- **`QuestProgress`, `QuestRecord` and `QuestHeldSlot` are now models**, with their keys first;
+  `QuestDefinition` is the model only. The views and the internal reads return the slots under
+  their new names: `quest_definition` → `(HeadSlot, Span<QuestTask>, Span<u32>)`,
+  `quest_progress` → `ProgressSlot`, `quest_record` → `RecordSlot`. Their serialisation is 0.1.0's.
+- **The component's impls take the tracking choice.** `InternalImpl`, `QuestImpl` and
+  `QuestViewImpl` have a second impl parameter, `impl Tracking: QuestTracking<TContractState>`. A
+  consumer adds one line to its contract, `impl QuestTracking =
+  quiver_quest::store::tracking::TrackAll<ContractState>;` for 0.1.0's events.
+- The event structs are declared in `quiver_quest::events` (one file each, `events::index`); they
+  are still exported from `quiver_quest::component::QuestComponent`, with the same selectors.
 
 ### Added
 
-- `quiver_quest::models::definition`: the model `QuestDefinition { id, schedule, tasks,
-  conditions }` (struct in `models::index`), with `DefinitionTrait::new`, `is_active`,
-  `interval_id`, `DefinitionAssert`, `errors` (the strings of `quiver_quest::errors`),
-  `DefinitionStorage` (the model over the slots A, B, C of 0.1.0) and `DefinitionTracked`. Not to
-  be confused with `quiver_quest::logic::QuestDefinition`, slot A, unchanged.
-- `quiver_quest::store`: the trait `Tracked<M>` (a tracked model and its event) and `StoreTrait`
-  on the component's state. For the model: `get_definition`, and `set_definition`, which emits
-  `QuestDefined`. Focused reads for the paths that need less than the model: `has_definition`,
-  `get_definition_head` (slot A), `get_definition_tasks` (B), `get_definition_conditions` (C).
-  And `set_definition_status`, which writes the quest's status in A and emits nothing.
-- `quiver_quest::events`: `QuestDefined` is declared in `events::index`, and
-  `DefinedTrait::new` builds it from the model. It is still exported as
-  `quiver_quest::component::QuestComponent::QuestDefined`, with the same selector, keys and data.
+- **Optional tracking** (D-147). `quiver_quest::store::QuestTracking<TContractState>`, one
+  constant per tracked model (`DEFINITION`, `REPORTER`), and its ready choices
+  `store::tracking::TrackAll` (every tracked model emits, as 0.1.0) and `TrackNone`. Under
+  `TrackNone`, `define` does not emit `QuestDefined` and `set_reporter` does not emit
+  `QuestReporterSet`; the action events (`QuestProgressed`, `QuestCompleted`, `QuestClaimed`,
+  `QuestRetired`) are emitted whatever the choice. The compiler folds the constant: an untracked
+  write costs exactly the write with no event code, a tracked one the write plus the event
+  (measured to the unit, `GAS.md`).
+- **Models** (`quiver_quest::models`, structs in `models::index`): `QuestDefinition` (tracked, slots
+  A, B, C), `QuestStatus` (untracked, the status bits of slot A, shared with the definition),
+  `QuestProgress` (P), `QuestRecord` (R), `QuestHeldSlot` (H), all untracked, and `QuestReporter`
+  (tracked). Each with its behaviour, checks, `errors` (the strings of `quiver_quest::errors`) and
+  storage.
+- **The store** (`quiver_quest::store`, `StoreTrait` on the component's state): `Tracked<M>`;
+  `get_definition`, `has_definition`, `get_definition_head` (A), `get_definition_tasks` (B),
+  `get_definition_conditions` (C), `set_definition`; `get_status`, `set_status(status, head)`;
+  `get_progress`, `set_progress`; `get_record`, `set_record`; `get_held_slot`, `set_held_slot`;
+  `get_reporter`, `set_reporter`. The component reads and writes storage only through it.
+- `quiver_quest::types` (`mode`, `schedule`, `task`, `batch`, `held`) and `quiver_quest::helpers::bits`.
 
 ### Changed
 
-- `define` validates with `DefinitionTrait::new` and writes through `Store::set_definition`. The
-  checks, their order, the writes and the event are those of 0.1.0.
-- Every read of a definition slot, and every write of the quest's status, goes through the store.
-  Only the component's code changed; the reads, the writes and their costs are those of 0.1.0. The worst case costs 2 583 680
-  L2 gas instead of 2 590 440. Every test that defines a quest is cheaper, and the others are
-  unchanged.
+- Every entrypoint reads and writes the same slots, in the same order, with the same checks and
+  events (under `TrackAll`) as 0.1.0. Slot A is read once per path, and the status is written as
+  the whole of A, from the A that was read.
+- **Costs.** No worst call is raised: `progress_many` is 7 220 L2 gas cheaper at `MAX_HELD` = 4
+  (6 205 843) and 14 140 at 8 held; `accept` 4 370 (1 917 170), `abandon` 9 910 (564 150);
+  `define` is 2 583 280 (2 590 440 in 0.1.0); `set_reporter` is unchanged, `retire` 300 more. The
+  largest rise is the view `quest_is_unlocked`, +4 300 (0.9 %). Detail in `GAS.md`.
 
 ## [0.1.0] - 2026-09-29
 
