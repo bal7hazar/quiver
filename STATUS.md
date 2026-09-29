@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 07:00 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 09:10 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -8,7 +8,12 @@
 the layering of `cartridge-gg/arcade` (models, events, types, a store, functions scoped in traits).
 **ARC-06** settles the pattern and shows it on one model, the quest definition
 ([brief](docs/briefs/ARC-06-model-store.md)); the owner reviews that model before ARC-07 rewrites
-both packages as 0.2.0. 0.1.0 stays published; no consumer uses it.
+both packages as 0.2.0. 0.1.0 stays published; no consumer uses it. **ARC-06 done** (08:20 to 09:03 UTC,
+[#19](https://github.com/bal7hazar/quiver/pull/19), CI green, 470 tests): a model is tracked when
+it implements `Tracked<M>`; the component's state is the store (`get_x`, `set_x`); the store costs
+exactly the hand-written code, a tracked write the event more (45 020); a convention, not a package.
+Reference model: `packages/quest/src/models/definition.cairo`. Its audits run in sequence:
+`[GPT-6-Sol]` on organisation, then `[GPT-6-Astra]` on cost.
 
 Both packages the game needs are published on scarbs.xyz, each after the project manager's go:
 
