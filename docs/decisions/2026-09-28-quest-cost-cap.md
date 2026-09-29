@@ -82,3 +82,16 @@ entrypoint changes.
 For the game: every quest is accepted before it progresses; H = 4 is its 3 active quests and one
 contract; a changed storage slot costing about 0.4M L2 gas per transaction is the first item of
 its ENG-01 cost budget (D-129).
+
+## Correction of 2026-09-29
+
+The price of a storage slot depends on whether the slot is new (project manager, from the game's
+record `04f2b3d`, and the `[GPT-6-Astra]` audit of ARC-03c, finding 1). The game's FND-04 read the
+state diffs of 149 Sepolia transactions: a **new** slot (zero before) costs about **453 500** L2
+gas per transaction; an **overwritten or zeroed** one about **32 000**. The 402 000 measured here
+was Starknet's allocation charge, paid by a new slot only. For ARC-03c: the worst call is measured
+with the player's progress and record slots new and with them existing; `GAS.md` says which slots
+each entrypoint creates and which it overwrites; the caps are set on the measured figures; a
+design that keeps a player's slots and reuses them instead of zeroing them (the held list,
+expired acceptances) is considered, since it pays about fourteen times less at the next use. The
+decision itself is unchanged.

@@ -46,7 +46,7 @@ jobs:
           for profile in research audit implement; do
             for mode in new resume; do
               out=$(scripts/agent.sh --dry-run smoke claude opus "$mode" "x" "$profile")
-              for var in SCARB_REGISTRY_AUTH_TOKEN STARKNET_NETWORK STARKNET_RPC_URL STARKNET_ACCOUNT_ADDRESS STARKNET_PRIVATE_KEY; do
+              for var in SCARB_REGISTRY_AUTH_TOKEN STARKNET_NETWORK STARKNET_RPC_URL STARKNET_RPC STARKNET_ACCOUNT_ADDRESS STARKNET_PRIVATE_KEY; do
                 grep -qF -- "\\\"$var\\\":\\\"\\\"" <<< "$out" || { echo "$var not emptied: $profile $mode" >&2; exit 1; }
               done
               grep -qF -- ' --settings ' <<< "$out"
@@ -76,6 +76,79 @@ jobs:
           if scripts/agent.sh --dry-run smoke claude sonnet-4 new "x"; then exit 1; fi
           if scripts/agent.sh --dry-run smoke claude sonnet new "x" ../profiles/implement; then exit 1; fi
           if scripts/agent.sh --dry-run --with-assets smoke claude sonnet new "x"; then exit 1; fi
+          # The budget as slots (the game's OPERATIONS §3): ~/orchestrator/slots, in a fake HOME. A slot is
+          # held by a kernel lock for as long as its holder lives; nothing is counted by reading processes.
+          fake=$(mktemp -d); slots=$fake/orchestrator/slots
+          set +e; out=$(HOME=$fake scripts/agent.sh thresholds 2>&1); s=$?; set -e; [ "$s" = 4 ]; grep -qF 'slots-init' <<< "$out"   # none yet
+          HOME=$fake scripts/agent.sh slots-init
+          HOME=$fake scripts/agent.sh thresholds                      # all free
+          # The slot names are protected: the directory is read-only, a held slot cannot be removed or
+          # replaced; a missing slot file refuses (never recreated by a probe) until slots-init; an
+          # unreadable one refuses as unreadable, not as held.
+          [ "$(stat -c %a "$slots")" = 555 ]
+          if rm -f "$slots/total-1" 2> /dev/null; [ -e "$slots/total-1" ]; then :; else echo "a slot file could be removed" >&2; exit 1; fi
+          chmod 755 "$slots"; rm "$slots/total-2"; chmod 555 "$slots"
+          set +e; out=$(HOME=$fake scripts/agent.sh thresholds 2>&1); s=$?; set -e; echo "$out"; [ "$s" = 4 ]; grep -qF 'is missing' <<< "$out"
+          HOME=$fake scripts/agent.sh slots-init; [ -f "$slots/total-2" ]; [ "$(stat -c %a "$slots")" = 555 ]
+          for x in total-1 total-3; do   # the first slot a launch would look at, and a later one
+            chmod 000 "$slots/$x"
+            set +e; out=$(HOME=$fake scripts/agent.sh thresholds 2>&1); s=$?; set -e; echo "$out"; [ "$s" = 4 ]; grep -qF 'unreadable' <<< "$out"
+            chmod 644 "$slots/$x"
+          done
+          # Each holder runs in its own session (setsid does not fork here), so its pid is its process group.
+          declare -A pid
+          run() { HOME=$fake setsid scripts/agent.sh run-in-slots "$1" "$2" "$fake/$3.log" sleep 120 & pid[$3]=$!; sleep 0.5; }
+          refuses() { set +e; out=$(HOME=$fake scripts/agent.sh thresholds 2>&1); s=$?; set -e; echo "$out"; [ "$s" = 4 ]; grep -qF "$1" <<< "$out"; }
+          # quiver holds its one slot: at its cap while total slots are free.
+          run total-1 quiver-1 a
+          HOME=$fake scripts/agent.sh slots
+          held=$(HOME=$fake scripts/agent.sh slots); grep -q '^total-1 *held' <<< "$held"; grep -q '^quiver-1 *held' <<< "$held"
+          # slots-init never opens the directory while a slot is held.
+          set +e; out=$(HOME=$fake scripts/agent.sh slots-init 2>&1); s=$?; set -e; echo "$out"; [ "$s" != 0 ]; grep -qF 'every slot is free' <<< "$out"
+          [ "$(stat -c %a "$slots")" = 555 ]
+          refuses 'the quiver track is at its cap'
+          # A slot already held cannot be taken: the inner shell refuses and runs nothing (75).
+          set +e; HOME=$fake scripts/agent.sh run-in-slots total-2 quiver-1 "$fake/c.log" touch "$fake/ran"; s=$?; set -e
+          [ "$s" = 75 ]; [ ! -e "$fake/ran" ]; grep -q '^slot-refused' "$fake/c.log"
+          # Two holders of other tracks fill the budget; a killed holder frees its slots, however it ends.
+          run total-2 game-1 b; run total-3 lib-1 c
+          kill -9 -- -"${pid[a]}"; sleep 0.5
+          held=$(HOME=$fake scripts/agent.sh slots); grep -q '^total-1 *free' <<< "$held"; grep -q '^quiver-1 *free' <<< "$held"
+          HOME=$fake scripts/agent.sh thresholds
+          run total-1 game-2 d
+          refuses 'the budget of 3 agents is in use'
+          for k in b c d; do kill -9 -- -"${pid[$k]}" 2> /dev/null || true; done; sleep 0.5
+          # The waiting marker of the game stops quiver; a stale one is ignored; it never stops the game's copy.
+          mkdir -p "$fake/orchestrator/waiting"; touch "$fake/orchestrator/waiting/game"
+          refuses 'the game is waiting'
+          sed 's/^TRACK=quiver$/TRACK=grimworld/' scripts/agent.sh > scripts/.agent-game-ci.sh; chmod +x scripts/.agent-game-ci.sh
+          grep -qx 'TRACK=grimworld' scripts/.agent-game-ci.sh
+          HOME=$fake scripts/.agent-game-ci.sh thresholds   # the marker never stops the game
+          touch -d '40 minutes ago' "$fake/orchestrator/waiting/game"
+          HOME=$fake scripts/agent.sh thresholds   # a stale marker is ignored
+          rm -f scripts/.agent-game-ci.sh
+          # End to end on the detached path, with a stub codex that sleeps: the launch confirms that the agent
+          # holds its two slots before it returns, status lists them, and they are free once it ends.
+          # GitHub's runner has node elsewhere: link it where the launcher expects it (the runner allows sudo).
+          if [ ! -x /usr/bin/node ] && command -v node > /dev/null; then sudo ln -s "$(command -v node)" /usr/bin/node; fi
+          if [ -x /usr/bin/node ] && [ -z "${QV_LOCAL_CHECK:-}" ]; then
+            mkdir -p "$fake/bin" .claude/worktrees/cli-slottest
+            printf 'setTimeout(() => {}, 3000);\n' > "$fake/bin/codex"; chmod +x "$fake/bin/codex"
+            out=$(HOME=$fake PATH="$fake/bin:$PATH" scripts/agent.sh slottest codex gpt-6-sol new "x" audit 2>&1)
+            echo "$out"; grep -qF 'slottest: holds slots total-1 and quiver-1' <<< "$out"
+            st=$(HOME=$fake scripts/agent.sh status); grep -q '^slot total-1 held slottest' <<< "$st"
+            sleep 5; held=$(HOME=$fake scripts/agent.sh slots); grep -q '^total-1 *free' <<< "$held"; grep -q '^quiver-1 *free' <<< "$held"
+          else
+            echo "end-to-end slot fixture skipped (no /usr/bin/node, or a local run)"
+          fi
+          # The launch lock: while another launcher holds it, a launch waits (killed by timeout: 124);
+          # once released, the same launch goes on to the slots, which refuse (4). Nothing is launched.
+          run total-1 quiver-1 e
+          flock "$fake/orchestrator/agent-launch.lock" sleep 6 & holder=$!; sleep 1
+          set +e; HOME=$fake timeout 3 scripts/agent.sh locktest claude opus new "x" research; s=$?; set -e
+          [ "$s" = 124 ]; wait "$holder"
+          set +e; HOME=$fake scripts/agent.sh locktest claude opus new "x" research; s=$?; set -e; [ "$s" = 4 ]
+          kill -9 -- -"${pid[e]}" 2> /dev/null || true
           # The build lock wraps build and test subcommands only.
           for bad in "rm -rf x" "scarb publish" "scarb run x" "--heavy scarb publish" "pnpm install" "snforge"; do
             if scripts/lock.sh $bad 2> /dev/null; then echo "lock.sh accepted: $bad" >&2; exit 1; fi

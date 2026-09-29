@@ -76,6 +76,11 @@ The VPS (8 vCPU, 31 GB) is shared with the owner's other programmes and with oth
   minute and run it again.
 - Do not install or upgrade anything the brief does not ask for. Never change the machine's
   toolchain (`asdf set`, `asdf install`, `asdf plugin`): other programmes use it.
+- **The machine is shared** (the game's OPERATIONS §3, 2026-09-29): delete and kill only what you
+  created, named exactly. Temporary files and directories go under your own worktree (for example
+  `target/` or a folder the brief names), never directly under `/tmp`. No wildcard outside your own
+  directory, no kill by pattern (`pkill -f`, `killall`), no `git clean` or `git worktree prune`
+  anywhere but your own worktree.
 
 ## 4. Rules of the packages
 

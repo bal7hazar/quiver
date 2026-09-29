@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 23:58 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 00:52 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -35,17 +35,34 @@ said**: a completed quest costs about 1.17M, most of it its two changed storage 
 quest per task and no prerequisite measures 20.6M at 16 tasks. **Decided by the project manager,
 D-135** ([decision](docs/decisions/2026-09-28-quest-cost-cap.md)): acceptance mandatory, at most
 H = 4 held quests per player (8 at most), progress walks the held list, prerequisites checked at
-acceptance. **Next: ARC-03c** ([brief](docs/briefs/ARC-03c-quest-held.md)), Opus 5.5, from
-ARC-03b's branch; #7 is superseded and closed when ARC-03c's pull request opens.
+acceptance. **ARC-03c done** (23:49 to 00:28 UTC, [#10](https://github.com/bal7hazar/quiver/pull/10),
+CI green; #7 closed as superseded): every quest accepted, at most 4 held (the code works up to 8),
+progress walks the held list. **Measured worst calls**: 6.1M (4 held, hooks empty), 11.3M (8 held),
+7.9M and 14.9M with a hook writing one slot per completion; the game's use 5.3M; all under the 20M
+cap. Its `[GPT-6-Astra]` audit ([report](docs/reports/ARC-03c-audit-gpt-6-astra-1.md)) returned
+**FAIL** (no authorization bypass, double claim or packing corruption found): the 402 000 L2 gas
+charge is Starknet's allocation cost (a cell going from zero to non-zero), not the cost of every
+changed slot, so the update costs and corrections are overstated (the worst calls, with fresh
+slots, stand); a hook that abandons and re-accepts a quest lets the outer call progress it; the
+one-write tests assert state, not writes. **Fix loop 1** runs since 00:43 UTC. The project manager
+corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
+about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
+what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
+and overwritten slots per entrypoint, reusing slots instead of zeroing them) goes to fix loop 2. After the merge: the ARC-01 sections the lot could not touch (§2 tables, §3.4, §3.7, §3.8,
+§5 notation) are brought in line by the orchestrator, then the publication request of
+`quiver_quest` 0.1.0.
 
-**Launcher** ([#8](https://github.com/bal7hazar/quiver/pull/8), CI green, `[GPT-6-Sol]` audit
-waiting for a slot): the budget of 3 counted by the launcher across the three tracks, failing
-closed, and the count and start under the shared lock `~/orchestrator/agent-launch.lock`, ported
-from the game's `scripts/agent.sh` at `e3a2e75` (#48). **Inherited findings**, from the audit of
-the library's port (bal7hazar/hexx-cairo#24), **closed** by the sync with the game's launcher at
-`44586e6` (the count scans /proc for every codex exec; an unreadable, malformed or dangling launch
-record and an unlistable records directory refuse). Until #8 merges, launches go through its
-launcher.
+**Launcher**: the budget is now **slot locks** ([#9](https://github.com/bal7hazar/quiver/pull/9),
+`1d61843`, then [#11](https://github.com/bal7hazar/quiver/pull/11) and
+[#12](https://github.com/bal7hazar/quiver/pull/12), synced with the game's `scripts/agent.sh` at
+`2628b21` by the project manager's decision (`slots-init` under the launch lock and only with every
+slot free; every slot checked for errors before one is chosen): slot files opened read-only,
+never created by a probe, the slot directory read-only, only `slots-init` creating missing ones): an agent holds `~/orchestrator/slots/total-N` and
+`quiver-1` by a kernel lock for as long as it lives; a launch takes both or refuses, and refuses
+while the game's waiting marker is fresh. This replaces #8's process count, and with it the four
+findings inherited from the game's launcher. ARC-03c, launched before the slots, is covered by the
+placeholder `slotkeep-quiver-ARC-03c-234905` (holds `total-2` and `quiver-1`). To sync again when
+the game's CHANGELOG marks the audited reference, if it differs.
 
 Budget slip, 22:28 UTC: the orchestrator resumed ARC-03b while three Grim World agents ran (two
 codex audits of the game and the library were counted, then overlooked); it stopped the run
@@ -67,8 +84,9 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
 | ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
-| ARC-03c quest held list | — | `claude-opus-5-5` / — | implement | Ready; after the PR-8 audit (cap 1) |
-| PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | Running since 23:44 UTC |
+| ARC-03c quest held list | `quiver-ARC-03c-004310` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Fix loop 1 since 00:43 UTC |
+| ARC-03c audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 00:39 UTC; to resume on the fixes |
+| PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | FAIL (findings in the shared code, inherited); #8 merged by decision |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
@@ -76,8 +94,8 @@ to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
 
 ## Budget
 
-The game's OPERATIONS §3 at `377576a`: caps game 2, map library 1, **quiver 1, audits included**,
-total 3; the game comes first: no quiver launch while `~/orchestrator/waiting/game` exists and is
+The game's OPERATIONS §3 at `377576a`: caps game 2, map library 1, **quiver 1 (the slot `quiver-1`),
+audits included**, total 3; the game comes first: no quiver launch while `~/orchestrator/waiting/game` exists and is
 less than 30 minutes old. ARC-03b (fix loop 2) is this track's one agent; the queued `[GPT-6-Sol]`
 audit of #8 was withdrawn at 23:07 UTC before it launched, and waits for ARC-03b to end.
 
