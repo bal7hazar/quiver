@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 05:20 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 04:59 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -79,7 +79,7 @@ request. **`quiver_quest` 0.1.0 is published** on
 `quiver_achievement`: its accepted design breaks the 20M cap in storage mode (448 records in the
 worst call, about 200M): **the project manager decided 0.1.0 in event mode only**
 ([decision](docs/decisions/2026-09-29-achievement-event-only.md)); storage mode with per-task counters
-later, its layout not reserved. **Next: ARC-04** on that decision ([brief](docs/briefs/ARC-04-achievement.md)). The project manager
+later, its layout not reserved. **ARC-04 is running** since 04:58 UTC ([brief](docs/briefs/ARC-04-achievement.md)). The project manager
 corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
 about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
 what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
@@ -119,12 +119,7 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
-| ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
-| PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | FAIL (findings in the shared code, inherited); #8 merged by decision |
-| ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
-
-ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
-to 20:11 UTC over four runs; its audit on `gpt-6-sol`, three passes.
+| ARC-04 achievement event mode | `quiver-ARC-04-045808`, slots `total-3`, `quiver-1` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Running since 04:58 UTC |
 
 ## Budget
 
