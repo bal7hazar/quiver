@@ -1,26 +1,38 @@
-//! Fixtures of the cost grid of `progress_many` (fix loop 2, point 1), seeded straight into the
-//! component's storage with snforge's `store`: the grid reaches past the caps, which `define`
-//! refuses, so that the cost model is fitted on a wide range.
+//! Fixtures of the cost grid of `progress_many` over the held list (ARC-03c), seeded straight into
+//! the component's storage with snforge's `store`, so that a list of up to `MAX_HELD_LIMIT` = 8
+//! entries is reached although `accept` stops at `MAX_HELD`.
 //!
-//! Grid point (E, N, K): tasks 1..=E, each with N live one-off quests of one task (target 1, no
-//! accept step), each with K prerequisites of its own (no sharing) that `PLAYER` completed and
-//! that no call has observed yet. One `progress_many(PLAYER, [(1, 1) .. (E, 1)], Storage)`
-//! completes all E × N quests: the worst case of each point.
+//! Grid point (H, state): quests 1..=H, daily, held by `PLAYER` in interval `NOW_DAY`; the call is
+//! `progress_many(PLAYER, [1..=15, 129], Storage)`, the worst entries for the merge. Each quest is,
+//! by `state`:
+//! - `COMPLETE`: tasks 129, 15, 14 (the last three entries), totals 1: completes;
+//! - `COUNT`: the same tasks, totals 2: counts 1 on each, does not complete;
+//! - `MISS`: tasks 201, 202, 203, not in the batch: read, nothing written;
+//! - `DONE`: completed earlier in this interval (a dead entry, pruned at the next accept);
+//! - `EXPIRED`: accepted in interval `NOW_DAY - 1` (a dead entry).
 
 use quiver_quest::interface::{IQuestDispatcher, IQuestDispatcherTrait};
 use quiver_quest::logic::{
-    QuestConditions, QuestDefinition, QuestIdPage, QuestRecord, QuestSchedule, QuestTask,
-    QuestTasks,
+    QuestDefinition, QuestHeld, QuestHeldSlot, QuestProgress, QuestSchedule, QuestTask, QuestTasks,
+    TaskProgress,
 };
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, map_entry_address, store, test_address,
+    ContractClassTrait, DeclareResultTrait, declare, map_entry_address, start_cheat_block_timestamp,
+    store, test_address,
 };
 use starknet::ContractAddress;
 use starknet::storage_access::StorePacking;
 use super::setup::PLAYER;
 
-/// Prerequisite ids start above every quest id of the grid.
-const PREREQUISITE_BASE: u32 = 1000000;
+/// Day 20 000 (2024-10-04), one hour in.
+pub const NOW_DAY: u64 = 20000;
+pub const NOW: u64 = 20000 * 86400 + 3600;
+
+pub const COMPLETE: u8 = 0;
+pub const COUNT: u8 = 1;
+pub const MISS: u8 = 2;
+pub const DONE: u8 = 3;
+pub const EXPIRED: u8 = 4;
 
 #[derive(Drop, Copy)]
 pub struct Grid {
@@ -28,11 +40,12 @@ pub struct Grid {
     pub quest: IQuestDispatcher,
 }
 
-/// `MockBench` (hooks empty), with the test contract as its reporter.
+/// `MockBench` (hooks empty), with the test contract as its reporter, at `NOW`.
 pub fn deploy() -> Grid {
     let class = declare("MockBench").unwrap().contract_class();
     let (address, _) = class.deploy(@array![]).unwrap();
     let grid = Grid { address, quest: IQuestDispatcher { contract_address: address } };
+    start_cheat_block_timestamp(address, NOW);
     grid.quest.set_reporter(test_address(), true);
     grid
 }
@@ -41,131 +54,89 @@ fn put(address: ContractAddress, member: felt252, keys: Span<felt252>, value: fe
     store(address, map_entry_address(member, keys), array![value].span());
 }
 
-fn id_at(ids: Span<u32>, index: u32) -> u32 {
-    match ids.get(index) {
-        Option::Some(id) => *id.unbox(),
-        Option::None => 0,
-    }
+fn daily() -> QuestSchedule {
+    QuestSchedule { start: 0, end: 0, duration: 86400, interval: 86400 }
 }
 
-fn ids_of(ids: Span<u32>) -> QuestConditions {
-    QuestConditions {
-        q0: id_at(ids, 0),
-        q1: id_at(ids, 1),
-        q2: id_at(ids, 2),
-        q3: id_at(ids, 3),
-        q4: id_at(ids, 4),
-        q5: id_at(ids, 5),
-        q6: id_at(ids, 6),
-    }
-}
-
-/// Quest `quest_id` on `task_id` (target 1), with prerequisites `conditions`, all completed by
-/// `PLAYER`.
-fn seed_quest(address: ContractAddress, quest_id: u32, task_id: u32, conditions: Span<u32>) {
+/// Quest `quest_id` in `state`, and its held entry.
+fn seed_quest(address: ContractAddress, quest_id: u32, state: u8) -> QuestHeld {
     let definition = QuestDefinition {
-        schedule: QuestSchedule { start: 0, end: 0, duration: 0, interval: 0 },
-        task_count: 1,
-        condition_count: conditions.len().try_into().unwrap(),
-        needs_accept: false,
+        schedule: daily(),
+        task_count: 3,
+        condition_count: 0,
         defined: true,
         retired: false,
         live_dependents: 0,
     };
     let key = array![quest_id.into()].span();
     put(address, selector!("Quest_definitions"), key, StorePacking::pack(definition));
-    let none = QuestTask { task_id: 0, total: 0 };
-    let tasks = QuestTasks { t0: QuestTask { task_id, total: 1 }, t1: none, t2: none };
-    put(address, selector!("Quest_tasks"), key, StorePacking::pack(tasks));
-    if conditions.len() != 0 {
-        put(address, selector!("Quest_conditions"), key, StorePacking::pack(ids_of(conditions)));
-    }
-    let done = QuestRecord {
-        completions: 1, claims: 0, unlocked: false, active: false, accepted_interval: 0,
+    let (ids, total) = if state == MISS {
+        ((201, 202, 203), 1)
+    } else if state == COUNT {
+        ((129, 15, 14), 2)
+    } else {
+        ((129, 15, 14), 1)
     };
-    for condition in conditions {
+    let (a, b, c) = ids;
+    let tasks = QuestTasks {
+        t0: QuestTask { task_id: a, total },
+        t1: QuestTask { task_id: b, total },
+        t2: QuestTask { task_id: c, total },
+    };
+    put(address, selector!("Quest_tasks"), key, StorePacking::pack(tasks));
+    if state == DONE {
+        let done = QuestProgress { c0: 1, c1: 1, c2: 1, completed: true, claimed: false };
         put(
             address,
-            selector!("Quest_records"),
-            array![PLAYER, (*condition).into()].span(),
+            selector!("Quest_progress"),
+            array![PLAYER, quest_id.into(), NOW_DAY.into()].span(),
             StorePacking::pack(done),
         );
     }
+    let interval_id = if state == EXPIRED {
+        NOW_DAY - 1
+    } else {
+        NOW_DAY
+    };
+    QuestHeld { quest_id, interval_id }
 }
 
-/// Grid point (e, n, k), seeded into `grid`: tasks 1..=e.
-pub fn seed(grid: Grid, e: u32, n: u32, k: u32) {
-    let mut tasks = array![];
-    let mut task_id: u32 = 1;
-    while task_id <= e {
-        tasks.append(task_id);
-        task_id += 1;
+/// Grid point (h, state), seeded into `grid`: quests 1..=h and the held list.
+pub fn seed(grid: Grid, h: u32, state: u8) {
+    let mut entries: Array<QuestHeld> = array![];
+    let mut id: u32 = 1;
+    while id <= h {
+        entries.append(seed_quest(grid.address, id, state));
+        id += 1;
     }
-    seed_tasks(grid, tasks.span(), n, k);
-}
-
-/// `n` quests with `k` prerequisites each on every task of `tasks`.
-pub fn seed_tasks(grid: Grid, tasks: Span<u32>, n: u32, k: u32) {
-    let mut index: u32 = 0;
-    while index < tasks.len() {
-        let task_id = *tasks[index];
-        let mut ids: Array<u32> = array![];
-        let mut i: u32 = 0;
-        while i < n {
-            let quest_id = index * n + i + 1;
-            let mut conditions = array![];
-            let mut j: u32 = 0;
-            while j < k {
-                conditions.append(PREREQUISITE_BASE + (quest_id - 1) * 7 + j + 1);
-                j += 1;
-            }
-            seed_quest(grid.address, quest_id, task_id, conditions.span());
-            ids.append(quest_id);
-            i += 1;
-        }
-        // Pages of 7, contiguous
-        let ids = ids.span();
-        let mut page: u8 = 0;
-        let mut start: u32 = 0;
-        while start < ids.len() {
-            let end = if start + 7 < ids.len() {
-                start + 7
-            } else {
-                ids.len()
-            };
-            let chunk = ids.slice(start, end - start);
-            let value = QuestIdPage { len: chunk.len().try_into().unwrap(), ids: ids_of(chunk) };
-            put(
-                grid.address,
-                selector!("Quest_task_pages"),
-                array![task_id.into(), page.into()].span(),
-                StorePacking::pack(value),
-            );
-            page += 1;
-            start = end;
-        }
-        index += 1;
+    let entries = entries.span();
+    let none = QuestHeld { quest_id: 0, interval_id: 0 };
+    let mut slot: u32 = 0;
+    while 2 * slot < h {
+        let e0 = *entries[2 * slot];
+        let e1 = if 2 * slot + 1 < h {
+            *entries[2 * slot + 1]
+        } else {
+            none
+        };
+        put(
+            grid.address,
+            selector!("Quest_held"),
+            array![PLAYER, slot.into()].span(),
+            StorePacking::pack(QuestHeldSlot { e0, e1 }),
+        );
+        slot += 1;
     }
 }
 
-/// The worst entries for `e` tasks: tasks 1..e-1, then 129 (= 1 mod 128), so that
-/// `batch_merge` meets a collision at the last entry and runs its plain merge in full.
-pub fn late_collision_tasks(e: u32) -> Span<u32> {
-    let mut tasks = array![];
-    let mut task_id: u32 = 1;
-    while task_id < e {
-        tasks.append(task_id);
-        task_id += 1;
-    }
-    tasks.append(129);
-    tasks.span()
-}
-
-/// Count 1 on each of `tasks`.
-pub fn entries_of(tasks: Span<u32>) -> Span<quiver_quest::logic::TaskProgress> {
+/// `[1..=15, 129]`, count 1 each: 129 = 1 mod 128, so `batch_merge` runs its plain merge in full.
+pub fn worst_entries() -> Span<TaskProgress> {
     let mut entries = array![];
-    for task_id in tasks {
-        entries.append(quiver_quest::logic::TaskProgress { task_id: *task_id, count: 1 });
+    let mut task_id: u32 = 1;
+    while task_id < 16 {
+        entries.append(TaskProgress { task_id, count: 1 });
+        task_id += 1;
     }
+    entries.append(TaskProgress { task_id: 129, count: 1 });
     entries.span()
 }

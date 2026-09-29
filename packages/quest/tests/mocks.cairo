@@ -40,7 +40,6 @@ pub trait IMockConsumer<TState> {
         schedule: quiver_quest::logic::QuestSchedule,
         tasks: Span<quiver_quest::logic::QuestTask>,
         conditions: Span<u32>,
-        needs_accept: bool,
     );
     fn submit_results(
         ref self: TState, adventurer_id: felt252, progress: Span<quiver_quest::logic::TaskProgress>,
@@ -261,10 +260,9 @@ pub mod MockConsumer {
             schedule: QuestSchedule,
             tasks: Span<QuestTask>,
             conditions: Span<u32>,
-            needs_accept: bool,
         ) {
             assert(get_caller_address() == self.admin.read(), 'not admin');
-            self.quest.define(quest_id, schedule, tasks, conditions, needs_accept);
+            self.quest.define(quest_id, schedule, tasks, conditions);
         }
 
         fn submit_results(
@@ -283,6 +281,72 @@ pub mod MockConsumer {
         ) -> u64 {
             self.quest.claim(adventurer_id, quest_id, interval_id)
         }
+    }
+}
+
+/// For the benchmarks of D-135: as `MockBench`, but `on_quest_complete` writes one storage slot
+/// per completion, a different one for each quest (`completions[quest_id]`), as a consumer that
+/// records completions for a title would.
+#[starknet::contract]
+pub mod MockBenchHook {
+    use quiver_quest::component::QuestComponent;
+    use starknet::ContractAddress;
+    use starknet::storage::{Map, StorageMapWriteAccess};
+
+    component!(path: QuestComponent, storage: quest, event: QuestEvent);
+
+    #[abi(embed_v0)]
+    impl QuestImpl = QuestComponent::QuestImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl QuestViewImpl = QuestComponent::QuestViewImpl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        quest: QuestComponent::Storage,
+        completions: Map<u32, u64>,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        QuestEvent: QuestComponent::Event,
+    }
+
+    impl QuestHooks of QuestComponent::QuestHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @QuestComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+
+        fn authorize_player(
+            self: @QuestComponent::ComponentState<ContractState>,
+            caller: ContractAddress,
+            player_id: felt252,
+        ) -> bool {
+            true
+        }
+
+        fn on_quest_complete(
+            ref self: QuestComponent::ComponentState<ContractState>,
+            player_id: felt252,
+            quest_id: u32,
+            interval_id: u64,
+            completions: u64,
+        ) {
+            let mut contract = self.get_contract_mut();
+            contract.completions.write(quest_id, completions);
+        }
+
+        fn on_quest_claim(
+            ref self: QuestComponent::ComponentState<ContractState>,
+            player_id: felt252,
+            quest_id: u32,
+            interval_id: u64,
+            claim_index: u64,
+        ) {}
     }
 }
 

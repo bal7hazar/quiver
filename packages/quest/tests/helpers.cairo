@@ -1,8 +1,8 @@
 //! Builders shared by the tests: they keep each test to its given, when and then.
 
 use quiver_quest::logic::{
-    QuestConditions, QuestIdPage, QuestProgress, QuestRecord, QuestSchedule, QuestTask, QuestTasks,
-    TaskProgress,
+    QuestConditions, QuestHeld, QuestHeldSlot, QuestProgress, QuestRecord, QuestSchedule, QuestTask,
+    QuestTasks, TaskProgress,
 };
 
 pub const DAY: u32 = 86400;
@@ -45,8 +45,12 @@ pub fn no_ids() -> QuestConditions {
     ids(0, 0, 0, 0, 0, 0, 0)
 }
 
-pub fn page(len: u8, ids: QuestConditions) -> QuestIdPage {
-    QuestIdPage { len, ids }
+pub fn held(quest_id: u32, interval_id: u64) -> QuestHeld {
+    QuestHeld { quest_id, interval_id }
+}
+
+pub fn held_slot(e0: QuestHeld, e1: QuestHeld) -> QuestHeldSlot {
+    QuestHeldSlot { e0, e1 }
 }
 
 pub fn progress(c0: u32, c1: u32, c2: u32, completed: bool, claimed: bool) -> QuestProgress {
@@ -57,14 +61,12 @@ pub fn no_progress() -> QuestProgress {
     progress(0, 0, 0, false, false)
 }
 
-pub fn record(
-    completions: u64, claims: u64, unlocked: bool, active: bool, accepted_interval: u64,
-) -> QuestRecord {
-    QuestRecord { completions, claims, unlocked, active, accepted_interval }
+pub fn record(completions: u64, claims: u64, unlocked: bool) -> QuestRecord {
+    QuestRecord { completions, claims, unlocked }
 }
 
 pub fn no_record() -> QuestRecord {
-    record(0, 0, false, false, 0)
+    record(0, 0, false)
 }
 
 /// `value`, hidden from the compiler: a benchmark's input is not folded into a constant.

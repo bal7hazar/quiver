@@ -257,26 +257,22 @@ pub mod QuestComponent {
                 return;
             }
             let time = get_block_timestamp();
-            // The held quests when the call starts. A hook may accept or abandon: after a hook
-            // has run, each later entry is processed only if the list still holds it, read again
-            // once per hook. An entry accepted by a hook is not in this walk
+            // The held quests when the call starts. A hook may accept or abandon: once a hook
+            // has run, each later entry is processed only if the list still holds it. An entry
+            // accepted by a hook is not in this walk
             let held = self.held_read(player_id);
-            let mut current = held;
             let mut hooked = false;
-            let mut stale = false;
+            let mut position: u32 = 0;
             for entry in held {
                 let entry = *entry;
-                if stale {
-                    current = self.held_read(player_id);
-                    stale = false;
-                }
-                if hooked && !held_contains(current, entry) {
+                if hooked && !self.still_held(player_id, entry, position) {
+                    position += 1;
                     continue;
                 }
                 if self.progress_held(player_id, entry, batch, time) {
                     hooked = true;
-                    stale = true;
                 }
+                position += 1;
             }
         }
 
@@ -519,8 +515,29 @@ pub mod QuestComponent {
             self.Quest_records.write(record_key, record);
             // 5. Event, then hook, after the writes
             self.emit(QuestCompleted { player_id, quest_id, interval_id });
-            Hooks::on_quest_complete(ref self, player_id, quest_id, interval_id, record.completions);
+            Hooks::on_quest_complete(
+                ref self, player_id, quest_id, interval_id, record.completions,
+            );
             true
+        }
+
+        /// Whether the list still holds `entry`, read at `position` of the list when the call
+        /// started. One slot read when it is still there, as after a hook that did not touch the
+        /// list; the whole list otherwise, since `abandon` moves the later entries up.
+        fn still_held(
+            self: @ComponentState<TContractState>,
+            player_id: felt252,
+            entry: QuestHeld,
+            position: u32,
+        ) -> bool {
+            let slot: u8 = (position / 2).try_into().unwrap();
+            let pair = self.Quest_held.read((player_id, slot));
+            let found = if position % 2 == 0 {
+                pair.e0
+            } else {
+                pair.e1
+            };
+            found == entry || held_contains(self.held_read(player_id), entry)
         }
 
         /// Whether a held entry is live at `time`: its quest is not retired, `time` is in the
@@ -741,7 +758,9 @@ pub mod QuestComponent {
             self.is_accepted(player_id, quest_id)
         }
 
-        fn quest_held(self: @ComponentState<TContractState>, player_id: felt252) -> Span<QuestHeld> {
+        fn quest_held(
+            self: @ComponentState<TContractState>, player_id: felt252,
+        ) -> Span<QuestHeld> {
             self.held_of(player_id)
         }
 

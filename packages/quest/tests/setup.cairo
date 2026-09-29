@@ -4,12 +4,13 @@ use quiver_quest::interface::{
     IQuestDispatcher, IQuestDispatcherTrait, IQuestSafeDispatcher, IQuestViewDispatcher,
     IQuestViewSafeDispatcher,
 };
-use quiver_quest::logic::{Mode, QuestSchedule, QuestTask, TaskProgress};
+use quiver_quest::logic::{HELD_SLOTS, Mode, QuestHeldSlot, QuestSchedule, QuestTask, TaskProgress};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
-    start_cheat_caller_address, stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, declare, load, map_entry_address,
+    start_cheat_block_timestamp, start_cheat_caller_address, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
+use starknet::storage_access::StorePacking;
 use super::helpers::{entry, task};
 use super::mocks::{IMockConsumerDispatcher, IMockQuestDispatcher, IMockQuestDispatcherTrait};
 
@@ -111,18 +112,23 @@ pub fn define(
     schedule: QuestSchedule,
     tasks: Span<QuestTask>,
     conditions: Span<u32>,
-    needs_accept: bool,
 ) {
     as_admin(quest);
-    quest.quest.define(quest_id, schedule, tasks, conditions, needs_accept);
+    quest.quest.define(quest_id, schedule, tasks, conditions);
     stop(quest);
 }
 
-/// A quest of one task, no condition, no accept step.
+/// A quest of one task, no condition.
 pub fn define_simple(
     quest: Quest, quest_id: u32, schedule: QuestSchedule, task_id: u32, total: u32,
 ) {
-    define(quest, quest_id, schedule, array![task(task_id, total)].span(), array![].span(), false);
+    define(quest, quest_id, schedule, array![task(task_id, total)].span(), array![].span());
+}
+
+/// `define_simple`, then `PLAYER` accepts it at the current block time.
+pub fn define_held(quest: Quest, quest_id: u32, schedule: QuestSchedule, task_id: u32, total: u32) {
+    define_simple(quest, quest_id, schedule, task_id, total);
+    accept(quest, PLAYER, quest_id);
 }
 
 pub fn retire(quest: Quest, quest_id: u32) {
@@ -167,6 +173,22 @@ pub fn claim(quest: Quest, player_id: felt252, quest_id: u32, interval_id: u64) 
 /// `[(task_id, count)]`.
 pub fn one_entry(task_id: u32, count: u32) -> Span<TaskProgress> {
     array![entry(task_id, count)].span()
+}
+
+/// The raw held list of `player_id`, slot by slot, read straight from storage.
+pub fn held_slots(quest: Quest, player_id: felt252) -> Span<QuestHeldSlot> {
+    let mut out = array![];
+    let mut slot: u8 = 0;
+    while slot < HELD_SLOTS {
+        let felt = *load(
+            quest.address,
+            map_entry_address(selector!("Quest_held"), array![player_id, slot.into()].span()),
+            1,
+        )[0];
+        out.append(StorePacking::unpack(felt));
+        slot += 1;
+    }
+    out.span()
 }
 
 /// The panic data of a failed call starts with `error`.

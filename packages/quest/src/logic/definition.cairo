@@ -15,10 +15,7 @@ const NO_TASK: QuestTask = QuestTask { task_id: 0, total: 0 };
 /// `'Quest: invalid condition'` (a condition 0, `== quest_id`, or repeated). That each
 /// condition exists is checked by the component, which has storage.
 pub fn definition_new(
-    quest_id: u32,
-    schedule: QuestSchedule,
-    tasks: Span<QuestTask>,
-    conditions: Span<u32>,
+    quest_id: u32, schedule: QuestSchedule, tasks: Span<QuestTask>, conditions: Span<u32>,
 ) -> (QuestDefinition, QuestTasks, QuestConditions) {
     assert(quest_id != 0, errors::INVALID_ID);
     schedule_validate(@schedule);

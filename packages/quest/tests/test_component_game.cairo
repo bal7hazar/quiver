@@ -1,18 +1,20 @@
-//! Grim World's own use of `progress_many`, a named benchmark (fix loop 2, point 4).
+//! Grim World's own use of `progress_many`, a named benchmark (A-G1 amendment point 4; A-10,
+//! A-12; D-135).
 //!
 //! One call per adventurer per transaction, 16 task entries (A-10). The adventurer holds 3 active
-//! quests with an accept step and one daily contract (design/06, design/14), all accepted and all
-//! completing in this call:
+//! quests and one daily contract (design/06, design/14; A-12), all accepted and all completing
+//! in this call:
 //! - quest 1: tasks 1 and 2, no prerequisite;
 //! - quest 2: task 3, one prerequisite;
 //! - quest 3: tasks 4 and 5, two prerequisites;
 //! - contract 4: task 6, daily, no prerequisite.
 //! Every one of the 16 tasks is shared by `per_task` quests in all: the others are board quests
-//! and contracts with an accept step that this adventurer has not accepted. Prerequisites were
-//! completed earlier; `accept` cached the unlock. Hooks are empty (`MockBench`).
+//! and contracts this adventurer has not accepted, which the call does not read. Prerequisites
+//! were completed earlier; `accept` checked them and cached the unlock. Hooks are empty
+//! (`MockBench`).
 
 use quiver_quest::interface::{IQuestDispatcherTrait, IQuestViewDispatcherTrait};
-use quiver_quest::logic::{Mode, QuestSchedule, QuestTask};
+use quiver_quest::logic::{Mode, QuestSchedule, QuestTask, TaskProgress};
 use super::grid::{Grid, deploy};
 use super::helpers::{distinct_entries, one_off, task};
 use super::setup::PLAYER;
@@ -27,27 +29,26 @@ fn daily() -> QuestSchedule {
 fn define(
     grid: Grid, id: u32, schedule: QuestSchedule, tasks: Span<QuestTask>, conditions: Span<u32>,
 ) {
-    grid.quest.define(id, schedule, tasks, conditions, true);
+    grid.quest.define(id, schedule, tasks, conditions);
 }
 
 /// The adventurer's state before the call, with `per_task` quests on each of the 16 tasks.
 fn game(per_task: u32) -> Grid {
     let grid = deploy();
     // Prerequisites, completed earlier
-    grid.quest.define(P1, one_off(), array![task(101, 1)].span(), array![].span(), false);
-    grid.quest.define(P2, one_off(), array![task(102, 1)].span(), array![].span(), false);
+    define(grid, P1, one_off(), array![task(101, 1)].span(), array![].span());
+    define(grid, P2, one_off(), array![task(102, 1)].span(), array![].span());
+    grid.quest.accept(PLAYER, P1);
+    grid.quest.accept(PLAYER, P2);
     grid
         .quest
         .progress_many(
             PLAYER,
-            array![
-                quiver_quest::logic::TaskProgress { task_id: 101, count: 1 },
-                quiver_quest::logic::TaskProgress { task_id: 102, count: 1 },
-            ]
+            array![TaskProgress { task_id: 101, count: 1 }, TaskProgress { task_id: 102, count: 1 }]
                 .span(),
             Mode::Storage,
         );
-    // The 4 held quests
+    // The 4 held quests; the first accept prunes P1 and P2
     define(grid, 1, one_off(), array![task(1, 1), task(2, 1)].span(), array![].span());
     define(grid, 2, one_off(), array![task(3, 1)].span(), array![P1].span());
     define(grid, 3, one_off(), array![task(4, 1), task(5, 1)].span(), array![P1, P2].span());
@@ -94,7 +95,7 @@ fn completions(grid: Grid) -> Array<u64> {
 }
 
 #[test]
-#[available_gas(l2_gas: 93071835)]
+#[available_gas(l2_gas: 80721514)]
 fn baseline_game_case_three_per_task() {
     let grid = game(3);
     let _entries = distinct_entries(1, 16, 1);
@@ -102,7 +103,7 @@ fn baseline_game_case_three_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 103723209)]
+#[available_gas(l2_gas: 85416816)]
 fn game_case_three_per_task() {
     let grid = game(3);
     grid.quest.progress_many(PLAYER, distinct_entries(1, 16, 1), Mode::Storage);
@@ -110,7 +111,7 @@ fn game_case_three_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 66904071)]
+#[available_gas(l2_gas: 56762194)]
 fn baseline_game_case_two_per_task() {
     let grid = game(2);
     let _entries = distinct_entries(1, 16, 1);
@@ -118,7 +119,7 @@ fn baseline_game_case_two_per_task() {
 }
 
 #[test]
-#[available_gas(l2_gas: 75319869)]
+#[available_gas(l2_gas: 61457496)]
 fn game_case_two_per_task() {
     let grid = game(2);
     grid.quest.progress_many(PLAYER, distinct_entries(1, 16, 1), Mode::Storage);

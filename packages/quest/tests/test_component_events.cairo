@@ -5,17 +5,15 @@ use quiver_quest::interface::IQuestViewDispatcherTrait;
 use quiver_quest::logic::Mode;
 use snforge_std::{EventSpyTrait, spy_events};
 use super::helpers::{one_off, schedule, task};
-use super::setup::{PLAYER, at, claim, define, define_simple, deploy, report, retire};
+use super::setup::{PLAYER, at, claim, define, define_held, define_simple, deploy, report, retire};
 
 #[test]
-#[available_gas(l2_gas: 16878123)]
+#[available_gas(l2_gas: 16629220)]
 fn quest_events_keys_and_data() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 2);
+    define_held(q, 1, one_off(), 7, 2);
     let mut spy = spy_events();
-    define(
-        q, 2, schedule(10, 20, 3, 4), array![task(8, 5), task(9, 6)].span(), array![1].span(), true,
-    );
+    define(q, 2, schedule(10, 20, 3, 4), array![task(8, 5), task(9, 6)].span(), array![1].span());
     report(q, PLAYER, 7, 3, Mode::Event);
     report(q, PLAYER, 7, 2, Mode::Storage);
     claim(q, PLAYER, 1, 0);
@@ -28,8 +26,8 @@ fn quest_events_keys_and_data() {
     let (_, defined) = events.at(0);
     assert!(defined.keys == @array![selector!("QuestDefined"), 2]);
     // schedule (start, end, duration, interval), tasks [len, (id, total)...], conditions
-    // [len, ids...], needs_accept
-    assert!(defined.data == @array![10, 20, 3, 4, 2, 8, 5, 9, 6, 1, 1, 1]);
+    // [len, ids...]
+    assert!(defined.data == @array![10, 20, 3, 4, 2, 8, 5, 9, 6, 1, 1]);
     let (_, progressed) = events.at(1);
     assert!(progressed.keys == @array![selector!("QuestProgressed"), PLAYER, 7]);
     assert!(progressed.data == @array![3]);
@@ -46,10 +44,10 @@ fn quest_events_keys_and_data() {
 
 /// Accept and abandon emit nothing (§3.4).
 #[test]
-#[available_gas(l2_gas: 5655500)]
+#[available_gas(l2_gas: 5202624)]
 fn quest_accept_and_abandon_emit_nothing() {
     let q = deploy();
-    define(q, 1, one_off(), array![task(7, 5)].span(), array![].span(), true);
+    define(q, 1, one_off(), array![task(7, 5)].span(), array![].span());
     let mut spy = spy_events();
     super::setup::accept(q, PLAYER, 1);
     super::setup::abandon(q, PLAYER, 1);
@@ -57,7 +55,7 @@ fn quest_accept_and_abandon_emit_nothing() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5802059)]
+#[available_gas(l2_gas: 5231489)]
 fn quest_current_interval_view() {
     let q = deploy();
     at(q, 100);

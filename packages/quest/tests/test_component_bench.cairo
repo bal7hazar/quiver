@@ -1,44 +1,76 @@
-//! Benchmarks of the component: one per entrypoint, on the worst case of ARC-01 §5.1
-//! (docs/CAIRO.md §2). Each is a test with its budget.
+//! Benchmarks of the component: one per entrypoint, on the worst case of ARC-01 §5.1 as amended by
+//! D-135 (docs/CAIRO.md §2). Each is a test with its budget.
 //!
 //! Each benchmark has a baseline, `baseline_*`, that runs the same setup without the measured
 //! call. The call's cost is the benchmark minus its baseline: in L2 gas, and exactly in storage
 //! reads and writes with `snforge test --detailed-resources`. The consumer is `MockBench`, whose
-//! hooks do nothing, so that a figure is the component's own.
+//! hooks do nothing, so that a figure is the component's own, or `MockBenchHook`, whose
+//! `on_quest_complete` writes one slot per completion.
+//!
+//! **The worst call the package allows** (Scope 5 of ARC-03c): `MAX_ENTRIES` entries whose last
+//! one collides modulo 128 (`batch_merge`'s plain merge in full), every held quest completing,
+//! each with 3 tasks at the last three positions of the batch (the longest lookups), a daily
+//! schedule (the interval id is a division). For `MAX_HELD = 4` the list is built by `accept`;
+//! **for 8, entries 5 to 8 are seeded** into slots 2 and 3 of the list with snforge's `store`
+//! (the component accepts at most `MAX_HELD`, but its walk reads up to `HELD_SLOTS` slots, so the
+//! same code walks the 8).
 
-use quiver_quest::constants::{MAX_CONDITIONS, MAX_ENTRIES, MAX_PAGES, QUESTS_PER_PAGE};
+use quiver_quest::constants::{MAX_CONDITIONS, MAX_ENTRIES, MAX_HELD};
 use quiver_quest::interface::{
     IQuestDispatcher, IQuestDispatcherTrait, IQuestViewDispatcher, IQuestViewDispatcherTrait,
 };
-use quiver_quest::logic::{Mode, QuestTask, TaskProgress};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, test_address};
-use super::helpers::{distinct_entries, entry, one_off, task};
+use quiver_quest::logic::{Mode, QuestSchedule, QuestTask, TaskProgress};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, map_entry_address, start_cheat_block_timestamp,
+    store, test_address,
+};
+use starknet::ContractAddress;
+use starknet::storage_access::StorePacking;
+use super::helpers::{DAY, distinct_entries, entry, held, held_slot, one_off, schedule, task};
 use super::setup::PLAYER;
 
-const MAX_QUESTS_PER_TASK: u32 = 28;
 /// Prerequisites are quests `PREREQUISITE + 1 ..= PREREQUISITE + 7`, on tasks
 /// `PREREQUISITE_TASK + 1 ..= PREREQUISITE_TASK + 7`.
 const PREREQUISITE: u32 = 1000;
 const PREREQUISITE_TASK: u32 = 2000;
 /// The quest a single-quest benchmark acts on.
 const D: u32 = 5000;
+/// Day 20 000 (2024-10-04), one hour in: interval id `NOW_DAY` of a daily quest.
+const NOW_DAY: u64 = 20000;
+const NOW: u64 = 20000 * 86400 + 3600;
 
 #[derive(Drop, Copy)]
 struct Bench {
+    address: ContractAddress,
     quest: IQuestDispatcher,
     view: IQuestViewDispatcher,
 }
 
-/// `MockBench`, with the test contract as its reporter.
-fn deploy() -> Bench {
-    let class = declare("MockBench").unwrap().contract_class();
+fn deploy_named(name: ByteArray) -> Bench {
+    let class = declare(name).unwrap().contract_class();
     let (address, _) = class.deploy(@array![]).unwrap();
     let bench = Bench {
+        address,
         quest: IQuestDispatcher { contract_address: address },
         view: IQuestViewDispatcher { contract_address: address },
     };
+    start_cheat_block_timestamp(address, NOW);
     bench.quest.set_reporter(test_address(), true);
     bench
+}
+
+/// `MockBench` (hooks empty), with the test contract as its reporter, at `NOW`.
+fn deploy() -> Bench {
+    deploy_named("MockBench")
+}
+
+/// `MockBenchHook` (`on_quest_complete` writes one slot), at `NOW`.
+fn deploy_hook() -> Bench {
+    deploy_named("MockBenchHook")
+}
+
+fn daily() -> QuestSchedule {
+    schedule(0, 0, DAY, DAY)
 }
 
 fn one(task_id: u32) -> Span<QuestTask> {
@@ -52,134 +84,50 @@ fn no_conditions() -> Span<u32> {
 /// Seven prerequisites, defined and completed by `PLAYER`; returns their ids.
 fn completed_prerequisites(bench: Bench) -> Span<u32> {
     let mut ids = array![];
-    let mut entries: Array<TaskProgress> = array![];
     let mut i: u32 = 1;
     while i <= MAX_CONDITIONS.into() {
-        bench
-            .quest
-            .define(
-                PREREQUISITE + i, one_off(), one(PREREQUISITE_TASK + i), no_conditions(), false,
-            );
-        ids.append(PREREQUISITE + i);
-        entries.append(entry(PREREQUISITE_TASK + i, 1));
+        let id = PREREQUISITE + i;
+        bench.quest.define(id, one_off(), one(PREREQUISITE_TASK + i), no_conditions());
+        bench.quest.accept(PLAYER, id);
+        bench.quest.progress(PLAYER, PREREQUISITE_TASK + i, 1, Mode::Storage);
+        ids.append(id);
         i += 1;
     }
-    bench.quest.progress_many(PLAYER, entries.span(), Mode::Storage);
     ids.span()
-}
-
-/// `MAX_QUESTS_PER_TASK` quests `first ..` on `task_id`, each with the seven prerequisites and
-/// no accept step: the witness of §5.1.
-fn shared_task(bench: Bench, task_id: u32, first: u32, conditions: Span<u32>) {
-    let mut id = first;
-    while id < first + MAX_QUESTS_PER_TASK {
-        bench.quest.define(id, one_off(), one(task_id), conditions, false);
-        id += 1;
-    }
-}
-
-/// `n` plain quests `first ..` on `task_id`.
-fn filler(bench: Bench, task_id: u32, first: u32, n: u32) {
-    let mut id = first;
-    while id < first + n {
-        bench.quest.define(id, one_off(), one(task_id), no_conditions(), false);
-        id += 1;
-    }
 }
 
 // Event mode: nothing read, nothing written
 
 #[test]
-#[available_gas(l2_gas: 830025)]
+#[available_gas(l2_gas: 908177)]
 fn baseline_deployed() {
     deploy();
 }
 
 #[test]
-#[available_gas(l2_gas: 1051823)]
+#[available_gas(l2_gas: 1131161)]
 fn bench_progress_event_mode() {
     let bench = deploy();
     bench.quest.progress(PLAYER, 1, 1, Mode::Event);
 }
 
 #[test]
-#[available_gas(l2_gas: 2156581)]
+#[available_gas(l2_gas: 2231698)]
 fn bench_progress_many_event_mode_worst() {
     let bench = deploy();
     bench.quest.progress_many(PLAYER, distinct_entries(1, MAX_ENTRIES, 1), Mode::Event);
 }
 
 #[test]
-#[available_gas(l2_gas: 1468856)]
+#[available_gas(l2_gas: 1546797)]
 fn bench_set_reporter() {
     let bench = deploy();
     bench.quest.set_reporter(PLAYER.try_into().unwrap(), true);
 }
 
-// progress: one task shared by 28 live quests, each with 7 prerequisites met earlier and first
-// observed now, all completing. §5.1: 340 reads, 56 writes, 28 events, 28 hooks
-
-fn progress_worst_setup() -> Bench {
-    let bench = deploy();
-    let conditions = completed_prerequisites(bench);
-    shared_task(bench, 1, 1, conditions);
-    bench
-}
-
-#[test]
-#[available_gas(l2_gas: 106387095)]
-fn baseline_progress_worst() {
-    let bench = progress_worst_setup();
-    assert!(bench.view.quest_record(PLAYER, 1).completions == 0);
-}
-
-#[test]
-#[available_gas(l2_gas: 151336729)]
-fn bench_progress_worst() {
-    let bench = progress_worst_setup();
-    bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
-    assert!(bench.view.quest_record(PLAYER, 1).completions == 1);
-}
-
-// progress_many: 16 distinct tasks, each shared by 28 live quests (448, all distinct), each with
-// 7 prerequisites met earlier and first observed now, all completing. §5.1: 5 440 reads, 896
-// writes, 448 events, 448 hooks
-
-fn progress_many_worst_setup() -> Bench {
-    let bench = deploy();
-    let conditions = completed_prerequisites(bench);
-    let mut task_id: u32 = 1;
-    while task_id <= MAX_ENTRIES {
-        shared_task(bench, task_id, (task_id - 1) * MAX_QUESTS_PER_TASK + 1, conditions);
-        task_id += 1;
-    }
-    bench
-}
-
-#[test]
-#[available_gas(l2_gas: 1355660988)]
-fn baseline_batch_bound_accepted() {
-    let bench = progress_many_worst_setup();
-    assert!(bench.view.quest_record(PLAYER, 448).completions == 0);
-}
-
-#[test]
-#[available_gas(l2_gas: 2072538372)]
-fn quest_batch_bound_accepted() {
-    let bench = progress_many_worst_setup();
-    bench.quest.progress_many(PLAYER, distinct_entries(1, MAX_ENTRIES, 1), Mode::Storage);
-    assert!(bench.view.quest_record(PLAYER, 1).completions == 1);
-    assert!(bench.view.quest_record(PLAYER, 448).completions == 1);
-}
-
-// progress_many through the slow merge (fix loop 1, point 4). Ids 1..=16 take `batch_merge`'s
-// fast path; these inputs meet a collision only at the 16th entry, so the fast pass runs 15
-// entries and then the plain merge runs in full (ARC-03a's worst case of `batch_merge`):
-// - late collision [1..=15, 129] (129 = 1 mod 128): 16 distinct tasks, the same 448-quest
-//   storage witness as above, with task 129 in place of task 16;
-// - late duplicate [1..=15, 15]: 15 distinct tasks, so 420 quests.
-
-/// Tasks 1..=15, then `last`, each with count 1.
+/// Tasks 1..=15, then `last`, each with count 1. `[1..=15, 129]` (129 = 1 mod 128) meets a
+/// collision only at the 16th entry, so the fast pass of `batch_merge` runs 15 entries and then
+/// the plain merge runs in full (ARC-03a's worst case of `batch_merge`).
 fn fifteen_then(last: u32) -> Span<TaskProgress> {
     let mut entries = array![];
     let mut task_id: u32 = 1;
@@ -191,99 +139,300 @@ fn fifteen_then(last: u32) -> Span<TaskProgress> {
     entries.span()
 }
 
-/// 28 quests with 7 prerequisites on each task 1..=15, and on `last` unless it repeats one.
-fn late_setup(last: u32) -> Bench {
-    let bench = deploy();
-    let conditions = completed_prerequisites(bench);
-    let mut task_id: u32 = 1;
-    while task_id < MAX_ENTRIES {
-        shared_task(bench, task_id, (task_id - 1) * MAX_QUESTS_PER_TASK + 1, conditions);
-        task_id += 1;
-    }
-    if last >= MAX_ENTRIES {
-        shared_task(bench, last, (MAX_ENTRIES - 1) * MAX_QUESTS_PER_TASK + 1, conditions);
-    }
-    bench
-}
-
 #[test]
-#[available_gas(l2_gas: 2756474)]
+#[available_gas(l2_gas: 2831591)]
 fn bench_progress_many_event_mode_late_collision() {
     let bench = deploy();
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Event);
 }
 
 #[test]
-#[available_gas(l2_gas: 2695763)]
+#[available_gas(l2_gas: 2771090)]
 fn bench_progress_many_event_mode_late_duplicate() {
     let bench = deploy();
     bench.quest.progress_many(PLAYER, fifteen_then(15), Mode::Event);
 }
 
-#[test]
-#[available_gas(l2_gas: 1355642991)]
-fn baseline_progress_many_late_collision() {
-    let bench = late_setup(129);
-    assert!(bench.view.quest_record(PLAYER, 448).completions == 0);
+// The worst call: `held` quests 1..=held held and all completing
+
+/// The worst tasks for the lookups of `progress_add` in `fifteen_then(129)`: its last three.
+fn worst_tasks() -> Span<QuestTask> {
+    array![task(129, 1), task(15, 1), task(14, 1)].span()
+}
+
+/// Quests 1..=`held`, daily, on the worst tasks, all held by `PLAYER` in interval `NOW_DAY`: the
+/// first `MAX_HELD` by `accept`, the rest seeded into the list (slots 2 and 3).
+fn held_setup(bench: Bench, held_count: u32) {
+    let mut id: u32 = 1;
+    while id <= held_count {
+        bench.quest.define(id, daily(), worst_tasks(), no_conditions());
+        if id <= MAX_HELD.into() {
+            bench.quest.accept(PLAYER, id);
+        }
+        id += 1;
+    }
+    let mut slot: u32 = 2;
+    while 2 * slot < held_count {
+        let e0 = held(2 * slot + 1, NOW_DAY);
+        let e1 = if 2 * slot + 2 <= held_count {
+            held(2 * slot + 2, NOW_DAY)
+        } else {
+            held(0, 0)
+        };
+        let key = array![PLAYER, slot.into()].span();
+        store(
+            bench.address,
+            map_entry_address(selector!("Quest_held"), key),
+            array![StorePacking::pack(held_slot(e0, e1))].span(),
+        );
+        slot += 1;
+    }
+    assert!(bench.view.quest_held(PLAYER).len() == held_count);
+}
+
+fn worst_setup(bench: Bench, held_count: u32) -> Bench {
+    held_setup(bench, held_count);
+    bench
+}
+
+/// Whether each of quests 1..=`held_count` is completed: the same view calls in a benchmark and
+/// its baseline, so that their difference is the call alone.
+fn completed(bench: Bench, held_count: u32) -> Array<bool> {
+    let mut out = array![];
+    let mut id: u32 = 1;
+    while id <= held_count {
+        out.append(bench.view.quest_progress(PLAYER, id, NOW_DAY).completed);
+        id += 1;
+    }
+    out
+}
+
+fn all(value: bool, n: u32) -> Array<bool> {
+    let mut out = array![];
+    let mut i: u32 = 0;
+    while i < n {
+        out.append(value);
+        i += 1;
+    }
+    out
 }
 
 #[test]
-#[available_gas(l2_gas: 2072968638)]
-fn bench_progress_many_worst_late_collision() {
-    let bench = late_setup(129);
+#[available_gas(l2_gas: 10137603)]
+fn baseline_progress_many_worst_held4() {
+    let bench = worst_setup(deploy(), 4);
+    let _entries = fifteen_then(129);
+    assert!(completed(bench, 4) == all(false, 4));
+}
+
+#[test]
+#[available_gas(l2_gas: 16575545)]
+fn bench_progress_many_worst_held4() {
+    let bench = worst_setup(deploy(), 4);
     bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
-    assert!(bench.view.quest_record(PLAYER, 448).completions == 1);
+    assert!(completed(bench, 4) == all(true, 4));
 }
 
 #[test]
-#[available_gas(l2_gas: 1272379072)]
-fn baseline_progress_many_late_duplicate() {
-    let bench = late_setup(15);
-    assert!(bench.view.quest_record(PLAYER, 420).completions == 0);
+#[available_gas(l2_gas: 16986470)]
+fn baseline_progress_many_worst_held8() {
+    let bench = worst_setup(deploy(), 8);
+    let _entries = fifteen_then(129);
+    assert!(completed(bench, 8) == all(false, 8));
 }
 
 #[test]
-#[available_gas(l2_gas: 1944932499)]
-fn bench_progress_many_worst_late_duplicate() {
-    let bench = late_setup(15);
-    bench.quest.progress_many(PLAYER, fifteen_then(15), Mode::Storage);
-    assert!(bench.view.quest_record(PLAYER, 420).completions == 1);
+#[available_gas(l2_gas: 28829864)]
+fn bench_progress_many_worst_held8() {
+    let bench = worst_setup(deploy(), 8);
+    bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
+    assert!(completed(bench, 8) == all(true, 8));
 }
 
-// accept, and the views that evaluate prerequisites: quest D with an accept step, 3 tasks and 7
-// prerequisites met and not cached. §5.1 accept: A + R + C + K + P = 11 reads, 1 write
+#[test]
+#[available_gas(l2_gas: 10137603)]
+fn baseline_progress_many_worst_held4_hook() {
+    let bench = worst_setup(deploy_hook(), 4);
+    let _entries = fifteen_then(129);
+    assert!(completed(bench, 4) == all(false, 4));
+}
+
+#[test]
+#[available_gas(l2_gas: 18481211)]
+fn bench_progress_many_worst_held4_hook() {
+    let bench = worst_setup(deploy_hook(), 4);
+    bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
+    assert!(completed(bench, 4) == all(true, 4));
+}
+
+#[test]
+#[available_gas(l2_gas: 16986470)]
+fn baseline_progress_many_worst_held8_hook() {
+    let bench = worst_setup(deploy_hook(), 8);
+    let _entries = fifteen_then(129);
+    assert!(completed(bench, 8) == all(false, 8));
+}
+
+#[test]
+#[available_gas(l2_gas: 32641196)]
+fn bench_progress_many_worst_held8_hook() {
+    let bench = worst_setup(deploy_hook(), 8);
+    bench.quest.progress_many(PLAYER, fifteen_then(129), Mode::Storage);
+    assert!(completed(bench, 8) == all(true, 8));
+}
+
+// The §5.1 witness, adapted (D-135): `MAX_ENTRIES` distinct tasks 1..=16 (fast merge), the
+// `MAX_HELD` held quests on tasks 14, 15, 16 all completing, and 28 quests on each of the 16 tasks
+// defined but not held, which the call does not read.
+
+fn bound_setup() -> Bench {
+    let bench = deploy();
+    let mut id: u32 = 1;
+    while id <= MAX_HELD.into() {
+        bench
+            .quest
+            .define(
+                id, daily(), array![task(16, 1), task(15, 1), task(14, 1)].span(), no_conditions(),
+            );
+        bench.quest.accept(PLAYER, id);
+        id += 1;
+    }
+    let mut task_id: u32 = 1;
+    while task_id <= MAX_ENTRIES {
+        let mut n: u32 = 0;
+        while n < 28 {
+            bench.quest.define(100 + task_id * 28 + n, daily(), one(task_id), no_conditions());
+            n += 1;
+        }
+        task_id += 1;
+    }
+    bench
+}
+
+#[test]
+#[available_gas(l2_gas: 579631175)]
+fn baseline_batch_bound_accepted() {
+    let bench = bound_setup();
+    let _entries = distinct_entries(1, MAX_ENTRIES, 1);
+    assert!(completed(bench, 4) == all(false, 4));
+    assert!(!bench.view.quest_progress(PLAYER, 100 + 28, NOW_DAY).completed);
+}
+
+/// Meaning changed by D-135: what the call reaches is the held list, not the quests of the tasks.
+#[test]
+#[available_gas(l2_gas: 585457789)]
+fn quest_batch_bound_accepted() {
+    let bench = bound_setup();
+    bench.quest.progress_many(PLAYER, distinct_entries(1, MAX_ENTRIES, 1), Mode::Storage);
+    assert!(completed(bench, 4) == all(true, 4));
+    assert!(!bench.view.quest_progress(PLAYER, 100 + 28, NOW_DAY).completed);
+}
+
+// accept at its worst: quest D with 3 tasks and 7 prerequisites met and not cached, and a full
+// list whose `MAX_HELD` entries are all dead, pruned by this accept: expired (one read each), or
+// completed in the current interval (two reads each)
+
+/// Quests 1..=`MAX_HELD` (task `10 + id`) fill the list with dead entries. `expired`: daily,
+/// accepted yesterday and never completed. Otherwise: one-off, accepted and completed now.
+fn accept_worst_setup(expired: bool) -> Bench {
+    let bench = deploy();
+    if expired {
+        start_cheat_block_timestamp(bench.address, NOW - 86400);
+    }
+    let conditions = completed_prerequisites(bench);
+    let quest_schedule = if expired {
+        daily()
+    } else {
+        one_off()
+    };
+    let mut entries = array![];
+    let mut id: u32 = 1;
+    while id <= MAX_HELD.into() {
+        bench.quest.define(id, quest_schedule, one(10 + id), no_conditions());
+        bench.quest.accept(PLAYER, id);
+        entries.append(entry(10 + id, 1));
+        id += 1;
+    }
+    if expired {
+        start_cheat_block_timestamp(bench.address, NOW);
+    } else {
+        bench.quest.progress_many(PLAYER, entries.span(), Mode::Storage);
+    }
+    bench.quest.define(D, one_off(), array![task(1, 5), task(2, 5), task(3, 5)].span(), conditions);
+    assert!(bench.view.quest_held(PLAYER).len() == MAX_HELD.into());
+    assert!(!bench.view.quest_is_accepted(PLAYER, 1));
+    bench
+}
+
+#[test]
+#[available_gas(l2_gas: 34666341)]
+fn baseline_accept_worst_expired() {
+    accept_worst_setup(true);
+}
+
+#[test]
+#[available_gas(l2_gas: 35848158)]
+fn bench_accept_worst_expired() {
+    let bench = accept_worst_setup(true);
+    bench.quest.accept(PLAYER, D);
+}
+
+#[test]
+#[available_gas(l2_gas: 39881558)]
+fn baseline_accept_worst_completed() {
+    accept_worst_setup(false);
+}
+
+#[test]
+#[available_gas(l2_gas: 41233223)]
+fn bench_accept_worst_completed() {
+    let bench = accept_worst_setup(false);
+    bench.quest.accept(PLAYER, D);
+}
+
+// accept, the common case: no prerequisite, an empty list. One slot written
+
+fn plain_setup() -> Bench {
+    let bench = deploy();
+    bench.quest.define(D, one_off(), array![task(1, 2)].span(), no_conditions());
+    bench
+}
+
+#[test]
+#[available_gas(l2_gas: 2177847)]
+fn baseline_plain() {
+    plain_setup();
+}
+
+#[test]
+#[available_gas(l2_gas: 2961116)]
+fn bench_accept_plain() {
+    let bench = plain_setup();
+    bench.quest.accept(PLAYER, D);
+}
+
+// The views that evaluate prerequisites or read the list, on quest D with 7 prerequisites and
+// the list full of dead entries
 
 fn prerequisites_setup() -> Bench {
-    let bench = deploy();
-    let conditions = completed_prerequisites(bench);
-    bench
-        .quest
-        .define(D, one_off(), array![task(1, 5), task(2, 5), task(3, 5)].span(), conditions, true);
-    bench
+    accept_worst_setup(false)
 }
 
 #[test]
-#[available_gas(l2_gas: 27357963)]
+#[available_gas(l2_gas: 39881558)]
 fn baseline_prerequisites() {
     prerequisites_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 28465408)]
-fn bench_accept_worst() {
-    let bench = prerequisites_setup();
-    bench.quest.accept(PLAYER, D);
-}
-
-#[test]
-#[available_gas(l2_gas: 27906955)]
+#[available_gas(l2_gas: 40398673)]
 fn bench_view_is_unlocked_worst() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_is_unlocked(PLAYER, D));
 }
 
 #[test]
-#[available_gas(l2_gas: 27681447)]
+#[available_gas(l2_gas: 40201178)]
 fn bench_view_definition_worst() {
     let bench = prerequisites_setup();
     let (_, tasks, conditions) = bench.view.quest_definition(D);
@@ -291,21 +440,28 @@ fn bench_view_definition_worst() {
 }
 
 #[test]
-#[available_gas(l2_gas: 27568960)]
+#[available_gas(l2_gas: 40189303)]
 fn bench_view_is_accepted() {
     let bench = prerequisites_setup();
     assert!(!bench.view.quest_is_accepted(PLAYER, D));
 }
 
 #[test]
-#[available_gas(l2_gas: 27528703)]
+#[available_gas(l2_gas: 40139764)]
+fn bench_view_held_full() {
+    let bench = prerequisites_setup();
+    assert!(bench.view.quest_held(PLAYER).len() == MAX_HELD.into());
+}
+
+#[test]
+#[available_gas(l2_gas: 40050220)]
 fn bench_view_current_interval() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_current_interval(D) == Option::Some(0));
 }
 
 #[test]
-#[available_gas(l2_gas: 27667986)]
+#[available_gas(l2_gas: 40184263)]
 fn bench_view_progress_and_record() {
     let bench = prerequisites_setup();
     assert!(!bench.view.quest_progress(PLAYER, D, 0).completed);
@@ -313,144 +469,193 @@ fn bench_view_progress_and_record() {
 }
 
 #[test]
-#[available_gas(l2_gas: 27488887)]
+#[available_gas(l2_gas: 40012483)]
 fn bench_view_is_reporter() {
     let bench = prerequisites_setup();
     assert!(bench.view.quest_is_reporter(test_address()));
 }
 
-// progress on an accepted quest (unlocked cached by accept). §5.1: Pg + B + A + R + P = 5 reads,
-// 1 write
+// abandon at its worst: a full list of live quests, the first abandoned, the three others move
+// up: both slots written
+
+/// Quests 1..=`MAX_HELD`, daily, on task `10 + id` with total 2, all held.
+fn full_list_setup() -> Bench {
+    let bench = deploy();
+    let mut id: u32 = 1;
+    while id <= MAX_HELD.into() {
+        bench.quest.define(id, daily(), array![task(10 + id, 2)].span(), no_conditions());
+        bench.quest.accept(PLAYER, id);
+        id += 1;
+    }
+    bench
+}
+
+#[test]
+#[available_gas(l2_gas: 9023396)]
+fn baseline_full_list() {
+    full_list_setup();
+}
+
+#[test]
+#[available_gas(l2_gas: 9553079)]
+fn bench_abandon_worst() {
+    let bench = full_list_setup();
+    bench.quest.abandon(PLAYER, 1);
+}
+
+/// A full list, one live quest progressed and not completing: the common case of a call.
+#[test]
+#[available_gas(l2_gas: 10455371)]
+fn bench_progress_full_list_one_counts() {
+    let bench = full_list_setup();
+    bench.quest.progress(PLAYER, 11, 1, Mode::Storage);
+}
+
+/// A full list, one live quest completing.
+#[test]
+#[available_gas(l2_gas: 11159942)]
+fn bench_progress_full_list_one_completes() {
+    let bench = full_list_setup();
+    bench.quest.progress(PLAYER, 11, 2, Mode::Storage);
+}
+
+/// A full list, every quest completing: 16 entries, 4 of them the quests' tasks.
+#[test]
+#[available_gas(l2_gas: 14387787)]
+fn bench_progress_full_list_all_complete() {
+    let bench = full_list_setup();
+    bench
+        .quest
+        .progress_many(
+            PLAYER,
+            array![entry(11, 2), entry(12, 2), entry(13, 2), entry(14, 2)].span(),
+            Mode::Storage,
+        );
+}
+
+/// A full list, the batch on none of its tasks: the list and each quest read, nothing written.
+#[test]
+#[available_gas(l2_gas: 9971626)]
+fn bench_progress_full_list_none_counts() {
+    let bench = full_list_setup();
+    bench.quest.progress(PLAYER, 99, 1, Mode::Storage);
+}
+
+// progress on one held quest; then claim
 
 fn accepted_setup() -> Bench {
-    let bench = prerequisites_setup();
+    let bench = plain_setup();
     bench.quest.accept(PLAYER, D);
     bench
 }
 
 #[test]
-#[available_gas(l2_gas: 28465408)]
+#[available_gas(l2_gas: 2961116)]
 fn baseline_accepted() {
     accepted_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 29427319)]
-fn bench_progress_accepted() {
+#[available_gas(l2_gas: 3826480)]
+fn bench_progress_plain() {
     let bench = accepted_setup();
     bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
 }
 
-// abandon. §5.1: A + R = 2 reads, 1 write
+#[test]
+#[available_gas(l2_gas: 4398835)]
+fn bench_progress_plain_completing() {
+    let bench = accepted_setup();
+    bench.quest.progress(PLAYER, 1, 2, Mode::Storage);
+}
+
+/// No quest held: one slot of the list read, nothing else.
+#[test]
+#[available_gas(l2_gas: 2402102)]
+fn bench_progress_nothing_held() {
+    let bench = plain_setup();
+    bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
+}
+
+/// Two quests held, D second: abandoning it rewrites slot 0 alone.
+fn two_held_setup() -> Bench {
+    let bench = deploy();
+    bench.quest.define(1, one_off(), one(9), no_conditions());
+    bench.quest.accept(PLAYER, 1);
+    bench.quest.define(D, one_off(), array![task(1, 2)].span(), no_conditions());
+    bench.quest.accept(PLAYER, D);
+    bench
+}
 
 #[test]
-#[available_gas(l2_gas: 28747816)]
+#[available_gas(l2_gas: 4692240)]
+fn baseline_two_held() {
+    two_held_setup();
+}
+
+#[test]
+#[available_gas(l2_gas: 5097981)]
 fn bench_abandon() {
-    let bench = accepted_setup();
+    let bench = two_held_setup();
     bench.quest.abandon(PLAYER, D);
 }
 
-// progress on a plain quest, then claim. §5.1: not completing 4 reads, 1 write; completing
-// 5 reads, 2 writes; claim P + R = 2 reads, 2 writes
-
-fn plain_setup() -> Bench {
-    let bench = deploy();
-    bench.quest.define(D, one_off(), array![task(1, 2)].span(), no_conditions(), false);
-    bench
-}
-
-#[test]
-#[available_gas(l2_gas: 2658926)]
-fn baseline_plain() {
-    plain_setup();
-}
-
-#[test]
-#[available_gas(l2_gas: 3557081)]
-fn bench_progress_plain() {
-    let bench = plain_setup();
-    bench.quest.progress(PLAYER, 1, 1, Mode::Storage);
-}
-
-#[test]
-#[available_gas(l2_gas: 4132838)]
-fn bench_progress_plain_completing() {
-    let bench = plain_setup();
-    bench.quest.progress(PLAYER, 1, 2, Mode::Storage);
-}
-
 fn completed_setup() -> Bench {
-    let bench = plain_setup();
+    let bench = accepted_setup();
     bench.quest.progress(PLAYER, 1, 2, Mode::Storage);
     bench
 }
 
 #[test]
-#[available_gas(l2_gas: 4132838)]
+#[available_gas(l2_gas: 4398835)]
 fn baseline_completed() {
     completed_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 4520603)]
+#[available_gas(l2_gas: 4781056)]
 fn bench_claim() {
     let bench = completed_setup();
     assert!(bench.quest.claim(PLAYER, D, 0) == 0);
 }
 
-// retire: quest D with 3 tasks, each shared by 28 live quests (D first on page 0, the last id on
-// page 3), and 7 conditions. §5.1: at most 22 reads, 14 writes
+// retire and define: quest D with 3 tasks and 7 conditions. Neither touches a task any more
 
 fn retire_worst_setup() -> Bench {
     let bench = deploy();
     let conditions = completed_prerequisites(bench);
-    bench
-        .quest
-        .define(D, one_off(), array![task(1, 1), task(2, 1), task(3, 1)].span(), conditions, false);
-    let rest = MAX_QUESTS_PER_TASK - 1;
-    filler(bench, 1, 1, rest);
-    filler(bench, 2, 101, rest);
-    filler(bench, 3, 201, rest);
+    bench.quest.define(D, one_off(), array![task(1, 1), task(2, 1), task(3, 1)].span(), conditions);
     bench
 }
 
 #[test]
-#[available_gas(l2_gas: 151539163)]
+#[available_gas(l2_gas: 26144541)]
 fn baseline_retire_worst() {
     retire_worst_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 153792232)]
+#[available_gas(l2_gas: 27197943)]
 fn bench_retire_worst() {
     let bench = retire_worst_setup();
     bench.quest.retire(D);
 }
 
-// define: 3 tasks, each with 27 live quests (4 pages to read), and 7 conditions. §5.1: K
-// conditions' A + each task's pages; writes A, B, C, one page per task, K conditions' A
-
 fn define_worst_setup() -> (Bench, Span<u32>) {
     let bench = deploy();
     let conditions = completed_prerequisites(bench);
-    let rest: u32 = (QUESTS_PER_PAGE * MAX_PAGES).into() - 1;
-    filler(bench, 1, 1, rest);
-    filler(bench, 2, 101, rest);
-    filler(bench, 3, 201, rest);
     (bench, conditions)
 }
 
 #[test]
-#[available_gas(l2_gas: 147962275)]
+#[available_gas(l2_gas: 23424180)]
 fn baseline_define_worst() {
     define_worst_setup();
 }
 
 #[test]
-#[available_gas(l2_gas: 151541179)]
+#[available_gas(l2_gas: 26144142)]
 fn bench_define_worst() {
     let (bench, conditions) = define_worst_setup();
-    bench
-        .quest
-        .define(D, one_off(), array![task(1, 1), task(2, 1), task(3, 1)].span(), conditions, false);
+    bench.quest.define(D, one_off(), array![task(1, 1), task(2, 1), task(3, 1)].span(), conditions);
 }

@@ -9,18 +9,19 @@ use snforge_std::{EventSpyAssertionsTrait, EventSpyTrait, spy_events};
 use super::helpers::{DAY, no_progress, no_record, one_off, schedule};
 use super::mocks::{HookCall, IMockQuestDispatcherTrait};
 use super::setup::{
-    DAY64, PLAYER, as_owner, as_reporter, assert_error, at, claim, define_simple, deploy, report,
-    stop,
+    DAY64, PLAYER, accept, as_owner, as_reporter, assert_error, at, claim, define_held, deploy,
+    report, stop,
 };
 
 #[test]
-#[available_gas(l2_gas: 22685295)]
+#[available_gas(l2_gas: 23550999)]
 fn quest_claim_index_counts_claims() {
     let q = deploy();
     at(q, 0);
-    define_simple(q, 1, schedule(0, 0, DAY, DAY), 7, 1);
+    define_held(q, 1, schedule(0, 0, DAY, DAY), 7, 1);
     report(q, PLAYER, 7, 1, Mode::Storage);
     at(q, DAY64);
+    accept(q, PLAYER, 1);
     report(q, PLAYER, 7, 1, Mode::Storage);
     assert!(claim(q, PLAYER, 1, 1) == 0);
     assert!(claim(q, PLAYER, 1, 0) == 1);
@@ -34,10 +35,10 @@ fn quest_claim_index_counts_claims() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 13650343)]
+#[available_gas(l2_gas: 14003699)]
 fn quest_claim_twice_reverts() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 1);
+    define_held(q, 1, one_off(), 7, 1);
     report(q, PLAYER, 7, 1, Mode::Storage);
     claim(q, PLAYER, 1, 0);
     as_owner(q);
@@ -47,10 +48,10 @@ fn quest_claim_twice_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6895535)]
+#[available_gas(l2_gas: 7253837)]
 fn quest_claim_uncompleted_reverts() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 5);
+    define_held(q, 1, one_off(), 7, 5);
     report(q, PLAYER, 7, 4, Mode::Storage);
     as_owner(q);
     assert_error(q.safe.claim(PLAYER, 1, 0), errors::NOT_COMPLETED);
@@ -60,10 +61,10 @@ fn quest_claim_uncompleted_reverts() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13379558)]
+#[available_gas(l2_gas: 13733597)]
 fn quest_claim_emits_and_writes() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 1);
+    define_held(q, 1, one_off(), 7, 1);
     report(q, PLAYER, 7, 1, Mode::Storage);
     let mut spy = spy_events();
     claim(q, PLAYER, 1, 0);
@@ -85,10 +86,10 @@ fn quest_claim_emits_and_writes() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10156216)]
+#[available_gas(l2_gas: 10526099)]
 fn quest_complete_hook_after_state_written() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 3);
+    define_held(q, 1, one_off(), 7, 3);
     report(q, PLAYER, 7, 3, Mode::Storage);
     assert!(q.mock.hook_count() == 1);
     assert!(
@@ -109,10 +110,10 @@ fn quest_complete_hook_after_state_written() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13366790)]
+#[available_gas(l2_gas: 13728568)]
 fn quest_claim_hook_after_state_written() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 3);
+    define_held(q, 1, one_off(), 7, 3);
     report(q, PLAYER, 7, 3, Mode::Storage);
     claim(q, PLAYER, 1, 0);
     assert!(q.mock.hook_count() == 2);
@@ -135,11 +136,11 @@ fn quest_claim_hook_after_state_written() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 8435066)]
+#[available_gas(l2_gas: 9351475)]
 fn quest_complete_hook_panic_reverts_progress() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 3);
-    define_simple(q, 2, one_off(), 7, 10);
+    define_held(q, 1, one_off(), 7, 3);
+    define_held(q, 2, one_off(), 7, 10);
     q.mock.set_panics(true, false);
     as_reporter(q);
     assert_error(q.safe.progress(PLAYER, 7, 3, Mode::Storage), 'Mock: complete refused');
@@ -153,10 +154,10 @@ fn quest_complete_hook_panic_reverts_progress() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 11582063)]
+#[available_gas(l2_gas: 11936732)]
 fn quest_claim_hook_panic_reverts_claim() {
     let q = deploy();
-    define_simple(q, 1, one_off(), 7, 3);
+    define_held(q, 1, one_off(), 7, 3);
     report(q, PLAYER, 7, 3, Mode::Storage);
     q.mock.set_panics(false, true);
     as_owner(q);

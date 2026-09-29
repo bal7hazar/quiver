@@ -1,10 +1,10 @@
 //! Unit costs of the operations the component is made of, through a dispatcher, as the
 //! benchmarks measure: a storage read and write of a `Map` keyed like the component's, an event
-//! like `QuestCompleted`, and the unpack of each packed type. A probe's cost is its test minus
-//! `probe_baseline`, divided by its count (fix loop 2, point 2).
+//! like `QuestCompleted`, and the unpack of each packed type read on the path of `progress_many`. A
+//! probe's cost is its test minus `probe_baseline`, divided by its count (fix loop 2, point 2).
 
-use quiver_quest::logic::{QuestDefinition, QuestRecord, QuestTasks};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use quiver_quest::logic::{QuestDefinition, QuestHeldSlot, QuestRecord, QuestTasks};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, map_entry_address, store};
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -17,11 +17,12 @@ pub trait IProbe<TState> {
     fn unpack_definition_n(ref self: TState, n: u32) -> u64;
     fn unpack_tasks_n(ref self: TState, n: u32) -> u32;
     fn unpack_record_n(ref self: TState, n: u32) -> u64;
+    fn unpack_held_n(ref self: TState, n: u32) -> u64;
 }
 
 #[starknet::contract]
 pub mod Probe {
-    use quiver_quest::logic::{QuestDefinition, QuestRecord, QuestTasks};
+    use quiver_quest::logic::{QuestDefinition, QuestHeldSlot, QuestRecord, QuestTasks};
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::storage_access::StorePacking;
     use super::IProbe;
@@ -122,6 +123,22 @@ pub mod Probe {
             }
             acc
         }
+
+        fn unpack_held_n(ref self: ContractState, n: u32) -> u64 {
+            let mut acc = 0;
+            let mut i: u32 = 0;
+            while i < n {
+                // two entries: (i, 20000) and (i + 1, 20000)
+                let packed: felt252 = i.into()
+                    + 20000 * 0x100000000
+                    + (i.into() + 1) * 0x100000000000000000000000000000000
+                    + 20000 * 0x10000000000000000000000000000000000000000;
+                let h: QuestHeldSlot = StorePacking::unpack(packed);
+                acc += h.e1.interval_id;
+                i += 1;
+            }
+            acc
+        }
     }
 }
 
@@ -158,7 +175,7 @@ fn probe_emit_100() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2640740)]
+#[available_gas(l2_gas: 2432840)]
 fn probe_unpack_definition_100() {
     deploy().unpack_definition_n(N);
 }
@@ -170,9 +187,50 @@ fn probe_unpack_tasks_100() {
 }
 
 #[test]
-#[available_gas(l2_gas: 1593050)]
+#[available_gas(l2_gas: 1219250)]
 fn probe_unpack_record_100() {
     deploy().unpack_record_n(N);
+}
+
+#[test]
+#[available_gas(l2_gas: 1434080)]
+fn probe_unpack_held_100() {
+    deploy().unpack_held_n(N);
+}
+
+/// The slots of `write_n`, seeded with snforge's `store` instead of a call: the setup of a
+/// benchmark that seeds its fixture.
+fn store_n(address: ContractAddress, n: u32) {
+    let mut i: u32 = 0;
+    while i < n {
+        let key = map_entry_address(selector!("values"), array!['player', i.into()].span());
+        store(address, key, array![i.into() + 1].span());
+        i += 1;
+    }
+}
+
+fn deploy_at() -> (ContractAddress, IProbeDispatcher) {
+    let class = declare("Probe").unwrap().contract_class();
+    let (address, _) = class.deploy(@array![]).unwrap();
+    (address, IProbeDispatcher { contract_address: address })
+}
+
+#[test]
+#[available_gas(l2_gas: 44749100)]
+fn probe_store_baseline() {
+    let (address, probe) = deploy_at();
+    store_n(address, N);
+    probe.noop(N);
+}
+
+/// Slots seeded with `store`, then changed by a call: whether the seeding counts as a change of
+/// the transaction (then each write costs as an overwrite) or not (as a first write).
+#[test]
+#[available_gas(l2_gas: 50744495)]
+fn probe_store_then_change_100() {
+    let (address, probe) = deploy_at();
+    store_n(address, N);
+    probe.write_other_n(N);
 }
 
 #[test]
@@ -200,4 +258,6 @@ fn probe_write_then_change_100() {
 }
 
 #[allow(unused_imports)]
-fn _types(_d: QuestDefinition, _t: QuestTasks, _r: QuestRecord, _a: ContractAddress) {}
+fn _types(
+    _d: QuestDefinition, _t: QuestTasks, _r: QuestRecord, _h: QuestHeldSlot, _a: ContractAddress,
+) {}
