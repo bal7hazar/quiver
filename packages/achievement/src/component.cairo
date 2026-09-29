@@ -111,8 +111,7 @@ pub mod AchievementComponent {
         ) {
             let (definition, extra) = definition_new(achievement_id, window, tasks);
             assert(
-                !self.Achievement_definitions.read(achievement_id).defined,
-                errors::ALREADY_DEFINED,
+                !self.Achievement_definitions.read(achievement_id).defined, errors::ALREADY_DEFINED,
             );
             self.Achievement_definitions.write(achievement_id, definition);
             if definition.task_count > 1 {

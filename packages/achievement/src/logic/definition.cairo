@@ -2,7 +2,9 @@
 
 use crate::constants::MAX_TASKS;
 use crate::errors;
-use super::types::{AchievementDefinition, AchievementExtraTasks, AchievementTask, AchievementWindow};
+use super::types::{
+    AchievementDefinition, AchievementExtraTasks, AchievementTask, AchievementWindow,
+};
 use super::window::window_validate;
 
 const NO_TASK: AchievementTask = AchievementTask { task_id: 0, total: 0 };
