@@ -90,7 +90,7 @@ accepted before it progresses; a player holds at most 4 quests; progress walks t
     `accept` refuses an interval id at or above 2^48 as not active. The slot layout is
     `e0` [0, 110), `counter` [110, 140), `e1` [140, 250), `kept` [250]. Constants
     `HELD_INTERVAL_LIMIT` and `ACCEPTANCE_LIMIT`.
-  - A slot of the held list is never zeroed: `QuestHeldSlot::kept` [240] is set once the slot
+  - A slot of the held list is never zeroed: `QuestHeldSlot::kept` [250] is set once the slot
     has held an entry, so the list growing back into it overwrites the slot instead of creating
     it.
 - The prerequisites of a quest are read in order, and the reading stops at the first one never
