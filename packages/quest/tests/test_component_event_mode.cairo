@@ -11,7 +11,7 @@ use super::mocks::IMockQuestDispatcherTrait;
 use super::setup::{PLAYER, as_owner, assert_error, define_held, deploy, report, report_many, stop};
 
 #[test]
-#[available_gas(l2_gas: 5875082)]
+#[available_gas(l2_gas: 5864635)]
 fn quest_event_mode_emits_only_progressed() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -35,7 +35,7 @@ fn quest_event_mode_emits_only_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5637058)]
+#[available_gas(l2_gas: 5626610)]
 fn quest_event_mode_calls_no_hook() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -50,7 +50,7 @@ fn quest_event_mode_calls_no_hook() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6142664)]
+#[available_gas(l2_gas: 6132217)]
 fn quest_event_mode_cannot_be_claimed() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -61,7 +61,7 @@ fn quest_event_mode_cannot_be_claimed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6679263)]
+#[available_gas(l2_gas: 6668815)]
 fn quest_modes_do_not_mix() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -72,7 +72,7 @@ fn quest_modes_do_not_mix() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5942947)]
+#[available_gas(l2_gas: 5932499)]
 fn quest_batch_event_mode_one_event_per_task() {
     let q = deploy();
     define_held(q, 1, one_off(), 1, 10);

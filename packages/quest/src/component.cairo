@@ -20,13 +20,13 @@ pub mod QuestComponent {
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use crate::constants::{ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, HELD_SLOTS, MAX_HELD};
     use crate::errors;
-    use crate::interface::{IQuest, IQuestView};
     pub use crate::events::index::QuestDefined;
+    use crate::interface::{IQuest, IQuestView};
     use crate::logic::{
         Mode, QuestConditions, QuestDefinition, QuestHeld, QuestHeldSlot, QuestProgress,
         QuestRecord, QuestSchedule, QuestTask, QuestTasks, TaskProgress, batch_merge,
-        claim as claim_logic, conditions_span, held_contains, held_position, held_remove,
-        held_slot, progress_add, record_complete, schedule_interval_id, tasks_span,
+        claim as claim_logic, conditions_span, held_contains, held_position, held_remove, held_slot,
+        progress_add, record_complete, schedule_interval_id, tasks_span,
     };
     use crate::models::definition::{DefinitionAssert, DefinitionTrait};
     use crate::store::StoreTrait;
@@ -165,7 +165,7 @@ pub mod QuestComponent {
                 prerequisite.live_dependents += 1;
                 self.Quest_definitions.write(condition, prerequisite);
             }
-            self.set_definition(@definition);
+            self.set_definition(definition);
         }
 
         /// Refuses `'Quest: does not exist'`, `'Quest: retired'`, `'Quest: has live

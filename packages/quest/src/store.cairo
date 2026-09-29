@@ -56,17 +56,17 @@ pub impl StoreImpl<
 
     /// Writes A, B, and C when the definition has conditions; emits `QuestDefined` (tracked). A
     /// definition never changes once written: the caller writes one for a quest not defined
-    /// (`DefinitionAssert::assert_does_not_exist`), since A is written with the status of a new
-    /// quest.
+    /// (`has_definition`), since A is written with the status of a new quest. The model is taken
+    /// by value, as every `set_x`: by snapshot costs 3 steps more (ARC-06).
     #[inline]
-    fn set_definition(ref self: ComponentState<TContractState>, definition: @QuestDefinition) {
-        let id = *definition.id;
+    fn set_definition(ref self: ComponentState<TContractState>, definition: QuestDefinition) {
+        let id = definition.id;
         let (slot_a, slot_b, slot_c) = definition.into_slots();
         self.Quest_definitions.write(id, slot_a);
         self.Quest_tasks.write(id, slot_b);
         if slot_a.condition_count != 0 {
             self.Quest_conditions.write(id, slot_c);
         }
-        HasComponent::emit(ref self, Tracked::event(definition));
+        HasComponent::emit(ref self, Tracked::event(@definition));
     }
 }
