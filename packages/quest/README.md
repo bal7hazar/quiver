@@ -339,7 +339,7 @@ The one slot the package zeroes is a reporter's, when `set_reporter(reporter, fa
 | `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 1 917 170 / 1 880 852 |
 | `abandon` | 564 150 / 513 938 |
 | `claim` | 364 520 / 314 308 |
-| `define` (3 tasks, 7 conditions; `TrackAll`) | 2 583 680 / 2 391 120 |
+| `define` (3 tasks, 7 conditions; `TrackAll`) | 2 583 280 / 2 390 720 |
 | `retire` (7 conditions) | 1 003 540 / 802 692 |
 
 **The consumer's transaction must fit.** The whole transaction counts: the consumer's own

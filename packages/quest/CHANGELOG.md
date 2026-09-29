@@ -75,7 +75,7 @@ and the component's impls take a tracking choice: a consumer's code must be upda
   the whole of A, from the A that was read.
 - **Costs.** No worst call is raised: `progress_many` is 7 220 L2 gas cheaper at `MAX_HELD` = 4
   (6 205 843) and 14 140 at 8 held; `accept` 4 370 (1 917 170), `abandon` 9 910 (564 150);
-  `define` is 2 583 680 (2 590 440 in 0.1.0); `set_reporter` is unchanged, `retire` 300 more. The
+  `define` is 2 583 280 (2 590 440 in 0.1.0); `set_reporter` is unchanged, `retire` 300 more. The
   largest rise is the view `quest_is_unlocked`, +4 300 (0.9 %). Detail in `GAS.md`.
 
 ## [0.1.0] - 2026-09-29

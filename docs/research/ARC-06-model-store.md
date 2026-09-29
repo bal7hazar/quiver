@@ -425,14 +425,21 @@ under `TrackAll`, `MockSilentStore` under `TrackNone`):
 |---|---|---|---|---|
 | `QuestReporter`, created | `TrackNone` | 454 630 | 454 630 (the write alone) | **0** |
 | `QuestReporter`, created | `TrackAll` | 498 230 | 498 230 (the write, then `emit`) | **0** |
-| `QuestDefinition`, 3 tasks, 7 conditions, A, B, C created | `TrackNone` | 1 497 390 | 1 502 350 (`definition_new`, the three writes) | −4 960 |
-| `QuestDefinition`, the same | `TrackAll` | 1 652 890 | 1 657 450 (the same, then `emit`) | −4 560 |
+| `QuestDefinition`, 3 tasks, 7 conditions, A, B, C created | `TrackNone` | 1 497 390 | 1 497 390 (the same model's slots written by hand, no event code) | **0** |
+| `QuestDefinition`, the same | `TrackAll` | 1 652 490 | 1 652 490 (the same writes, then `emit`) | **0** |
 
 The reporter is the write alone to the unit when untracked, and the write plus its event (43 600)
-when tracked. The definition through the store is cheaper than 0.1.0's code under both choices:
-`DefinitionTrait::new` validates for less than `definition_new` (ARC-06, §4). Its event costs
-155 500 through the model and 155 100 by hand: the event is built from the model's fields rather
-than from the call's arguments, 4 steps more, on the tracked choice only.
+when tracked; so is the definition (its event 155 100, 0.1.0's to the unit).
+
+**Fix loop 1: the definition's arms from one model.** The first measurement set the store (which
+validates with `DefinitionTrait::new`) against 0.1.0's `definition_new` and writes: 1 497 390
+against 1 502 350 untracked, 1 652 890 against 1 657 450 tracked. The two arms did different
+validation and conversion work, which could hide tracking overhead. Both arms now build the model
+with `DefinitionTrait::new`; the hand arm writes its slots and, tracked, emits its event built from
+the model's fields through the component. That showed 400 of overhead on the tracked arm:
+`DefinedTrait::new` desnapped each field of the model's snapshot. It now desnaps the model once,
+and the tracked store equals the hand arm to the unit. Against 0.1.0's own code the store stays
+4 960 cheaper under both choices (`DefinitionTrait::new` validates for less).
 
 **What the tests check** (§1.4, extended): under `TrackAll`, each tracked `set_x` emits its event
 once per write, created, changed and rewritten unchanged, with 0.1.0's keys and data
