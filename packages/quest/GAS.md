@@ -378,3 +378,184 @@ L2 gas snforge reports for the test; the budget is its `#[available_gas(l2_gas: 
 | `quiver_quest_integrationtest::test_schedule::schedule_validate_rejects_end_before_start` | 15520 | 16296 | 2026-09-29 | c231365 |
 | `quiver_quest_integrationtest::test_schedule::schedule_validate_rejects_half_recurring_duration_only` | 15520 | 16296 | 2026-09-29 | c231365 |
 | `quiver_quest_integrationtest::test_schedule::schedule_validate_rejects_half_recurring_interval_only` | 15520 | 16296 | 2026-09-29 | c231365 |
+
+## Cost model of `quiver_quest` 0.1.0 (ARC-03c, D-135)
+
+This section is written by hand below the generated table. `scripts/gas.py --write` rewrites
+this file and drops the section; `--check` reads only the rows above. Figures are L2 gas as
+snforge 0.61 reports it, from the full run of this commit. Reads, writes and events come from
+`snforge test --detailed-resources`. A call's cost is its test minus its baseline (the same
+fixture without the call), through a dispatcher. Hooks do nothing (`MockBench`) unless the row
+says so.
+
+### The cost of a changed slot (`test_component_probe`, 100 operations per test)
+
+| Operation | L2 gas | of which Sierra gas |
+|---|---|---|
+| Storage read, `Map` with a tuple key | 30 205 | 30 205 |
+| **Storage write to a slot whose value changes in the transaction** | **459 099** | 57 099 |
+| Storage write of a slot already changed in the transaction, or unchanged | 57 099 | 57 099 |
+| Event of 3 keys and 1 data felt (`QuestCompleted`'s shape) | 48 542 | 12 742 |
+| Unpack `QuestDefinition` / `QuestTasks` / `QuestRecord` / `QuestHeldSlot` | 18 633 / 12 625 / 7 075 / 9 121 | same |
+
+The figures are the same as ARC-03b's (the probes were re-run): **a slot changed by a transaction
+costs 402 000 L2 gas beyond its write's computation**, once per slot per transaction. That is the
+state diff. snforge counts a whole test as one transaction. A slot the setup of a test already
+changed, whether by a call or by the `store` cheatcode (`probe_store_then_change_100`: 57 099
+per write), costs a benchmark only 57 099 to change again. The benchmarks below say where that
+happens and give the transaction's figure, which adds 402 000 per such slot.
+
+### The held list
+
+`Quest_held: Map<(player_id, slot), QuestHeldSlot>`, slots 0 to 3, two entries per slot:
+
+| Bits of a slot | Field |
+|---|---|
+| [0, 32) | `e0.quest_id` (0 = empty) |
+| [32, 96) | `e0.interval_id`, the interval of the acceptance |
+| [96, 128) | reserved (zero) |
+| [128, 160) | `e1.quest_id` |
+| [160, 224) | `e1.interval_id` |
+| [224, 252) | reserved (zero) |
+
+The entries are contiguous and in the order of acceptance. A slot whose `e1` is empty ends the
+list, so `progress_many` reads 1 slot for 0 or 1 held quests, 2 for 2 or 3, and 3 for 4. `MAX_HELD
+= 4` bounds only `accept`. The walk reads up to 4 slots (8 entries, `MAX_HELD_LIMIT`), whatever
+`MAX_HELD` is, and that is how the H = 8 case is measured with the same code.
+
+**Why this layout.** Acceptance lives in the list alone. The record lost `active` and
+`accepted_interval`, and each entry carries the interval of its acceptance. As a result:
+
+- **progress never writes the list.** A completed, expired or retired entry stays in place
+  (dead) until the next `accept` prunes it. The slots a progress call changes are only those it
+  cannot avoid: each counted quest's progress P, and each completed quest's record R.
+- **`accept` and `abandon` change the list slot alone** in the common case (1 slot), not the list
+  and the record.
+- The layout was chosen to minimise the changed slots of progress, then of `accept` and `abandon`.
+
+**Why pruning happens at `accept`, not at progress.** Measured in the grid below:
+
+- A dead entry costs a later progress call 0.07 M (expired: one read of A) to 0.12 M (completed:
+  A and P). Pruning it at progress would change a list slot, 0.46 M, in the call that meets it.
+- So pruning at progress pays only when four or more progress calls follow before the player's
+  next `accept`.
+- It would also add up to 2 (H = 4) or 4 (H = 8) changed slots, 0.9 M or 1.8 M, to the worst
+  call.
+- `accept` already reads the list to find room, so pruning there costs the dead entries' reads
+  and no extra slot in the common case.
+
+### The worst call (`test_component_bench`)
+
+The worst call is 16 entries `[1..=15, 129]`. The last one collides modulo 128, so
+`batch_merge`'s plain merge runs in full. Every held quest completes. Each held quest has 3
+tasks at the batch's last three positions (the longest lookups) and a daily schedule (a
+division). H = 4 is built by `accept`. For H = 8, entries 5 to 8 are seeded into slots 2 and 3
+with `store`. P, R and the hook's slots are untouched by the setup, so every changed slot is
+counted in full.
+
+| Case | Benchmark | Call (L2 gas) | Reads | Writes | Events | Against 20 M | Against 1.1 × 10⁹ |
+|---|---|---|---|---|---|---|---|
+| H = 4, hooks empty | `bench_progress_many_worst_held4` | 6 131 373 | 23 | 8 | 4 | 31 % | 0.56 % |
+| H = 8, hooks empty | `bench_progress_many_worst_held8` | 11 279 423 | 44 | 16 | 8 | 56 % | 1.03 % |
+| H = 4, hook writes one slot | `bench_progress_many_worst_held4_hook` | 7 946 293 | 23 | 12 | 4 | 40 % | 0.72 % |
+| H = 8, hook writes one slot | `bench_progress_many_worst_held8_hook` | 14 909 263 | 44 | 24 | 8 | 75 % | 1.36 % |
+
+Reads include the reporter check (1). At H = 4 the 23 reads are: the reporter, the list (3
+slots), then A, P, B and R per quest (16), and one slot per later quest to check that it is still
+held after the previous quest's hook (3). A hook that writes one fresh slot adds about 0.45 M per
+completion. The network's limit is 1.1 × 10⁹ L2 gas per transaction ("Max L2 gas per
+transaction", docs.starknet.io, Learn > Cheatsheets > Chain info, read 2026-09-28).
+
+### The grid (`test_component_grid`): H held quests, each in one state
+
+The call is `progress_many(PLAYER, [1..=15, 129], Storage)` against a seeded list. Each row gives
+the call's L2 gas:
+
+| H | all complete | all count (no completion) | none in the batch | all completed earlier (dead) | all expired (dead) |
+|---|---|---|---|---|---|
+| 0 | 990 513 | | | | |
+| 1 | 2 222 983 | 1 678 623 | 1 225 363 | 1 087 083 | 1 043 393 |
+| 2 | 3 539 643 | 2 408 983 | 1 502 463 | 1 225 903 | 1 138 523 |
+| 4 | 6 132 593 | 3 829 233 | 2 016 193 | 1 463 073 | 1 288 313 |
+| 8 | 11 281 763 | 6 633 003 | 3 006 923 | 1 900 683 | 1 551 163 |
+
+Per entry, (call − call at H = 0) / H, and what it pays for:
+
+| Entry | H = 1 | H = 2 | H = 4 | H = 8 | What it pays for |
+|---|---|---|---|---|---|
+| completing | 1 232 470 | 1 274 565 | 1 285 520 | 1 286 406 | A, P, B, R read; P and R changed (918 000); the event; from the second entry on, one slot read to check that it is still held after the previous hook |
+| counting | 688 110 | 709 235 | 709 680 | 705 311 | A, P, B read; P changed (459 000) |
+| missed (none of its tasks in the batch) | 234 850 | 255 975 | 256 420 | 252 051 | A, P, B read; the batch scanned for its 3 tasks |
+| done (completed earlier in the interval) | 96 570 | 117 695 | 118 140 | 113 771 | A, P read |
+| expired (accepted in an earlier interval) | 52 880 | 74 005 | 74 450 | 70 081 | A read |
+
+So `call(H) ≤ 990 513 + 1 287 000 × H`: 990 513 for the reporter check, the list's first slot
+and the merge of 16 entries, and at most 1.29 M per held quest.
+
+The quests defined on a task but not held cost nothing. At H = 4 the worst call is 6.1 M. For
+comparison, the 20.6 M of ARC-03b's smallest 16-entry configuration came from 16 quests
+completing. The package now allows at most H.
+
+### Grim World's case (`test_component_game`)
+
+16 task entries; 3 held quests and one daily contract, all accepted and all completing;
+prerequisites 0 to 2, checked and cached by `accept`; every task shared by 2 or 3 quests in all,
+the others not accepted.
+
+| Case | Call (L2 gas), measured | Transaction's figure | Reads | Writes | Events |
+|---|---|---|---|---|---|
+| 3 quests per task (48) | 4 471 716 | 5 275 716 | 23 | 8 | 4 |
+| 2 quests per task (32) | 4 471 716 | 5 275 716 | 23 | 8 | 4 |
+
+The two are equal: the quests not held are not read. The transaction's figure adds 2 × 402 000.
+The records of quests 2 and 3 were changed in the same test by `accept`, which cached their
+unlock, so the benchmark counts their completion write as a second change. In a real
+transaction, where the accept came earlier, it is a first change. ARC-03b measured this case at
+10.1 M.
+
+### Slots changed per entrypoint
+
+| Entrypoint | Best | Common | Worst |
+|---|---|---|---|
+| `progress`, `progress_many`, `Mode::Event` | 0 | 0 | 0 |
+| `progress`, `progress_many`, `Mode::Storage` | 0 (nothing held counts) | 1 per quest that counts (P); 2 per quest that completes (P, R) | 2H: 8 at H = 4, 16 at H = 8; plus the hooks' own. The list: never |
+| `accept` | 1 (the list slot of the new entry) | 1; 2 when the quest has conditions and its unlock is cached now (R) | 3 at H = 4: both list slots (pruning moves the entries up) and R |
+| `abandon` | 1 (the entry's slot, when it is in the last slot) | 1 or 2 | 2 at H = 4: both list slots (the later entries move up) |
+| `claim` | 2 (P, R) | 2 | 2 |
+| `define` | 2 (A, B) | 2 + K (C and the K prerequisites' `live_dependents`) | 10 (A, B, C and 7 prerequisites) |
+| `retire` | 1 (A) | 1 + K | 8 (A and 7 prerequisites) |
+| `set_reporter` | 1 (its flag) | 1 | 1 |
+| Views | 0 | 0 | 0 |
+
+### Every entrypoint, measured
+
+The transaction's figure adds 402 000 per slot that the call changes and its setup had already
+changed in the same test (see the first section). Where that count is 0, the two figures are the
+same.
+
+| Entrypoint | Case | Benchmark (baseline) | Call, measured | Changed slots | Of them already changed by the setup | Transaction's figure | Reads / writes / events |
+|---|---|---|---|---|---|---|---|
+| `progress_many` | the worst, H = 4 | `bench_progress_many_worst_held4` | 6 131 373 | 8 | 0 | 6 131 373 | 23 / 8 / 4 |
+| `progress_many` | the worst, H = 8 | `bench_progress_many_worst_held8` | 11 279 423 | 16 | 0 | 11 279 423 | 44 / 16 / 8 |
+| `progress_many` | §5.1 witness adapted: 16 distinct tasks, 4 held completing, 28 quests on each task not held | `quest_batch_bound_accepted` | 5 549 156 | 8 | 0 | 5 549 156 | 23 / 8 / 4 |
+| `progress_many` | 4 held, all completing, 4 entries | `bench_progress_full_list_all_complete` (`baseline_full_list`) | 5 108 944 | 8 | 0 | 5 108 944 | 23 / 8 / 4 |
+| `progress` | 4 held, one counts | `bench_progress_full_list_one_counts` (`baseline_full_list`) | 1 363 786 | 1 | 0 | 1 363 786 | 16 / 1 / 0 |
+| `progress` | 4 held, one completes | `bench_progress_full_list_one_completes` (`baseline_full_list`) | 2 034 806 | 2 | 0 | 2 034 806 | 20 / 2 / 1 |
+| `progress` | 4 held, none in the batch | `bench_progress_full_list_none_counts` (`baseline_full_list`) | 903 076 | 0 | 0 | 903 076 | 16 / 0 / 0 |
+| `progress` | 1 held, counts | `bench_progress_plain` (`baseline_accepted`) | 824 156 | 1 | 0 | 824 156 | 5 / 1 / 0 |
+| `progress` | 1 held, completes | `bench_progress_plain_completing` (`baseline_accepted`) | 1 369 256 | 2 | 0 | 1 369 256 | 6 / 2 / 1 |
+| `progress` | nothing held | `bench_progress_nothing_held` (`baseline_plain`) | 213 576 | 0 | 0 | 213 576 | 2 / 0 / 0 |
+| `accept` | the worst: 7 prerequisites not cached, 4 dead entries completed now, all pruned | `bench_accept_worst_completed` | 1 287 300 | 3 | 2 | 2 091 300 | 22 / 3 / 0 |
+| `accept` | same, 4 entries expired at rollover | `bench_accept_worst_expired` | 1 125 540 | 3 | 2 | 1 929 540 | 18 / 3 / 0 |
+| `accept` | no prerequisite, empty list | `bench_accept_plain` (`baseline_plain`) | 745 970 | 1 | 0 | 745 970 | 3 / 1 / 0 |
+| `abandon` | the worst: first of 4, the others move up | `bench_abandon_worst` (`baseline_full_list`) | 504 460 | 2 | 2 | 1 308 460 | 5 / 2 / 0 |
+| `abandon` | second of 2 | `bench_abandon` (`baseline_two_held`) | 386 420 | 1 | 1 | 788 420 | 4 / 1 / 0 |
+| `claim` | — | `bench_claim` (`baseline_completed`) | 364 020 | 2 | 2 | 1 168 020 | 2 / 2 / 1 |
+| `define` | 3 tasks, 7 conditions | `bench_define_worst` | 2 590 440 | 10 | 7 | 5 404 440 | 8 / 10 / 1 |
+| `retire` | 7 conditions | `bench_retire_worst` | 1 003 240 | 8 | 8 | 4 219 240 | 9 / 8 / 1 |
+| `set_reporter` | — | `bench_set_reporter` (`baseline_deployed`) | 608 210 | 1 | 0 | 608 210 | 0 / 1 / 1 |
+| `progress`, event mode | 1 entry | `bench_progress_event_mode` (`baseline_deployed`) | 212 366 | 0 | 0 | 212 366 | 1 / 0 / 1 |
+| `progress_many`, event mode | 16 entries, late collision | `bench_progress_many_event_mode_late_collision` (`baseline_deployed`) | 1 831 823 | 0 | 0 | 1 831 823 | 1 / 0 / 16 |
+
+Reads of `progress` and `progress_many` include the reporter check (1). ARC-03b's `claim`
+benchmark had the same setup, so its 369 300 was a second change of P and R too.

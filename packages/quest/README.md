@@ -1,14 +1,19 @@
 # quiver_quest
 
-Quests for Starknet games: tasks, intervals, prerequisites, an optional accept step, claim. Pure
-Cairo and Starknet, no Dojo. The accepted API is
-[ARC-01 §3](../../docs/research/ARC-01-quest-achievement.md).
+Quests for Starknet games: tasks, intervals, prerequisites, acceptance, claim. Pure Cairo and
+Starknet, no Dojo. The accepted API is [ARC-01 §3](../../docs/research/ARC-01-quest-achievement.md),
+as amended by D-135.
 
-A quest has 1 to 3 **tasks** (a task id and a target), a **schedule** (one-off, or recurring in
-intervals), up to 7 **prerequisites** (quests completed at least once, ever), and optionally an
-**accept step**. The game reports progress on tasks; the component counts it on every live quest
-that uses the task, completes quests, and lets players claim them. Rewards are the game's: it
-grants them in its hooks.
+A quest has:
+
+- 1 to 3 **tasks**, each a task id and a target;
+- a **schedule**: one-off, or recurring in intervals;
+- up to 7 **prerequisites**: quests completed at least once, ever.
+
+**A player accepts a quest before it counts**, and holds at most `MAX_HELD` = 4 quests at once.
+The game reports progress on tasks. The component counts it on the quests the player holds,
+completes them, and lets the player claim them. Rewards are the game's: it grants them in its
+hooks.
 
 ## Two layers
 
@@ -87,6 +92,13 @@ mod Game {
     }
 
     #[external(v0)]
+    fn accept_quest(ref self: ContractState, player_id: felt252, quest_id: u32) {
+        // The game's checks first: the caller owns player_id, the quest is on today's board, ...
+        // Refused when the player already holds MAX_HELD live quests ('Quest: too many held')
+        self.quest.accept(player_id, quest_id);
+    }
+
+    #[external(v0)]
     fn claim_quest(ref self: ContractState, player_id: felt252, quest_id: u32, interval_id: u64) {
         // The game's checks first: the caller owns player_id, the place allows a claim, ...
         self.quest.claim(player_id, quest_id, interval_id);
@@ -121,11 +133,15 @@ registry on its own entrypoints.
 the first claim of that quest by that player). A hook that panics reverts the whole call: that is
 how a consumer refuses a claim.
 
-A hook may re-enter the component, since the state is written first. A quest completed by a
-re-entrant `progress` is not completed again by the outer call. A quest retired by a hook is
-skipped by the rest of the call that ran the hook. A re-entrant `claim` of the claim being made,
-or `accept` of the quest just completed, is refused (`'Quest: already claimed'`,
-`'Quest: already completed'`) and so reverts the whole outer call.
+A hook may re-enter the component, since the state is written first.
+
+- A quest completed by a re-entrant `progress` is not completed again by the outer call.
+- The rest of the call that ran a hook skips a quest the hook retired or abandoned.
+- A quest the hook accepted is not progressed by that call: its batch was reported before the
+  acceptance. The next call counts it.
+- A re-entrant `claim` of the claim being made, or `accept` of the quest just completed, is
+  refused (`'Quest: already claimed'`, `'Quest: already completed'`). That reverts the whole
+  outer call.
 
 ## Modes
 
@@ -133,10 +149,10 @@ or `accept` of the quest just completed, is refused (`'Quest: already claimed'`,
 
 | | `Mode::Storage` | `Mode::Event` |
 |---|---|---|
-| Reads, writes | Each affected progress and record read and written at most once | **None** |
+| Reads, writes | The player's held list; each held quest's progress and record read and written at most once | **None** |
 | Events | `QuestCompleted` per completion | `QuestProgressed { player_id, task_id, count }` per merged, non-zero entry |
 | Hooks | `on_quest_complete` | None |
-| Windows, intervals, prerequisites, acceptance | Enforced | Not enforced: the indexer applies them from `QuestDefined` |
+| Windows, intervals, prerequisites, acceptance | Enforced | Not enforced: the indexer applies them from `QuestDefined` and its own record of acceptances (`accept` emits no event) |
 | Completion, claim, views | Yes | No: `quest_progress` stays zero, a claim reverts `'Quest: not completed'` |
 
 Feed a quest in one mode only: progress in one mode is invisible to the other. Definitions are
@@ -150,8 +166,9 @@ the consumer aggregates its results by task id, one entry per task, and calls `p
 (`'Quest: too many entries'`), duplicates included: there is no fallback to a second call. The
 package cannot see across calls; a second call in the same transaction is the consumer's error.
 
-Progress never reverts for a quest-level reason: a quest outside its schedule, locked, not
-accepted or already completed in the interval is skipped. Counts saturate at each task's total.
+Progress never reverts for a quest-level reason. A held quest that is retired, outside the
+interval of its acceptance, or already completed in the interval is skipped; a quest not held is
+not read. Counts saturate at each task's total.
 
 ## Schedules, and the daily alignment on 00:00 UTC
 
@@ -166,20 +183,47 @@ not check it. Progress, completion and claim are per interval. **An acceptance h
 interval in which it was made**: an unfinished acceptance is lost at rollover, with the progress
 of that interval, and the quest must be accepted again.
 
-## Prerequisites, acceptance, retirement
+## Acceptance, the held list, prerequisites, retirement
 
-- A quest with conditions is unlocked when each of them has been completed at least once, at any
-  time, before or after the quest was defined. It is evaluated when progress or `accept` reaches
-  the quest, and then cached in the player's record. `quest_is_unlocked` evaluates without
-  writing. Conditions must be defined, live, distinct and not the quest itself: no cycle can form.
-- With `needs_accept`, progress counts only while the quest is accepted in the current interval.
-  An acceptance ends at completion, at `abandon`, or at rollover. A completed interval cannot be
-  accepted again. A limit on active quests is the consumer's: use `quest_is_accepted`, not the
-  raw bits of `quest_record`.
-- `retire` takes a quest off its tasks' pages, freeing its slot, and is refused while a live quest
-  names it as a condition (`'Quest: has live dependents'`): retire dependents first. A retired
-  quest counts no progress and cannot be accepted, redefined or used as a condition; its
-  completed intervals stay claimable.
+**Acceptance.** Every quest needs acceptance: progress counts only on the quests a player holds.
+`accept` refuses, in this order:
+
+1. `'Quest: does not exist'`, `'Quest: retired'`;
+2. `'Quest: not active'`, outside the schedule;
+3. `'Quest: locked'`, prerequisites not met;
+4. `'Quest: already accepted'`, held and live in this interval;
+5. `'Quest: already completed'`, this interval;
+6. `'Quest: too many held'`, `MAX_HELD` live quests held.
+
+An acceptance ends at completion, at `abandon`, at retirement, or at rollover (A-11).
+
+**The held list.** A player's list holds at most `MAX_HELD` = 4 live quests, two per storage
+slot, in the order of acceptance.
+
+- `quest_held(player_id)` returns it, dead entries included; `quest_is_accepted` tells whether an
+  entry is live.
+- An entry dies when its quest completes, expires at rollover or is retired. It stays in the
+  list until the player's next `accept`, which prunes every dead entry before it counts the room
+  left. Progress never writes the list.
+- `abandon` removes the quest, and the later entries move up.
+
+**Prerequisites.** A quest with conditions is unlocked when each of them has been completed at
+least once, at any time, before or after the quest was defined.
+
+- `accept` checks the prerequisites and caches the unlock in the player's record. Progress does
+  not read them.
+- `quest_is_unlocked` evaluates them without writing.
+- Conditions must be defined, live, distinct and not the quest itself, so no cycle can form.
+
+**Retirement.** `retire` is refused while a live quest names the quest as a condition (`'Quest:
+has live dependents'`): retire dependents first. A retired quest:
+
+- counts no progress, and its held entries are dead;
+- cannot be accepted, redefined or used as a condition;
+- keeps its completed intervals claimable.
+
+Any number of quests may use a task: tasks have no cap and no index. Only the quests a player
+holds cost anything on progress.
 
 ## Bounds
 
@@ -188,15 +232,11 @@ Every loop is bounded:
 | Bound | Value | Bounds |
 |---|---|---|
 | `MAX_TASKS` | 3 | Tasks per quest; unrolled |
-| `MAX_CONDITIONS` | 7 | Prerequisites per quest: records read to evaluate them, dependents' counters updated by `define` and `retire` |
-| `QUESTS_PER_PAGE` × `MAX_PAGES` | 7 × 4 = 28 | Live quests per task (`'Quest: task full'` above); pages read per task |
+| `MAX_CONDITIONS` | 7 | Prerequisites per quest: records read by `accept` to evaluate them, dependents' counters updated by `define` and `retire` |
 | `MAX_ENTRIES` | 16 | Entries of one `progress_many` call, checked first; the merge makes at most 16² comparisons |
+| `MAX_HELD` | 4 | Live quests a player holds (`'Quest: too many held'` above): the quests one progress call can count and complete |
+| `MAX_HELD_LIMIT`, `HELD_SLOTS` | 8, 4 | What the held list's layout holds: 4 slots of 2 entries. The walk of the list reads at most 4 slots, whatever `MAX_HELD` is: the code works for any `MAX_HELD` up to 8 |
 | live dependents | 65 535 | Live quests naming one quest as a condition (`'Quest: too many dependents'`) |
-
-The worst case of one `progress_many` call under these bounds is 16 tasks × 28 quests, each with
-7 prerequisites evaluated for the first time: 5 440 storage reads and 896 writes, measured
-(`quest_batch_bound_accepted`). **These bounds are those of A-G1 and do not meet the cost cap of
-its amendment** (below); smaller caps are pending a decision.
 
 ## Integration budget
 
@@ -208,26 +248,28 @@ the worst call the package allows must stay **under 20 × 10⁶ L2 gas**
 ([A-G1 amendment](../../docs/decisions/2026-09-28-A-G1-amendment-cost-cap.md)). For scale, Grim
 World's worst tick is 5.1 × 10⁶ as a whole transaction.
 
-**The package's worst call.** Measured through a dispatcher, with hooks that do nothing
-([GAS.md](GAS.md#cost-model-of-progress_many-arc-03b-fix-loop-2), cost model):
+**The package's worst call.** It is `progress_many` with 16 entries (the slowest merge), every
+held quest completing, each quest with 3 tasks. Measured through a dispatcher
+([GAS.md](GAS.md#cost-model-of-quiver_quest-010-arc-03c-d-135)):
 
 | Case | L2 gas |
 |---|---|
-| Under the bounds of this version (16 entries, 28 quests per task, 7 prerequisites) | 683 167 283 |
-| The smallest configuration that keeps 16 entries: 1 quest per task, no prerequisite | 20 644 413 |
-| Grim World's use: 16 entries, 3 quests per task, 4 held quests completing (3 with an accept step, 1 daily contract), 0 to 2 prerequisites | 10 144 166 |
+| `MAX_HELD` = 4, hooks empty | 6 131 373 |
+| `MAX_HELD` = 4, `on_quest_complete` writing one storage slot | 7 946 293 |
+| 8 held (the layout's limit), hooks empty | 11 279 423 |
+| 8 held, `on_quest_complete` writing one storage slot | 14 909 263 |
+| Grim World's use: 16 entries, 3 quests and a daily contract held and completing, 0 to 2 prerequisites | 5 275 716 (4 471 716 in its test, where `accept` had already changed two of the records) |
 
-A completed quest costs about 1.17 × 10⁶ L2 gas, most of it the two storage slots it changes
-(its progress and its record). The caps that bring the worst call under 20 × 10⁶ are **not set in
-this version**: 16 entries per call do not fit under 20 × 10⁶ with any caps, and the choice
-between fewer entries and the other options is escalated (GAS.md lists the measured options).
+Each held quest adds at most 1.29 × 10⁶ L2 gas. Most of that is the two storage slots a completed
+quest changes, its progress and its record: a slot changed by a transaction costs about 0.4 × 10⁶.
+The quests a player does not hold cost nothing, however many share the reported tasks. The worst
+call is a property of `MAX_HELD`, not of how many quests use a task.
 
 **The consumer's transaction must fit.** The whole transaction counts: the consumer's own
 entrypoint and logic, the package's calls, the hooks (`on_quest_complete` runs once per completed
 quest, so its cost multiplies with them), and the account's validation and execution. A consumer
-measures its own worst transaction and enforces a smaller practical bound (entries per call,
-quests per task, prerequisites) whenever the package's caps would let it exceed its budget, and
-in any case the network's limit.
+measures its own worst transaction, and in particular the cost of its `on_quest_complete` times
+`MAX_HELD`.
 
 **The reporter check in event mode.** The external `progress` and `progress_many` of `QuestImpl`
 read the reporter registry once (one storage read), in `Mode::Event` too, before emitting. Called
@@ -236,21 +278,27 @@ through the internal layer, event mode reads and writes nothing.
 ## Library
 
 `quiver_quest::logic` is the pure library, without storage: state in, state out
-([ARC-01 §3.2](../../docs/research/ARC-01-quest-achievement.md)). It holds the types (`Mode`,
-`QuestSchedule`, `QuestTask`, `QuestDefinition`, `QuestTasks`, `QuestConditions`, `QuestIdPage`,
-`QuestProgress`, `QuestRecord`, `TaskProgress`), their packing into one felt each
-(`StorePacking<T, felt252>`, layouts of §3.3), and the functions on schedules, definitions,
-batches, progress, records, claims and pages. Error strings are in `quiver_quest::errors`.
+([ARC-01 §3.2](../../docs/research/ARC-01-quest-achievement.md)). It holds:
+
+- the types `Mode`, `QuestSchedule`, `QuestTask`, `QuestDefinition`, `QuestTasks`,
+  `QuestConditions`, `QuestProgress`, `QuestRecord`, `QuestHeld`, `QuestHeldSlot` and
+  `TaskProgress`;
+- their packing into one felt each (`StorePacking<T, felt252>`, layouts of §3.3);
+- the functions on schedules, definitions, batches, progress, records, claims and the held list.
+
+Error strings are in `quiver_quest::errors`.
 
 Every loop is bounded: `batch_merge` by `MAX_ENTRIES` (checked first; at most `MAX_ENTRIES²`
 comparisons when a task id repeats or two ids are equal modulo 128, one pass otherwise); the lookups of a merged batch
 (`batch_count_of`, `batch_first_position`, `progress_add`) by `MAX_ENTRIES`; the condition checks
 of `definition_new` by `MAX_CONDITIONS` (checked first); `prerequisites_met` by the one record per
-condition the caller passes, `MAX_CONDITIONS`. Tasks and pages are unrolled, without loops.
+condition the caller passes, `MAX_CONDITIONS`; the held list's functions by the entries of the
+list, `MAX_HELD_LIMIT`. Tasks are unrolled, without loops.
 
 ## Gas
 
 Every test has a budget; the figures are in [GAS.md](GAS.md): the library's benchmarks in
 `test_bench`, the component's in `test_component_bench`, one per entrypoint on the worst case of
-ARC-01 §5.1. Per entrypoint, the measure and the budget are in
+ARC-01 §5.1; the grid over the held list in `test_component_grid`; Grim World's case in
+`test_component_game`. Per entrypoint, the measure and the budget are in
 [docs/BUDGETS.md](../../docs/BUDGETS.md).
