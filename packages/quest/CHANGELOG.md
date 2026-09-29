@@ -8,10 +8,10 @@ events and error strings are named.
 
 Nothing yet.
 
-## [0.1.0] - not yet released
+## [0.1.0] - 2026-09-29
 
 The first version: the API accepted at gate A-G1
-([ARC-01 §3](../../docs/research/ARC-01-quest-achievement.md)), amended by D-135 (every quest is
+([ARC-01 §3](https://github.com/bal7hazar/quiver/blob/main/docs/research/ARC-01-quest-achievement.md)), amended by D-135 (every quest is
 accepted before it progresses; a player holds at most 4 quests; progress walks them).
 
 ### Added
