@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 05:33 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 05:50 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -81,7 +81,9 @@ worst call, about 200M): **the project manager decided 0.1.0 in event mode only*
 ([decision](docs/decisions/2026-09-29-achievement-event-only.md)); storage mode with per-task counters
 later, its layout not reserved. **ARC-04 done** (04:58 to 05:31 UTC, [#17](https://github.com/bal7hazar/quiver/pull/17),
 CI green, 102 tests within budget): worst `progress_many` 1.82M L2 gas (9 % of the cap), the game's
-results call 0.83M, worst `define` 1.20M; its `[GPT-6-Astra]` audit runs since 05:32 UTC. The project manager
+results call 0.83M, worst `define` 1.20M. `[GPT-6-Astra]` audit ([report](docs/reports/ARC-04-audit-gpt-6-astra-1.md)):
+PASS WITH FINDINGS, no blocker or major; its two minors fixed in one loop; **#17 merged** (`b525a8c`).
+**Next: the publication request of `quiver_achievement` 0.1.0.** The project manager
 corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
 about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
 what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
@@ -116,13 +118,11 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 | ARC-02 | [#4](https://github.com/bal7hazar/quiver/pull/4) merged: root `Scarb.toml`, `quiver_quest` and `quiver_achievement` skeletons (bounds as constants, one budgeted test each), `cairo.yml` by affected package (base-branch script, fail closed, summary job `cairo`), `scripts/gas.py` (every source test measured and budgeted, `GAS.md` checked), `release.yml` (checks and `scarb package`, no publish), [docs/WORKSPACE.md](docs/WORKSPACE.md). `[GPT-6-Luna]` audit: FAIL, FAIL, then closed by the orchestrator (one finding refuted as a repository limit, D-121); reports in docs/reports |
 | ARC-03a | [#6](https://github.com/bal7hazar/quiver/pull/6) merged: `quiver_quest::logic`, types, one-felt packing with field-width and reserved-bit checks, pure functions and errors of the accepted API; 166 tests (36 benchmarks) with budgets; worst case of `batch_merge` 753 k L2 gas (a late duplicate among 16 entries). Reports in docs/reports |
 | ARC-03c | [#10](https://github.com/bal7hazar/quiver/pull/10) merged: `quiver_quest` 0.1.0, the component on the player's held quests (D-135): acceptance mandatory, at most 4 held, 30-bit acceptance numbers, held-list slots kept; worst calls measured under 20M (6.21M at H = 4); 423 tests within budget. Four fix loops (the fourth an exception of the project manager); `[GPT-6-Astra]` four passes, the last PASS WITH FINDINGS. Reports in docs/reports |
+| ARC-04 | [#17](https://github.com/bal7hazar/quiver/pull/17) merged: `quiver_achievement` 0.1.0 in event mode only (definitions stored, progress as events, reporter access control, no storage mode by absence); worst `progress_many` 1.82M L2 gas; 102 tests within budget. `[GPT-6-Astra]` PASS WITH FINDINGS, two minors fixed. Reports in docs/reports |
 
 ## Agents
 
-| Task | Unit | Model asked / ran | Profile | State |
-|---|---|---|---|---|
-| ARC-04 achievement event mode | `quiver-ARC-04-045808` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Exited 0; #17 |
-| ARC-04 audit | setsid (codex), slots | `gpt-6-astra` / `gpt-6-astra` | audit | Running since 05:32 UTC |
+None running.
 
 ## Budget
 
