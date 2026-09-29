@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 10:35 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 11:00 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -15,8 +15,9 @@ exactly the hand-written code, a tracked write the event more (45 020); a conven
 Reference model: `packages/quest/src/models/definition.cairo`. Audits: `[GPT-6-Astra]` cost PASS WITH
 FINDINGS; `[GPT-6-Sol]` organisation FAIL (production reads bypassing the store; no rule for an
 event field not stored), then PASS WITH FINDINGS after one fix loop. **#19 merged** (`e9e1d48`).
-**Waiting for the owner's review of the reference model**, through the project manager; ARC-07
-(both packages as 0.2.0) starts after it.
+**The owner reviewed it (D-147)**: `logic/` disappears; each model's event is optional for the
+consumer, at compile time, at no cost on a write. **ARC-07a** (`quiver_quest` 0.2.0,
+[brief](docs/briefs/ARC-07a-quest-0.2.0.md)) is sent to the project manager before its launch.
 
 Both packages the game needs are published on scarbs.xyz, each after the project manager's go:
 
