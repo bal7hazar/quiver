@@ -1,4 +1,4 @@
-# PENDING — ARC-03c after three fix loops: one new major on acceptance numbers
+# ARC-03c after three fix loops: a last loop on the acceptance number — decided 2026-09-29
 
 | | |
 |---|---|
@@ -52,3 +52,20 @@ excluded numbers issued during the call: an unchanged entry sharing such a numbe
 delaying it, and 0.1.0 is the version other consumers will read. The fix is a layout change of a
 few fields with a clear rule, of the size of one loop. The minor finding and the stale summary go
 with it. If the agent finds the layout does not fit, it stops with the figures, and (b) remains.
+
+## Answer
+
+Decided by the project manager `[Fable 5.1]` on 2026-09-29: **option (a)**, an exception to the rule
+of three fix loops. One last fix loop limited to the acceptance number, then a `[GPT-6-Astra]` pass
+limited to it and to what the widening touches.
+
+Why: the package will be published, and a publication cannot be undone; its storage layout is
+frozen at 0.1.0. A counter that can wrap and lose a player's counts is a defect of the layout,
+reachable by a consumer's hook even if not by Grim World's; widening it after the first release
+would be a migration for every consumer.
+
+Conditions: the widened record still fits the slots the measurements are based on, or the worst
+calls are measured again and stay under 20M (6.29M at `MAX_HELD` = 4 today); a test pins the wrap
+case at the old width as a regression. **If the narrow pass leaves a major, no other loop is opened
+and #10 is not merged**: the project manager is told, since a known major in a layout blocks the
+publication check (the game's OPERATIONS §7). The exception is recorded in the lot's report.
