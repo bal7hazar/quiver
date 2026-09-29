@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 00:31 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 00:34 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -45,8 +45,9 @@ UTC. After the merge: the ARC-01 sections the lot could not touch (ยง2 tables, ย
 `quiver_quest` 0.1.0.
 
 **Launcher**: the budget is now **slot locks** ([#9](https://github.com/bal7hazar/quiver/pull/9),
-`1d61843`, synced with the game's `scripts/agent.sh` at `65425a2` by the project manager's
-decision, before the game's audit of it): an agent holds `~/orchestrator/slots/total-N` and
+`1d61843`, then [#11](https://github.com/bal7hazar/quiver/pull/11), synced with the game's
+`scripts/agent.sh` at `033043a` by the project manager's decision: slot files opened read-only,
+never created by a probe, the slot directory read-only, only `slots-init` creating missing ones): an agent holds `~/orchestrator/slots/total-N` and
 `quiver-1` by a kernel lock for as long as it lives; a launch takes both or refuses, and refuses
 while the game's waiting marker is fresh. This replaces #8's process count, and with it the four
 findings inherited from the game's launcher. ARC-03c, launched before the slots, is covered by the
