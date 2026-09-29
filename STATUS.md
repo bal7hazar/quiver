@@ -1,6 +1,35 @@
 # Status
 
-**2026-09-29 12:15 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 12:30 UTC** (paused), written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+
+## Pause 2026-09-29
+
+Paused at 12:30 UTC by the project manager for the owner (the app's quota at 95 %, reset
+2026-09-30 14:00 UTC). Nothing runs; resume only on the owner's or the project manager's message
+after the reset.
+
+| | |
+|---|---|
+| Last commit on `main` | `24fb49e` (docs: ARC-07a closed, reports archived; the lot waits for the owner's review) |
+| Open pull requests | None |
+| Branches | `main` only; every task branch merged and deleted |
+| Agents | None running; slot `quiver-1` free. No agent to resume: every task is closed |
+| Worktrees | The orchestrator's own only; every task worktree removed |
+
+| Task | State | Next step |
+|---|---|---|
+| ARC-07a, `quiver_quest` 0.2.0 on the pattern (D-143, D-147) | Done: [#20](https://github.com/bal7hazar/quiver/pull/20) merged (`5571876`), audits PASS (`[GPT-6-Sol]`) and PASS WITH FINDINGS (`[GPT-6-Astra]`); version 0.2.0 in `Scarb.toml`, **not published** | The owner's verdict on the lot |
+| ARC-07b, `quiver_achievement` 0.2.0 on the pattern | **Not briefed, not launched**: waits for the owner's verdict on ARC-07a | Brief it on the verdict (the rule for events carrying unstored fields: `points` stored in free bits of slot A, ARC-06 research §6), then launch through `scripts/agent.sh` (new agent, no session to resume) |
+| Publication of both packages as 0.2.0 | Not asked | After ARC-07b: one `PENDING-publish-*` file per package, as for 0.1.0 (D-132) |
+| ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
+
+**Waiting for the owner**: the verdict on `quiver_quest` 0.2.0 (ARC-07a), sent to the project manager
+at 12:15 UTC: the store (`packages/quest/src/store.cairo`, `TrackAll` / `TrackNone` in
+`store::tracking`), the models (`packages/quest/src/models/`), the consumer's one-line choice
+(`packages/quest/README.md`), the mechanism and its cost (`docs/research/ARC-06-model-store.md` §7);
+including **whether action events (`QuestCompleted`, `QuestClaimed`, `QuestProgressed`,
+`QuestRetired`) become optional too**: today only models' events are optional, and action events are
+always emitted where 0.1.0 emits them.
 
 ## Where we are
 
