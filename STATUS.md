@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-29 02:55 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 03:50 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -64,7 +64,12 @@ another quest can make an unchanged held quest lose a batch's counts (unreachabl
 **Three fix loops are used; the project manager decided a last loop, as an exception**
 ([decision](docs/decisions/2026-09-29-ARC-03c-last-loop.md)): limited to the acceptance number,
 widened so that a wrap is impossible in practice, then a `[GPT-6-Astra]` pass limited to it. A major
-left by that pass blocks the merge and goes back to the project manager. The project manager
+left by that pass blocks the merge and goes back to the project manager. **The last loop is done** (02:54 to
+03:37 UTC, CI green, 423 tests within budget): a 30-bit acceptance number and counter (a wrap needs
+about 10⁹ acceptances by one player), a 48-bit held interval id, whole entries compared again, the
+16-bit wrap case pinned as a regression; worst calls re-measured, all under 20M (6.21M at H = 4;
+15.06M at H = 8 with a one-slot hook; the game's use 4.55M). The narrow `[GPT-6-Astra]` pass waits
+for a slot. The project manager
 corrected the slot price the same night (the game's FND-04, 149 Sepolia transactions: a new slot
 about 453 500 L2 gas, an overwritten or zeroed one about 32 000; [recorded](docs/decisions/2026-09-28-quest-cost-cap.md));
 what fix loop 1 does not cover (the worst call with the player's slots new and existing, created
@@ -104,8 +109,8 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
 | ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
-| ARC-03c quest held list | `quiver-ARC-03c-*` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Last loop (exception), waits for a slot |
-| ARC-03c audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | Third pass FAIL at 02:38 UTC (one new major) |
+| ARC-03c quest held list | `quiver-ARC-03c-025442` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Last loop done |
+| ARC-03c audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | Narrow pass waits for a slot |
 | PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | FAIL (findings in the shared code, inherited); #8 merged by decision |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
