@@ -1,11 +1,14 @@
 # Status
 
-**2026-09-29 06:25 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 07:00 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
-**Track ARC is idle; its slot `quiver-1` is free for the other tracks.** No agent runs and none is
-queued.
+**Woken on 2026-09-29 by the owner's rule D-143** (docs/CAIRO.md §7, §8): quiver's code does not keep
+the layering of `cartridge-gg/arcade` (models, events, types, a store, functions scoped in traits).
+**ARC-06** settles the pattern and shows it on one model, the quest definition
+([brief](docs/briefs/ARC-06-model-store.md)); the owner reviews that model before ARC-07 rewrites
+both packages as 0.2.0. 0.1.0 stays published; no consumer uses it.
 
 Both packages the game needs are published on scarbs.xyz, each after the project manager's go:
 
