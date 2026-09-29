@@ -143,3 +143,57 @@ cost is the benchmark minus its `bench_baseline_*`.
 
 The other functions (packing, records, schedules) are between 13 720 and 45 000 with their setup;
 see `GAS.md`.
+
+## `quiver_achievement`: the component (event mode only)
+
+Measured 2026-09-29 (ARC-04; the commit is in `packages/achievement/GAS.md`), snforge 0.61, L2
+gas, as for `quiver_quest` above: **call** is the benchmark minus its baseline, through a
+dispatcher from `MockBench` (`authorize_admin` accepts every caller); reads and events from
+`snforge test --detailed-resources`, the reads of `progress` and `progress_many` including the
+reporter check. 0.1.0 is event mode only
+([decision](decisions/2026-09-29-achievement-event-only.md)): progress writes nothing, and reads
+no definition, so its cost does not depend on the achievements defined. The network estimate
+reprices each written slot as above; details in
+[packages/achievement/GAS.md](../packages/achievement/GAS.md#cost-model-of-quiver_achievement-010-arc-04-event-mode-only).
+
+| Entrypoint | Case | Benchmark | Test measured | Test budget | Call | Created / overwritten | Network estimate | Reads / events | Against 20 M |
+|---|---|---|---|---|---|---|---|---|---|
+| `progress_many` | **the worst**: 16 entries `[1..=15, 129]`, late collision | `bench_progress_many_late_collision` | 2 606 413 | 2 736 734 | **1 816 813** | 0 / 0 | 1 816 813 | 1 / 16 | 9.1 % |
+| `progress_many` | 16 entries `[1..=15, 15]`, late duplicate | `bench_progress_many_late_duplicate` | 2 549 593 | 2 677 073 | 1 759 993 | 0 / 0 | 1 759 993 | 1 / 15 | 8.8 % |
+| `progress_many` | 16 distinct entries | `bench_progress_many_sixteen_distinct` | 2 035 086 | 2 136 841 | 1 245 486 | 0 / 0 | 1 245 486 | 1 / 16 | 6.2 % |
+| `progress_many` | the worst, 48 achievements of 3 tasks on its tasks | `bench_progress_many_late_collision_with_definitions` | 60 255 793 | 63 268 583 | 1 816 613 | 0 / 0 | 1 816 613 | 1 / 16 | 9.1 % |
+| `progress` | 1 entry | `bench_progress` | 998 836 | 1 048 778 | 209 236 | 0 / 0 | 209 236 | 1 / 1 | 1.0 % |
+| `define` | **the worst**: 3 tasks | `bench_define_worst` | 1 986 630 | 2 085 962 | 1 197 030 | 2 / 0 | 1 185 818 | 1 / 1 | 6.0 % |
+| `define` | 1 task | `bench_define_one_task` | 1 497 240 | 1 572 102 | 707 640 | 1 / 0 | 702 034 | 1 / 1 | 3.5 % |
+| `retire` | — | `bench_retire` | 2 227 570 | 2 338 949 | 240 760 | 0 / 1 | 215 654 | 1 / 1 | 1.2 % |
+| `set_reporter` | a new reporter | `bench_set_reporter` | 1 397 010 | 1 466 861 | 607 410 | 1 / 0 | 601 804 | 0 / 1 | 3.0 % |
+| `set_reporter` | a registered reporter revoked: the slot is zeroed | `bench_set_reporter_revoke` | 1 201 740 | 1 261 827 | −195 270 in the test; 206 730 in a transaction of its own | 0 / 1 | 181 624 | 0 / 1 | 1.0 % |
+| `set_reporter` | a registered reporter set again, unchanged | `bench_set_reporter_unchanged` | 1 603 540 | 1 683 717 | 206 530 | 0 / 1 | 181 424 | 0 / 1 | 1.0 % |
+| `achievement_definition` | 3 tasks | `bench_view_definition_worst` | 2 200 940 | 2 310 987 | 214 130 | — | — | 2 / 0 | — |
+| `achievement_is_reporter` | — | `bench_view_is_reporter` | 914 290 | 960 005 | 124 690 | — | — | 1 / 0 | — |
+
+**Grim World's use** (design/13, the MVP's 8 titles as 26 tiers on 8 tasks):
+
+| Case | Benchmark | Test measured | Test budget | Call | Created / overwritten | Network estimate | Reads / events | Against 20 M |
+|---|---|---|---|---|---|---|---|---|
+| A results transaction: 6 character tasks and 2 account tasks, one `progress_many` per player id | `bench_game_results_call` | 20 143 438 | 21 150 610 | **829 728** | 0 / 0 | 829 728 | 2 / 8 | 4.1 % |
+| 16 distinct tasks in one call (A-10) | `bench_game_results_call_sixteen` | 20 558 996 | 21 586 946 | 1 245 286 | 0 / 0 | 1 245 286 | 1 / 16 | 6.2 % |
+| The 26 tiers defined in one transaction (the admin's setup) | `bench_game_define_titles` | 19 315 330 | 20 281 097 | 18 525 730 | 26 / 0 | 18 379 974 | 26 / 26 | **92.6 %** |
+
+Every call of the package is under 20 M, by snforge's prices and by the network's. Defining in
+bulk is the consumer's batching of admin calls: 26 definitions in one transaction come near the
+cap, so they are spread over several transactions (the README says so).
+
+## `quiver_achievement`: the library
+
+`packages/achievement/tests/test_bench.cairo`. A figure includes the test's setup
+(`bench_baseline_sixteen_entries`: 49 990).
+
+| Algorithm | Worst case | Benchmark | Measured | Budget |
+|---|---|---|---|---|
+| `batch_merge` | 16 entries, a modulo-128 collision at the 16th | `bench_batch_merge_late_modulo_collision` | 751 523 | 789 100 |
+| `batch_merge` | 16 entries, a repeat at the 16th | `bench_batch_merge_late_duplicate` | 747 613 | 784 994 |
+| `batch_merge` | 16 distinct entries (fast path) | `bench_batch_merge_sixteen_distinct` | 180 396 | 189 416 |
+| `AchievementDefinition` pack and unpack | every field at its maximum | `bench_pack_unpack_definition` | 34 120 | 35 826 |
+| `AchievementExtraTasks` pack and unpack | every field at its maximum | `bench_pack_unpack_extra_tasks` | 24 930 | 26 177 |
+| `definition_new` | 3 tasks | `bench_definition_new_three_tasks` | 20 920 | 21 966 |
