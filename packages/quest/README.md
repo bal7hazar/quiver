@@ -250,37 +250,43 @@ the worst call the package allows must stay **under 20 × 10⁶ L2 gas**
 World's worst tick is 5.1 × 10⁶ as a whole transaction.
 
 **The package's worst call.** It is `progress_many` with 16 entries (the slowest merge), every
-held quest completing, each quest with 3 tasks. Measured through a dispatcher
-([GAS.md](GAS.md#cost-model-of-quiver_quest-010-arc-03c-d-135)):
+held quest completing, each quest with 3 tasks. Measured through a dispatcher with snforge
+([GAS.md](GAS.md#cost-model-of-quiver_quest-010-arc-03c-d-135)). The network's estimate reprices
+each written slot at the prices below. "Created" means the player's progress and record slots
+are new (the worst); "existing" means they are overwritten.
 
-| Case | L2 gas |
-|---|---|
-| `MAX_HELD` = 4, hooks empty | 6 187 453 |
-| `MAX_HELD` = 4, `on_quest_complete` writing one new storage slot | 8 002 373 |
-| 8 held (the layout's limit), hooks empty | 11 376 913 |
-| 8 held, `on_quest_complete` writing one new storage slot | 15 006 753 |
-| Grim World's use: 16 entries, 3 quests and a daily contract held and completing, 0 to 2 prerequisites | 4 527 796 |
+| Case | Created: snforge / network | Existing: snforge / network |
+|---|---|---|
+| `MAX_HELD` = 4, hooks empty | **6 182 583** / 6 137 735 | 2 966 583 / 2 765 735 |
+| `MAX_HELD` = 4, `on_quest_complete` writing one new slot | **7 997 503** / 7 930 231 | 4 781 503 / 4 558 231 |
+| 8 held (the layout's limit), hooks empty | **11 374 333** / 11 284 637 | 4 942 333 / 4 540 637 |
+| 8 held, `on_quest_complete` writing one new slot | **15 004 173** / 14 869 629 | 8 572 173 / 8 125 629 |
+| Grim World's use: 16 entries, 3 quests and a daily contract completing, 0 to 2 prerequisites | 4 522 926 / 4 439 078 (6 slots created, 2 overwritten) | — |
 
 **Each held quest adds at most 1.30 × 10⁶ L2 gas.** Most of that is its two storage writes, its
-progress and its record.
+progress and its record. A written slot costs, per transaction:
 
-- Every write costs about 57 000 L2 gas.
-- A write that **allocates** a storage cell costs about 402 000 more. Allocating means the cell
-  is zero at the start of the transaction and non-zero at its end (Starknet's allocation cost).
-- The worst call allocates both cells of each quest: its first count in the interval and its
-  first completion. A quest completed before costs about 0.4 × 10⁶ less, since its record is
-  updated, not allocated.
+| Written slot | snforge (the figures above) | The network (the game's FND-04, 149 Sepolia transactions) |
+|---|---|---|
+| **Created**: zero before, non-zero after | 459 106 | about 453 500 |
+| Overwritten, zeroed or unchanged | 57 106 | about 32 000 |
 
-The quests a player does not hold cost nothing, however many share the reported tasks. The worst
-call is a property of `MAX_HELD`, not of how many quests use a task.
+The worst call creates both slots of each quest: its first count in the interval and its first
+completion. A quest whose slots exist already costs about 0.8 × 10⁶ less. The quests a player
+does not hold cost nothing, however many share the reported tasks. The worst call is a property
+of `MAX_HELD`, not of how many quests use a task.
 
-**Other entrypoints, at their worst** (a transaction of its own):
+**The package never zeroes a slot.** A slot of the held list keeps a marker once it has held an
+entry, so the list growing back into it overwrites the slot instead of creating it: 690 420
+instead of 1 084 240 for that `accept`.
+
+**Other entrypoints, at their worst** (snforge / network):
 
 | Entrypoint | L2 gas |
 |---|---|
-| `accept` (7 prerequisites checked; two allocations: the list's next slot and the record) | 1 889 960 |
-| `abandon` | 538 870 |
-| `claim` | 364 020 |
+| `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 1 899 210 / 1 862 892 |
+| `abandon` | 547 920 / 497 708 |
+| `claim` | 364 020 / 313 808 |
 
 **The consumer's transaction must fit.** The whole transaction counts: the consumer's own
 entrypoint and logic, the package's calls, the hooks (`on_quest_complete` runs once per completed
