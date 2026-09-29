@@ -84,9 +84,12 @@ accepted before it progresses; a player holds at most 4 quests; progress walks t
   - It skips a quest a hook abandoned, and does not progress a quest a hook accepted, even one
     the hook abandoned and accepted again in the same interval: each held entry carries the
     player's acceptance number (`QuestHeld::acceptance`), from a counter kept in slot 0 of the
-    list (`QuestHeldSlot::counter`), and the call compares whole entries. The number wraps at
-    2^16 over a player's lifetime, so the call also reads the counter when it starts and excludes
-    every entry whose number was issued since.
+    list (`QuestHeldSlot::counter`), and the call compares whole entries. The number and the
+    counter have 30 bits (the counter wraps to 0 after 2^30 − 1, about 1.07 × 10⁹ acceptances by
+    one player); a held entry stores its interval id on 48 bits (`HELD_INTERVAL_LIMIT`), and
+    `accept` refuses an interval id at or above 2^48 as not active. The slot layout is
+    `e0` [0, 110), `counter` [110, 140), `e1` [140, 250), `kept` [250]. Constants
+    `HELD_INTERVAL_LIMIT` and `ACCEPTANCE_LIMIT`.
   - A slot of the held list is never zeroed: `QuestHeldSlot::kept` [240] is set once the slot
     has held an entry, so the list growing back into it overwrites the slot instead of creating
     it.

@@ -635,13 +635,13 @@ pub struct QuestRecord {               // per (player, quest), across intervals
 
 pub struct QuestHeld {                 // one quest a player holds; quest_id 0 = empty
     pub quest_id: u32,
-    pub interval_id: u64,              // the interval in which it was accepted
-    pub acceptance: u16,               // the player's acceptance number (ARC-03c fix loop 1)
+    pub interval_id: u64,              // the interval in which it was accepted; stored on 48 bits
+    pub acceptance: u32,               // the player's acceptance number, 30 bits (fix loop 4)
 }
 pub struct QuestHeldSlot {             // one slot of a player's held list: two entries
     pub e0: QuestHeld,
     pub e1: QuestHeld,
-    pub counter: u16,                  // slot 0: the player's last acceptance number; else 0
+    pub counter: u32,                  // slot 0: the player's last acceptance number (30 bits); else 0
     pub kept: bool,                    // set once the slot held an entry; never cleared
 }
 // An acceptance is a held entry. It is live while its quest is not retired, the quest's current
@@ -784,7 +784,7 @@ pub struct Storage {
 | **C** `QuestConditions` | `q{i}` [32i, 32i + 32), i = 0..7 | Seven `u32` ids. **224 bits**. Read by `accept` while `record.unlocked` is false |
 | `QuestProgress` | `c0` [0, 32) · `c1` [32, 64) · `c2` [64, 96) · `completed` [96] · `claimed` [97] | All counts of one quest in one interval, so one read and one write per quest per call. **98 bits**. The completion time is not stored: it is in the block of `QuestCompleted` |
 | `QuestRecord` | `completions` [0, 64) · `claims` [64, 128) · `unlocked` [128] | Counters are full `u64`, like interval ids (§3.2). **129 bits**. Acceptance is not here: it is the held list |
-| `QuestHeldSlot` | `e0.quest_id` [0, 32) · `e0.interval_id` [32, 96) · `e0.acceptance` [96, 112) · `counter` [112, 128) (slot 0 only) · `e1.quest_id` [128, 160) · `e1.interval_id` [160, 224) · `e1.acceptance` [224, 240) · `kept` [240] | Two held entries per slot, each quest id, the interval of its acceptance and the player's acceptance number (fix loop 1 of ARC-03c); in slot 0, the number of the player's last acceptance; `kept`, set once the slot has held an entry and never cleared (fix loop 2); no field straddles bit 128. **241 bits**. The list is contiguous and in the order of acceptance: slot 0 first, `e0` before `e1`, no empty entry before a full one, so a slot whose `e1` is empty ends it. 4 slots hold `MAX_HELD_LIMIT = 8` |
+| `QuestHeldSlot` | `e0.quest_id` [0, 32) · `e0.interval_id` [32, 80) · `e0.acceptance` [80, 110) · `counter` [110, 140) (slot 0 only) · `e1.quest_id` [140, 172) · `e1.interval_id` [172, 220) · `e1.acceptance` [220, 250) · `kept` [250]; bit 251 reserved and rejected | Two held entries per slot: each quest id, the interval of its acceptance (48 bits: 2^48 one-second intervals are 8.9 million years; `accept` refuses an interval id ≥ 2^48 as not active) and the player's acceptance number (30 bits). In slot 0, the number of the player's last acceptance (30 bits, wrapping to 0 after 2^30 − 1, about 1.07 × 10⁹ acceptances by one player). `kept`: set once the slot has held an entry and never cleared (fix loop 2). Only the counter straddles bit 128 (widths of fix loop 4, an exception decided by the project manager). **251 bits**, every value below 2^251. The list is contiguous and in the order of acceptance: slot 0 first, `e0` before `e1`, no empty entry before a full one, so a slot whose `e1` is empty ends it. 4 slots hold `MAX_HELD_LIMIT = 8` |
 | `Quest_reporters` | `bool` | One slot per reporter |
 
 **The held list, and why this layout** (D-135, measured in `packages/quest/GAS.md`).
@@ -807,16 +807,18 @@ The layout minimises the slots progress creates first, then its writes:
 
 - **The held list is never zeroed** (fix loop 2). A list slot keeps its `kept` bit once it has
   held an entry, so the list growing back into it overwrites it. This costs about 32 000 instead of
-  453 500 at the network's prices (measured 690 420 instead of 1 084 240 for that `accept`).
+  453 500 at the network's prices (measured 712 750 instead of 1 084 240 for that `accept`).
   The worst progress call is not worse: its walk reads the entries without the bits.
 - **The acceptance is the entry**, with its interval and its acceptance number, and not also
   bits of R. Progress needs no R to know an acceptance.
 - **Acceptance numbers.** Each `accept` stamps its entry with the player's `counter + 1`
-  (wrapping at 2^16) and stores it as the new counter. A quest abandoned and accepted again in
-  the same interval is a different entry, so a progress call that was running when a hook renewed
-  it does not progress it. The number wraps over a player's lifetime, so the call also reads the
-  counter when it starts and excludes, after a hook, every entry whose number was issued since
-  (fix loop 3). The counter also keeps slot 0 non-zero once a player has accepted
+  (30 bits, wrapping to 0 after 2^30 − 1) and stores it as the new counter. An acceptance is
+  identified by its whole entry, quest, interval and number: a quest abandoned and accepted again
+  in the same interval is a different entry, so a progress call that was running when a hook
+  renewed it does not progress it. Fix loop 3's 16-bit number wrapped after 65 536 acceptances by
+  one player and needed a window of the numbers issued during a call, which could skip an
+  unchanged entry. At 30 bits a wrap needs about 1.07 × 10⁹ acceptances, and the window is gone
+  (fix loop 4). The counter also keeps slot 0 non-zero once a player has accepted
   anything, so later accepts update it rather than allocate it.
 - **Dead entries are pruned lazily, at the next `accept`.** A dead entry costs a later progress
   call 0.05–0.08 M (expired: A read) to 0.10–0.12 M (completed: A and P read). Pruning it at
@@ -1009,18 +1011,15 @@ pub impl InternalImpl<
 1. `batch = batch_merge(entries)`. This reverts above `MAX_ENTRIES`, drops zero counts and
    merges duplicate tasks. If `batch` is empty, return: nothing is read or emitted. Set
    `time = get_block_timestamp()`.
-2. Read the player's held list, slots 0, 1, … while full, at most `HELD_SLOTS`, and the
-   acceptance counter of slot 0 (`start`). These are the
+2. Read the player's held list: slots 0, 1, … while full, at most `HELD_SLOTS`. These are the
    entries `(q, iid)` of the call, in the order of acceptance. A quest the player does not hold
    is not read, whatever tasks it shares with the batch.
 3. For each entry `(q, iid)` at position `i`:
    1. If a hook has run earlier in this call, check that the list still holds the entry, the
       same quest, interval and acceptance number: read the slot of position `i`; if the entry is
       not there, read the list and look for it. Skip it if it is gone (a hook abandoned it, or
-      abandoned and accepted it again). An entry a hook accepted is not in this walk. Skip it
-      also when its number was issued during the call: `(number − start) mod 2^16` in
-      `[1, (counter − start) mod 2^16]`, where `start` is the counter read at step 2. The number
-      wraps over a player's lifetime and may have been reissued (fix loop 3).
+      abandoned and accepted it again: the renewed entry has a new number). An entry a hook
+      accepted is not in this walk.
    2. Read A. Skip if `A.retired`, then if `schedule_interval_id(time) != Some(iid)` (expired at
       rollover, or outside the window of the interval).
    3. Read `P(player, q, iid)`. If it is completed, skip.
@@ -1552,25 +1551,25 @@ A call whose counts are all zero reads, writes and emits **nothing**, in either 
 
 | Case | Storage reads | Writes (created) | Events | Hooks | Call, snforge (network) |
 |---|---|---|---|---|---|
-| Event mode, `progress` | 1 (the reporter) | 0 | 1 (0 if `count == 0`) | 0 | 213 166 |
-| Event mode, `progress_many` | 1 | 0 | **E** (one per merged, non-zero entry) | 0 | 1 832 623 (16, slowest merge) |
-| Storage, nothing held | 1 + the list's first slot = **2** | 0 | 0 | 0 | 227 106 |
-| Storage, one held quest, first count in the interval, not completing | 1 + list (1) + A + P + B = **5** | **1** (1: P) | 0 | 0 | 838 096 (832 490) |
-| Same, completing, first completion | 5 + R = **6** | **2** (2: P, R) | 1 | 1 | 1 383 196 (1 371 984) |
-| Storage, H held quests, per quest: completing / counting / not in the batch / completed earlier / expired | A + P + B + R / A + P + B / A + P + B / A + P / A; + 1 slot per quest after a hook | 2 / 1 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | ≤ 1 298 000 / 714 000 / 261 000 / 123 000 / 79 000 per quest, P and R created |
-| **Worst case, `progress_many`**: 16 entries, slowest merge, every held quest completing, 3 tasks each, P and R created; H = `MAX_HELD` = 4 | 1 + list 3 + 4 × 4 + 3 + 2 (slot 0 after a hook) = **25** | **8** (8) | 4 | 4 | **6 292 283** (6 247 435) |
-| Same, P and R existing (overwritten) | 25 | 8 (0) | 4 | 4 | 3 076 283 (2 875 435) |
-| Same at H = 8 (the layout's limit; the list seeded), created / existing | 1 + 4 + 8 × 4 + 7 + 6 = **50** | **16** (16 / 0) | 8 | 8 | **11 676 993** (11 587 297) / 5 244 993 (4 843 297) |
-| With a hook that writes one new slot, created: H = 4 / H = 8 | 25 / 50 | 12 / 24 (12 / 24) | 4 / 8 | 4 / 8 | **8 107 203** (8 039 931) / **15 306 833** (15 172 289) |
-| With a hook that writes one new slot, existing: H = 4 / H = 8 | 25 / 50 | 12 / 24 (4 / 8) | 4 / 8 | 4 / 8 | 4 891 203 (4 667 931) / 8 874 833 (8 428 289) |
-| Grim World: 16 entries, 3 quests and a daily contract completing, K ≤ 2 | 25 | 8 (6; the records cached by `accept` are overwritten) | 4 | 4 | 4 632 626 (4 548 778) |
-| Claim | P + R = **2** | **2** (0); at saturated `claims`, 2 writes but 1 changed slot (P) | 1 | 1 | 364 020 (313 808) |
-| Accept, a player's first, no prerequisite | A + list + P = **3** | **1** (1: slot 0) | 0 | 0 | 767 030 (761 424) |
-| Accept, growing back into a list slot used before | 8 | 2 (0) | 0 | 0 | 690 420 (640 208) |
-| **Accept, worst**: grows into a list slot never used, K = 7 not cached | A + R + C + K + list 2 + P + 2 × (A + P) = **17** | **3** (2: the slot, R) | 0 | 0 | **1 899 210** (1 862 892) |
-| Accept on a mixed list: 2 live weekly and 2 stale daily entries, K = 7 | **20** | **3** (1: R) | 0 | 0 | 1 657 340 (1 601 522) |
-| Accept pruning 4 dead entries completed now, K = 7 | **22** | **3** (1: R) | 0 | 0 | 1 733 550 (1 677 732) |
-| Abandon, worst: the first of 4 | A + list 3 + P = **5** | **2** (0) | 0 | 0 | 547 920 (497 708) |
+| Event mode, `progress` | 1 (the reporter) | 0 | 1 (0 if `count == 0`) | 0 | 212 366 |
+| Event mode, `progress_many` | 1 | 0 | **E** (one per merged, non-zero entry) | 0 | 1 831 823 (16, slowest merge) |
+| Storage, nothing held | 1 + the list's first slot = **2** | 0 | 0 | 0 | 226 756 |
+| Storage, one held quest, first count in the interval, not completing | 1 + list (1) + A + P + B = **5** | **1** (1: P) | 0 | 0 | 837 546 (831 940) |
+| Same, completing, first completion | 5 + R = **6** | **2** (2: P, R) | 1 | 1 | 1 382 646 (1 371 434) |
+| Storage, H held quests, per quest: completing / counting / not in the batch / completed earlier / expired | A + P + B + R / A + P + B / A + P + B / A + P / A; after a hook, + the entry's slot (and the whole list if the entry moved) | 2 / 1 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | 1 / 0 / 0 / 0 / 0 | ≤ 1 304 000 / 717 000 / 264 000 / 126 000 / 82 000 per quest, P and R created |
+| **Worst case, `progress_many`**: 16 entries, slowest merge, every held quest completing, 3 tasks each, P and R created; H = `MAX_HELD` = 4 | 1 + list 3 + 4 × 4 + 3 (the entry's slot after a hook) = **23** | **8** (8) | 4 | 4 | **6 213 063** (6 168 215) |
+| Same, P and R existing (overwritten) | 23 | 8 (0) | 4 | 4 | 2 997 063 (2 796 215) |
+| Same at H = 8 (the layout's limit; the list seeded), created / existing | 1 + 4 + 8 × 4 + 7 = **44** | **16** (16 / 0) | 8 | 8 | **11 430 213** (11 340 517) / 4 998 213 (4 596 517) |
+| With a hook that writes one new slot, created: H = 4 / H = 8 | 23 / 44 | 12 / 24 (12 / 24) | 4 / 8 | 4 / 8 | **8 027 983** (7 960 711) / **15 060 053** (14 925 509) |
+| With a hook that writes one new slot, existing: H = 4 / H = 8 | 23 / 44 | 12 / 24 (4 / 8) | 4 / 8 | 4 / 8 | 4 811 983 (4 588 711) / 8 628 053 (8 181 509) |
+| Grim World: 16 entries, 3 quests and a daily contract completing, K ≤ 2 | 23 | 8 (6; the records cached by `accept` are overwritten) | 4 | 4 | 4 553 406 (4 469 558) |
+| Claim | P + R = **2** | **2** (0); at saturated `claims`, 2 writes and 2 overwritten, but 1 changed slot: only P changes | 1 | 1 | 364 020 (313 808) |
+| Accept, a player's first, no prerequisite | A + list + P = **3** | **1** (1: slot 0) | 0 | 0 | 778 830 (773 224) |
+| Accept, growing back into a list slot used before | 8 | 2 (0) | 0 | 0 | 712 750 (662 538) |
+| **Accept, worst**: grows into a list slot never used, K = 7 not cached | A + R + C + K + list 2 + P + 2 × (A + P) = **17** | **3** (2: the slot, R) | 0 | 0 | **1 921 540** (1 885 222) |
+| Accept on a mixed list: 2 live weekly and 2 stale daily entries, K = 7 | **20** | **3** (1: R) | 0 | 0 | 1 684 750 (1 628 932) |
+| Accept pruning 4 dead entries completed now, K = 7 | **22** | **3** (1: R) | 0 | 0 | 1 760 960 (1 705 142) |
+| Abandon, worst: the first of 4 | A + list 3 + P = **5** | **2** (0) | 0 | 0 | 574 060 (523 848) |
 | Retire (admin) | A + C + K prerequisite A: **≤ 9** | 1 + K: **≤ 8** (0) | 1 | 0 | 1 003 240 (802 392) |
 | Define (once) | A + K conditions' A: **≤ 8** | 2 without conditions; 3 + K with K > 0: **≤ 10** (A, B, C: 3) | 1 | 0 | 2 590 440 (2 397 880) |
 
@@ -1578,7 +1577,7 @@ A call whose counts are all zero reads, writes and emits **nothing**, in either 
 the ones the player holds, whatever the number of quests on the reported tasks and their
 prerequisites.
 
-The worst call is therefore at most `1.00 M + 1.34 M × MAX_HELD` with every slot created. That
+The worst call is therefore at most `1.00 M + 1.31 M × MAX_HELD` with every slot created. That
 is well under the 20 M of the A-G1 amendment at H = 4 and at H = 8, by snforge's prices and by
 the network's, and 0.56 % of the network's 1.1 × 10⁹ at H = 4.
 

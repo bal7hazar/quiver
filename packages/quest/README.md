@@ -140,8 +140,8 @@ A hook may re-enter the component, since the state is written first.
 - A quest the hook accepted is not progressed by that call: its batch was reported before the
   acceptance. The next call counts it. This holds for a quest the hook abandons and accepts again
   in the same interval too: each acceptance has its own number, and the call compares it. The
-  number is 16 bits and wraps over a player's lifetime. So the call also treats every number
-  issued since it started as new, and a reissued number is excluded too.
+  number is 30 bits: it wraps to 0 only after about 1.07 × 10⁹ acceptances by one player. An
+  acceptance is identified by its whole entry, quest, interval and number.
 - A re-entrant `claim` of the claim being made, or `accept` of the quest just completed, is
   refused (`'Quest: already claimed'`, `'Quest: already completed'`). That reverts the whole
   outer call.
@@ -259,13 +259,13 @@ are new (the worst); "existing" means they are overwritten.
 
 | Case | Created: snforge / network | Existing: snforge / network |
 |---|---|---|
-| `MAX_HELD` = 4, hooks empty | **6 292 283** / 6 247 435 | 3 076 283 / 2 875 435 |
-| `MAX_HELD` = 4, `on_quest_complete` writing one new slot | **8 107 203** / 8 039 931 | 4 891 203 / 4 667 931 |
-| 8 held (the layout's limit), hooks empty | **11 676 993** / 11 587 297 | 5 244 993 / 4 843 297 |
-| 8 held, `on_quest_complete` writing one new slot | **15 306 833** / 15 172 289 | 8 874 833 / 8 428 289 |
-| Grim World's use: 16 entries, 3 quests and a daily contract completing, 0 to 2 prerequisites | 4 632 626 / 4 548 778 (6 slots created, 2 overwritten) | — |
+| `MAX_HELD` = 4, hooks empty | **6 213 063** / 6 168 215 | 2 997 063 / 2 796 215 |
+| `MAX_HELD` = 4, `on_quest_complete` writing one new slot | **8 027 983** / 7 960 711 | 4 811 983 / 4 588 711 |
+| 8 held (the layout's limit), hooks empty | **11 430 213** / 11 340 517 | 4 998 213 / 4 596 517 |
+| 8 held, `on_quest_complete` writing one new slot | **15 060 053** / 14 925 509 | 8 628 053 / 8 181 509 |
+| Grim World's use: 16 entries, 3 quests and a daily contract completing, 0 to 2 prerequisites | 4 553 406 / 4 469 558 (6 slots created, 2 overwritten) | — |
 
-**Each held quest adds at most 1.34 × 10⁶ L2 gas.** Most of that is its two storage writes, its
+**Each held quest adds at most 1.31 × 10⁶ L2 gas.** Most of that is its two storage writes, its
 progress and its record. A written slot costs, per transaction:
 
 | Written slot | snforge (the figures above) | The network (the game's FND-04, 149 Sepolia transactions) |
@@ -279,7 +279,7 @@ does not hold cost nothing, however many share the reported tasks. The worst cal
 of `MAX_HELD`, not of how many quests use a task.
 
 **The held list is never zeroed.** A slot of the held list keeps a marker once it has held an
-entry, so the list growing back into it overwrites the slot instead of creating it: 690 420
+entry, so the list growing back into it overwrites the slot instead of creating it: 712 750
 instead of 1 084 240 for that `accept`.
 
 The one slot the package zeroes is a reporter's, when `set_reporter(reporter, false)` revokes it.
@@ -288,8 +288,8 @@ The one slot the package zeroes is a reporter's, when `set_reporter(reporter, fa
 
 | Entrypoint | L2 gas |
 |---|---|
-| `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 1 899 210 / 1 862 892 |
-| `abandon` | 547 920 / 497 708 |
+| `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 1 921 540 / 1 885 222 |
+| `abandon` | 574 060 / 523 848 |
 | `claim` | 364 020 / 313 808 |
 
 **The consumer's transaction must fit.** The whole transaction counts: the consumer's own

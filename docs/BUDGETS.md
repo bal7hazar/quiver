@@ -7,7 +7,7 @@ agreement, lowering one needs nothing.
 
 ## `quiver_quest`: the component
 
-Measured 2026-09-29 at `5a72315` (ARC-03c fix loop 3, D-135), snforge 0.61, L2 gas. Each
+Measured 2026-09-29 at `21f3066` (ARC-03c fix loop 4, D-135), snforge 0.61, L2 gas. Each
 benchmark has a baseline that runs the same setup without the call.
 
 - **Call** is the benchmark minus its baseline: the entrypoint's own cost through a dispatcher,
@@ -46,20 +46,20 @@ L2 gas per transaction", docs.starknet.io, Learn > Cheatsheets > Chain info, rea
 
 **Created**: the player's P and R slots are new (a first count in the interval, a first
 completion); this is the worst, and **the figure set against the cap**. **Existing**: P and R
-already exist and are overwritten. The hook's slot is new in both cases. Since fix loop 3 the walk also reads slot 0 after each
-hook (the acceptance counter), which adds +109 700 at H = 4 and +302 660 at H = 8.
+already exist and are overwritten. The hook's slot is new in both cases. Since fix loop 4, acceptance numbers have 30 bits and the
+walk compares whole entries after a hook, without the extra read of slot 0 that fix loop 3 added.
 
 | Worst call | Benchmark | Test measured | Test budget | Call, snforge | Created / overwritten | Network estimate | Against 20 M (snforge / network) | Against 1.1 × 10⁹ |
 |---|---|---|---|---|---|---|---|---|
-| **H = 4, created, hooks empty** | `bench_progress_many_worst_held4` | 16 212 473 | 17 023 097 | **6 292 283** | 8 / 0 | 6 247 435 | 31 % / 31 % | 0.57 % |
-| H = 4, existing, hooks empty | `bench_progress_many_worst_held4_existing` | 16 363 773 | 17 181 962 | 3 076 283 | 0 / 8 | 2 875 435 | 15 % / 14 % | 0.28 % |
-| **H = 4, created, a hook writing one slot** | `bench_progress_many_worst_held4_hook` | 18 027 393 | 18 928 763 | **8 107 203** | 12 / 0 | 8 039 931 | 41 % / 40 % | 0.74 % |
-| H = 4, existing, a hook writing one slot | `bench_progress_many_worst_held4_existing_hook` | 18 178 693 | 19 087 628 | 4 891 203 | 4 / 8 | 4 667 931 | 24 % / 23 % | 0.44 % |
-| **H = 8, created, hooks empty** | `bench_progress_many_worst_held8` | 28 143 253 | 29 550 416 | **11 676 993** | 16 / 0 | 11 587 297 | 58 % / 58 % | 1.06 % |
-| H = 8, existing, hooks empty | `bench_progress_many_worst_held8_existing` | 28 444 023 | 29 866 225 | 5 244 993 | 0 / 16 | 4 843 297 | 26 % / 24 % | 0.48 % |
-| **H = 8, created, a hook writing one slot** | `bench_progress_many_worst_held8_hook` | 31 773 093 | 33 361 748 | **15 306 833** | 24 / 0 | 15 172 289 | 77 % / 76 % | 1.39 % |
-| H = 8, existing, a hook writing one slot | `bench_progress_many_worst_held8_existing_hook` | 32 073 863 | 33 677 557 | 8 874 833 | 8 / 16 | 8 428 289 | 44 % / 42 % | 0.81 % |
-| Grim World's use: 16 entries, 3 quests and a daily contract completing, K ≤ 2 | `game_case_three_per_task` | 81 824 818 | 85 916 059 | 4 632 626 | 6 / 2 | 4 548 778 | 23 % / 23 % | 0.42 % |
+| **H = 4, created, hooks empty** | `bench_progress_many_worst_held4` | 16 216 753 | 17 027 591 | **6 213 063** | 8 / 0 | 6 168 215 | 31 % / 31 % | 0.56 % |
+| H = 4, existing, hooks empty | `bench_progress_many_worst_held4_existing` | 16 368 053 | 17 186 456 | 2 997 063 | 0 / 8 | 2 796 215 | 15 % / 14 % | 0.27 % |
+| **H = 4, created, a hook writing one slot** | `bench_progress_many_worst_held4_hook` | 18 031 673 | 18 933 257 | **8 027 983** | 12 / 0 | 7 960 711 | 40 % / 40 % | 0.73 % |
+| H = 4, existing, a hook writing one slot | `bench_progress_many_worst_held4_existing_hook` | 18 182 973 | 19 092 122 | 4 811 983 | 4 / 8 | 4 588 711 | 24 % / 23 % | 0.44 % |
+| **H = 8, created, hooks empty** | `bench_progress_many_worst_held8` | 27 987 733 | 29 387 120 | **11 430 213** | 16 / 0 | 11 340 517 | 57 % / 57 % | 1.04 % |
+| H = 8, existing, hooks empty | `bench_progress_many_worst_held8_existing` | 28 288 503 | 29 702 929 | 4 998 213 | 0 / 16 | 4 596 517 | 25 % / 23 % | 0.45 % |
+| **H = 8, created, a hook writing one slot** | `bench_progress_many_worst_held8_hook` | 31 617 573 | 33 198 452 | **15 060 053** | 24 / 0 | 14 925 509 | 75 % / 75 % | 1.37 % |
+| H = 8, existing, a hook writing one slot | `bench_progress_many_worst_held8_existing_hook` | 31 918 343 | 33 514 261 | 8 628 053 | 8 / 16 | 8 181 509 | 43 % / 41 % | 0.78 % |
+| Grim World's use: 16 entries, 3 quests and a daily contract completing, K ≤ 2 | `game_case_three_per_task` | 81 846 308 | 85 938 624 | 4 553 406 | 6 / 2 | 4 469 558 | 23 % / 22 % | 0.41 % |
 
 All of them are under 20 M, by snforge's prices and by the network's.
 
@@ -67,40 +67,40 @@ All of them are under 20 M, by snforge's prices and by the network's.
 
 | Entrypoint | Case | Benchmark | Test measured | Test budget | Call | Created / overwritten | Network estimate | Reads / events |
 |---|---|---|---|---|---|---|---|---|
-| `progress_many` | §5.1 witness adapted: 16 distinct tasks, 4 held completing, 28 quests per task not held | `quest_batch_bound_accepted` | 557 967 536 | 585 865 913 | 5 710 066 | 8 / 0 | 5 665 218 | 25 / 4 |
-| `progress_many` | 4 held, all completing, 4 entries | `bench_progress_full_list_all_complete` | 14 091 344 | 14 795 912 | 5 269 854 | 8 / 0 | 5 225 006 | 25 / 4 |
-| `progress` | 4 held, one completes | `bench_progress_full_list_one_completes` | 11 017 206 | 11 568 067 | 2 195 716 | 2 / 0 | 2 184 504 | 22 / 1 |
-| `progress` | 4 held, one counts | `bench_progress_full_list_one_counts` | 10 217 276 | 10 728 140 | 1 395 786 | 1 / 0 | 1 390 180 | 16 / 0 |
-| `progress` | 4 held, none in the batch | `bench_progress_full_list_none_counts` | 9 756 566 | 10 244 395 | 935 076 | 0 / 0 | 935 076 | 16 / 0 |
-| `progress` | 1 held, completes | `bench_progress_plain_completing` | 4 224 366 | 4 435 585 | 1 383 196 | 2 / 0 | 1 371 984 | 6 / 1 |
-| `progress` | 1 held, counts | `bench_progress_plain` | 3 679 266 | 3 863 230 | 838 096 | 1 / 0 | 832 490 | 5 / 0 |
-| `progress` | nothing held | `bench_progress_nothing_held` | 2 301 246 | 2 416 309 | 227 106 | 0 / 0 | 227 106 | 2 / 0 |
-| `progress`, event mode | 1 entry | `bench_progress_event_mode` | 1 078 096 | 1 132 001 | 213 166 | 0 / 0 | 213 166 | 1 / 1 |
-| `progress_many`, event mode | 16 distinct entries | `bench_progress_many_event_mode_worst` | 2 126 226 | 2 232 538 | 1 261 296 | 0 / 0 | 1 261 296 | 1 / 16 |
-| `progress_many`, event mode | `[1..=15, 129]`, late collision | `bench_progress_many_event_mode_late_collision` | 2 697 553 | 2 832 431 | 1 832 623 | 0 / 0 | 1 832 623 | 1 / 16 |
-| `progress_many`, event mode | `[1..=15, 15]`, late duplicate | `bench_progress_many_event_mode_late_duplicate` | 2 639 933 | 2 771 930 | 1 775 003 | 0 / 0 | 1 775 003 | 1 / 15 |
-| `accept` | **worst**: grows into a slot never used; K = 7 not cached | `bench_accept_growth` | 30 387 632 | 31 907 014 | 1 899 210 | 2 / 1 | 1 862 892 | 17 / 0 |
-| `accept` | grows back into a slot used before | `bench_accept_regrow` | 9 166 380 | 9 624 699 | 690 420 | 0 / 2 | 640 208 | 8 / 0 |
-| `accept` | mixed list: 2 live weekly, 2 stale daily; K = 7 | `bench_accept_mixed` | 35 269 252 | 37 032 715 | 1 657 340 | 1 / 2 | 1 601 522 | 20 / 0 |
-| `accept` | 4 dead entries completed now, pruned; K = 7 | `bench_accept_worst_completed` | 40 408 396 | 42 428 816 | 1 733 550 | 1 / 2 | 1 677 732 | 22 / 0 |
-| `accept` | 4 entries expired, pruned; K = 7 | `bench_accept_worst_expired` | 35 111 412 | 36 866 983 | 1 571 790 | 1 / 2 | 1 515 972 | 18 / 0 |
-| `accept` | a player's first accept, no prerequisite | `bench_accept_plain` | 2 841 170 | 2 983 229 | 767 030 | 1 / 0 | 761 424 | 3 / 0 |
-| `abandon` | **worst**: first of 4, the others move up | `bench_abandon_worst` | 9 369 410 | 9 837 881 | 547 920 | 0 / 2 | 497 708 | 5 / 0 |
-| `abandon` | the third of 3: slot 1 no longer used, kept | `bench_abandon_shrink` | 7 265 790 | 7 629 080 | 443 860 | 0 / 1 | 418 754 | 4 / 0 |
-| `abandon` | second of 2 | `bench_abandon` | 4 925 680 | 5 171 964 | 415 140 | 0 / 1 | 390 034 | 4 / 0 |
-| `claim` | — | `bench_claim` | 4 588 386 | 4 817 806 | 364 020 | 0 / 2 | 313 808 | 2 / 1 |
-| `define` | 3 tasks, 7 conditions | `bench_define_worst` | 25 140 162 | 26 397 171 | 2 590 440 | 3 / 7 | 2 397 880 | 8 / 1 |
-| `retire` | 7 conditions | `bench_retire_worst` | 26 143 782 | 27 450 972 | 1 003 240 | 0 / 8 | 802 392 | 9 / 1 |
+| `progress_many` | §5.1 witness adapted: 16 distinct tasks, 4 held completing, 28 quests per task not held | `quest_batch_bound_accepted` | 557 956 576 | 585 854 405 | 5 630 846 | 8 / 0 | 5 585 998 | 25 / 4 |
+| `progress_many` | 4 held, all completing, 4 entries | `bench_progress_full_list_all_complete` | 14 080 384 | 14 784 404 | 5 190 634 | 8 / 0 | 5 145 786 | 25 / 4 |
+| `progress` | 4 held, one completes | `bench_progress_full_list_one_completes` | 11 006 246 | 11 556 559 | 2 116 496 | 2 / 0 | 2 105 284 | 22 / 1 |
+| `progress` | 4 held, one counts | `bench_progress_full_list_one_counts` | 10 294 186 | 10 808 896 | 1 404 436 | 1 / 0 | 1 398 830 | 16 / 0 |
+| `progress` | 4 held, none in the batch | `bench_progress_full_list_none_counts` | 9 833 476 | 10 325 150 | 943 726 | 0 / 0 | 943 726 | 16 / 0 |
+| `progress` | 1 held, completes | `bench_progress_plain_completing` | 4 235 616 | 4 447 397 | 1 382 646 | 2 / 0 | 1 371 434 | 6 / 1 |
+| `progress` | 1 held, counts | `bench_progress_plain` | 3 690 516 | 3 875 042 | 837 546 | 1 / 0 | 831 940 | 5 / 0 |
+| `progress` | nothing held | `bench_progress_nothing_held` | 2 300 896 | 2 415 941 | 226 756 | 0 / 0 | 226 756 | 2 / 0 |
+| `progress`, event mode | 1 entry | `bench_progress_event_mode` | 1 077 296 | 1 131 161 | 212 366 | 0 / 0 | 212 366 | 1 / 1 |
+| `progress_many`, event mode | 16 distinct entries | `bench_progress_many_event_mode_worst` | 2 125 426 | 2 231 698 | 1 260 496 | 0 / 0 | 1 260 496 | 1 / 16 |
+| `progress_many`, event mode | `[1..=15, 129]`, late collision | `bench_progress_many_event_mode_late_collision` | 2 696 753 | 2 831 591 | 1 831 823 | 0 / 0 | 1 831 823 | 1 / 16 |
+| `progress_many`, event mode | `[1..=15, 15]`, late duplicate | `bench_progress_many_event_mode_late_duplicate` | 2 639 133 | 2 771 090 | 1 774 203 | 0 / 0 | 1 774 203 | 1 / 15 |
+| `accept` | **worst**: grows into a slot never used; K = 7 not cached | `bench_accept_growth` | 30 512 312 | 32 037 928 | 1 921 540 | 2 / 1 | 1 885 222 | 17 / 0 |
+| `accept` | grows back into a slot used before | `bench_accept_regrow` | 9 250 250 | 9 712 763 | 712 750 | 0 / 2 | 662 538 | 8 / 0 |
+| `accept` | mixed list: 2 live weekly, 2 stale daily; K = 7 | `bench_accept_mixed` | 35 474 152 | 37 247 860 | 1 684 750 | 1 / 2 | 1 628 932 | 20 / 0 |
+| `accept` | 4 dead entries completed now, pruned; K = 7 | `bench_accept_worst_completed` | 40 534 076 | 42 560 780 | 1 760 960 | 1 / 2 | 1 705 142 | 22 / 0 |
+| `accept` | 4 entries expired, pruned; K = 7 | `bench_accept_worst_expired` | 35 316 312 | 37 082 128 | 1 599 200 | 1 / 2 | 1 543 382 | 18 / 0 |
+| `accept` | a player's first accept, no prerequisite | `bench_accept_plain` | 2 852 970 | 2 995 619 | 778 830 | 1 / 0 | 773 224 | 3 / 0 |
+| `abandon` | **worst**: first of 4, the others move up | `bench_abandon_worst` | 9 463 810 | 9 937 001 | 574 060 | 0 / 2 | 523 848 | 5 / 0 |
+| `abandon` | the third of 3: slot 1 no longer used, kept | `bench_abandon_shrink` | 7 327 330 | 7 693 697 | 459 470 | 0 / 1 | 434 364 | 4 / 0 |
+| `abandon` | second of 2 | `bench_abandon` | 4 964 890 | 5 213 135 | 430 750 | 0 / 1 | 405 644 | 4 / 0 |
+| `claim` | — | `bench_claim` | 4 599 636 | 4 829 618 | 364 020 | 0 / 2 | 313 808 | 2 / 1 |
+| `define` | 3 tasks, 7 conditions | `bench_define_worst` | 25 218 912 | 26 479 858 | 2 590 440 | 3 / 7 | 2 397 880 | 8 / 1 |
+| `retire` | 7 conditions | `bench_retire_worst` | 26 222 532 | 27 533 659 | 1 003 240 | 0 / 8 | 802 392 | 9 / 1 |
 | `set_reporter` | a new reporter | `bench_set_reporter` | 1 473 140 | 1 546 797 | 608 210 | 1 / 0 | 602 604 | 0 / 1 |
 | `set_reporter` | a registered reporter revoked: the slot is zeroed | `bench_set_reporter_revoke` | 1 278 670 | 1 342 604 | −194 470 in the test; 207 530 in a transaction of its own | 0 / 1 | 182 424 | 0 / 1 |
 | `set_reporter` | a registered reporter set again, unchanged | `bench_set_reporter_unchanged` | 1 680 470 | 1 764 494 | 207 330 | 0 / 1 | 182 224 | 0 / 1 |
-| `quest_is_unlocked` | K = 7, not cached | `bench_view_is_unlocked_worst` | 39 167 336 | 41 125 703 | 492 490 | — | — | 10 / 0 |
-| `quest_definition` | 3 tasks, 7 conditions | `bench_view_definition_worst` | 38 979 246 | 40 928 209 | 304 400 | — | — | 3 / 0 |
-| `quest_is_accepted` | full list, not held | `bench_view_is_accepted` | 38 992 556 | 40 942 184 | 325 100 | — | — | 4 / 0 |
-| `quest_held` | full list | `bench_view_held_full` | 38 958 296 | 40 906 211 | 291 540 | — | — | 3 / 0 |
-| `quest_progress` + `quest_record` | two calls | `bench_view_progress_and_record` | 38 963 136 | 40 911 293 | 288 290 | — | — | 2 / 0 |
-| `quest_current_interval` | — | `bench_view_current_interval` | 38 835 476 | 40 777 250 | 160 630 | — | — | 1 / 0 |
-| `quest_is_reporter` | — | `bench_view_is_reporter` | 38 799 536 | 40 739 513 | 124 690 | — | — | 1 / 0 |
+| `quest_is_unlocked` | K = 7, not cached | `bench_view_is_unlocked_worst` | 39 265 606 | 41 228 887 | 492 490 | — | — | 10 / 0 |
+| `quest_definition` | 3 tasks, 7 conditions | `bench_view_definition_worst` | 39 077 516 | 41 031 392 | 304 400 | — | — | 3 / 0 |
+| `quest_is_accepted` | full list, not held | `bench_view_is_accepted` | 39 106 066 | 41 061 370 | 332 950 | — | — | 4 / 0 |
+| `quest_held` | full list | `bench_view_held_full` | 39 071 806 | 41 025 397 | 298 690 | — | — | 3 / 0 |
+| `quest_progress` + `quest_record` | two calls | `bench_view_progress_and_record` | 39 061 406 | 41 014 477 | 288 290 | — | — | 2 / 0 |
+| `quest_current_interval` | — | `bench_view_current_interval` | 38 933 746 | 40 880 434 | 160 630 | — | — | 1 / 0 |
+| `quest_is_reporter` | — | `bench_view_is_reporter` | 38 897 806 | 40 842 697 | 124 690 | — | — | 1 / 0 |
 
 ### Slots created and overwritten, per entrypoint
 
@@ -110,18 +110,18 @@ All of them are under 20 M, by snforge's prices and by the network's.
 | `progress_many`, storage mode | none (nothing held counts) | per quest that counts, P created on its first count in the interval, overwritten later; per completion, R created at the first completion, overwritten later | 2H created (8 at H = 4); plus the hooks' own. The held list: never written |
 | `accept` | 1 overwritten (slot 0) | 1 or 2 overwritten; R created when it caches a first unlock | 2 created (a never-used list slot, R) and 1 overwritten (slot 0). A player's first accept creates slot 0 |
 | `abandon` | 1 overwritten | 1 or 2 overwritten | 2 overwritten; a slot the list stops using keeps its `kept` bit, never zeroed |
-| `claim` | 2 writes, 1 changed slot, 1 overwritten (P) when `claims` is saturated: R is rewritten unchanged | 2 overwritten (P, R) | 2 overwritten |
+| `claim` | 2 writes, 2 overwritten, 1 changed slot when `claims` is saturated: only P changes, R is rewritten unchanged | 2 overwritten (P, R) | 2 overwritten |
 | `define` | 2 created (A, B) | 3 created (A, B, C), K overwritten | 3 created, 7 overwritten |
 | `retire` | 1 overwritten | 1 + K overwritten | 8 overwritten |
 | `set_reporter` | 1 write, nothing changed (the value is already set) | 1 created (a new reporter); 1 zeroed (a registered reporter revoked) | 1 created |
 
 **Kept slots** (fix loop 2): a held-list slot is never zeroed once it has held an entry. Growing
-back into it costs 690 420 instead of 1 084 240 (about 640 000 instead of 1 053 500 at the
+back into it costs 712 750 instead of 1 084 240 (about 640 000 instead of 1 053 500 at the
 network's prices). The worst calls are not worse; the reasons are in `GAS.md`.
 
 ## `quiver_quest`: the library
 
-Measured 2026-09-29 at `5a72315`, as written in `packages/quest/GAS.md`
+Measured 2026-09-29 at `21f3066`, as written in `packages/quest/GAS.md`
 (`packages/quest/tests/test_bench.cairo`). A figure includes the test's setup; the function's own
 cost is the benchmark minus its `bench_baseline_*`.
 
@@ -137,7 +137,7 @@ cost is the benchmark minus its `bench_baseline_*`.
 | `held_remove` | 8 entries, the first removed | `bench_held_remove_first` | 46 400 | 48 720 |
 | `held_contains` | absent among 8 | `bench_held_contains_absent` | 41 270 | 43 334 |
 | `held_position` | absent among 8 | `bench_held_position_absent` | 38 570 | 40 499 |
-| `QuestHeldSlot` pack and unpack | both entries' ids and intervals at their maximum | `bench_pack_unpack_held_slot` | 37 500 | 39 375 |
+| `QuestHeldSlot` pack and unpack | every field at its maximum: ids, intervals 2^48 − 1, numbers and the counter 2^30 − 1 | `bench_pack_unpack_held_slot` | 45 730 | 48 017 |
 | `prerequisites_met` | 7 records | `bench_prerequisites_met_seven` | 29 700 | 31 185 |
 | `held_slot` | the last slot of 8 entries | `bench_held_slot_last` | 29 960 | 31 458 |
 
