@@ -1,6 +1,6 @@
 # Status
 
-**2026-09-28 23:58 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-29 00:05 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Where we are
 
@@ -38,14 +38,18 @@ H = 4 held quests per player (8 at most), progress walks the held list, prerequi
 acceptance. **Next: ARC-03c** ([brief](docs/briefs/ARC-03c-quest-held.md)), Opus 5.5, from
 ARC-03b's branch; #7 is superseded and closed when ARC-03c's pull request opens.
 
-**Launcher** ([#8](https://github.com/bal7hazar/quiver/pull/8), CI green, `[GPT-6-Sol]` audit
-waiting for a slot): the budget of 3 counted by the launcher across the three tracks, failing
-closed, and the count and start under the shared lock `~/orchestrator/agent-launch.lock`, ported
-from the game's `scripts/agent.sh` at `e3a2e75` (#48). **Inherited findings**, from the audit of
-the library's port (bal7hazar/hexx-cairo#24), **closed** by the sync with the game's launcher at
-`44586e6` (the count scans /proc for every codex exec; an unreadable, malformed or dangling launch
-record and an unlistable records directory refuse). Until #8 merges, launches go through its
-launcher.
+**Launcher**: [#8](https://github.com/bal7hazar/quiver/pull/8) **merged** (`c1eda41`, CI green on
+`main`), by the project manager's decision although its `[GPT-6-Sol]` audit
+([report](docs/reports/PR-8-audit-gpt-6-sol-1.md)) failed, because `main` counted nothing and took
+no lock before it. It carries the game's launcher reference `44586e6`: the budget counted across
+the three tracks, failing closed, the count and start under `~/orchestrator/agent-launch.lock`.
+**Open, inherited from the game's launcher** (their source; to close when the game's CHANGELOG
+marks the next reference, which replaces the process scan with slot locks held for each agent's
+life): (1) a codex audit just forked, before its exec, reads as a reused pid and is not counted;
+(2) two audits in one working directory count as one; (3) an unreadable `/proc` cmdline is skipped
+(undercount); (4) unreadable working directories overcount. Until then, before each launch the
+orchestrator also looks at the units and the codex processes itself and does not launch within a
+minute of another track's launch.
 
 Budget slip, 22:28 UTC: the orchestrator resumed ARC-03b while three Grim World agents ran (two
 codex audits of the game and the library were counted, then overlooked); it stopped the run
@@ -67,8 +71,8 @@ D-132: no sub-agent publishes; the orchestrator asks the project manager with a
 | Task | Unit | Model asked / ran | Profile | State |
 |---|---|---|---|---|
 | ARC-03b quest component | `quiver-ARC-03b-224458` (resumed) | `claude-opus-5-5` / `claude-opus-5-5` | implement | Closed: superseded by ARC-03c (D-135); report archived |
-| ARC-03c quest held list | — | `claude-opus-5-5` / — | implement | Ready; after the PR-8 audit (cap 1) |
-| PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | Running since 23:44 UTC |
+| ARC-03c quest held list | `quiver-ARC-03c-234905` | `claude-opus-5-5` / `claude-opus-5-5` | implement | Running since 23:49 UTC |
+| PR-8 audit | setsid (codex) | `gpt-6-sol` / `gpt-6-sol` | audit | FAIL (findings in the shared code, inherited); #8 merged by decision |
 | ARC-03b audit | setsid (codex) | `gpt-6-astra` / `gpt-6-astra` | audit | FAIL at 22:27 UTC; to resume on the fixes |
 
 ARC-01 ran on `claude-opus-5-5` (asked and ran), profile `research`, from 19:25
