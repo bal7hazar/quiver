@@ -20,13 +20,16 @@ pub mod QuestComponent {
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
     use crate::constants::{ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, HELD_SLOTS, MAX_HELD};
     use crate::errors;
+    pub use crate::events::index::QuestDefined;
     use crate::interface::{IQuest, IQuestView};
     use crate::logic::{
         Mode, QuestConditions, QuestDefinition, QuestHeld, QuestHeldSlot, QuestProgress,
         QuestRecord, QuestSchedule, QuestTask, QuestTasks, TaskProgress, batch_merge,
-        claim as claim_logic, conditions_span, definition_new, held_contains, held_position,
-        held_remove, held_slot, progress_add, record_complete, schedule_interval_id, tasks_span,
+        claim as claim_logic, held_contains, held_position, held_remove, held_slot, progress_add,
+        record_complete, schedule_interval_id, tasks_span,
     };
+    use crate::models::definition::DefinitionTrait;
+    use crate::store::StoreTrait;
 
     /// Members are prefixed with `Quest_` so that they do not collide in the consumer's storage.
     /// Every value is one felt (layouts in `quiver_quest::logic::types`).
@@ -56,16 +59,6 @@ pub mod QuestComponent {
         QuestClaimed: QuestClaimed,
         QuestRetired: QuestRetired,
         QuestReporterSet: QuestReporterSet,
-    }
-
-    /// Every `define`.
-    #[derive(Drop, PartialEq, Debug, starknet::Event)]
-    pub struct QuestDefined {
-        #[key]
-        pub quest_id: u32,
-        pub schedule: QuestSchedule,
-        pub tasks: Span<QuestTask>,
-        pub conditions: Span<u32>,
     }
 
     /// `Mode::Event` only; one per merged, non-zero entry.
@@ -148,11 +141,11 @@ pub mod QuestComponent {
         impl Hooks: QuestHooksTrait<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Validates (`definition_new`), then refuses `'Quest: already defined'` (retired or
-        /// not), a condition not defined or retired (`'Quest: invalid condition'`), a condition
-        /// with `0xffff` live dependents (`'Quest: too many dependents'`). Writes each
-        /// condition's A (`live_dependents + 1`), A, B, C (only with conditions); emits
-        /// `QuestDefined`. Any number of quests may use a task.
+        /// Validates (`DefinitionTrait::new`), then refuses `'Quest: already defined'` (retired
+        /// or not), a condition not defined or retired (`'Quest: invalid condition'`), a
+        /// condition with `0xffff` live dependents (`'Quest: too many dependents'`). Writes each
+        /// condition's A (`live_dependents + 1`), then the definition through the store (A, B, C
+        /// only with conditions, and `QuestDefined`). Any number of quests may use a task.
         fn define(
             ref self: ComponentState<TContractState>,
             quest_id: u32,
@@ -160,25 +153,19 @@ pub mod QuestComponent {
             tasks: Span<QuestTask>,
             conditions: Span<u32>,
         ) {
-            let (definition, quest_tasks, quest_conditions) = definition_new(
-                quest_id, schedule, tasks, conditions,
-            );
-            assert(!self.Quest_definitions.read(quest_id).defined, errors::ALREADY_DEFINED);
-            // Conditions: at most MAX_CONDITIONS, checked by definition_new
+            let definition = DefinitionTrait::new(quest_id, schedule, tasks, conditions);
+            assert(!self.has_definition(quest_id), errors::ALREADY_DEFINED);
+            // Conditions: at most MAX_CONDITIONS, checked by DefinitionTrait::new. Each one's
+            // status, one read and one write of its A
             for condition in conditions {
                 let condition = *condition;
-                let mut prerequisite = self.Quest_definitions.read(condition);
+                let mut prerequisite = self.get_definition_head(condition);
                 assert(prerequisite.defined && !prerequisite.retired, errors::INVALID_CONDITION);
                 assert(prerequisite.live_dependents != 0xffff, errors::TOO_MANY_DEPENDENTS);
                 prerequisite.live_dependents += 1;
-                self.Quest_definitions.write(condition, prerequisite);
+                self.set_definition_status(condition, prerequisite);
             }
-            self.Quest_definitions.write(quest_id, definition);
-            self.Quest_tasks.write(quest_id, quest_tasks);
-            if definition.condition_count != 0 {
-                self.Quest_conditions.write(quest_id, quest_conditions);
-            }
-            self.emit(QuestDefined { quest_id, schedule, tasks, conditions });
+            self.set_definition(definition);
         }
 
         /// Refuses `'Quest: does not exist'`, `'Quest: retired'`, `'Quest: has live
@@ -187,21 +174,22 @@ pub mod QuestComponent {
         /// entries of the quest become dead: progress skips them, and each player's next `accept`
         /// prunes them.
         fn retire(ref self: ComponentState<TContractState>, quest_id: u32) {
-            let mut definition = self.Quest_definitions.read(quest_id);
+            let mut definition = self.get_definition_head(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
             assert(definition.live_dependents == 0, errors::HAS_LIVE_DEPENDENTS);
             if definition.condition_count != 0 {
-                let conditions = self.Quest_conditions.read(quest_id);
-                for condition in conditions_span(@conditions, definition.condition_count) {
+                let conditions = self
+                    .get_definition_conditions(quest_id, definition.condition_count);
+                for condition in conditions {
                     let condition = *condition;
-                    let mut prerequisite = self.Quest_definitions.read(condition);
+                    let mut prerequisite = self.get_definition_head(condition);
                     prerequisite.live_dependents -= 1;
-                    self.Quest_definitions.write(condition, prerequisite);
+                    self.set_definition_status(condition, prerequisite);
                 }
             }
             definition.retired = true;
-            self.Quest_definitions.write(quest_id, definition);
+            self.set_definition_status(quest_id, definition);
             self.emit(QuestRetired { quest_id });
         }
 
@@ -287,7 +275,7 @@ pub mod QuestComponent {
         /// appends the quest, and writes the slots of the list that changed. The acceptance holds
         /// until completion, abandon, retirement or rollover.
         fn accept(ref self: ComponentState<TContractState>, player_id: felt252, quest_id: u32) {
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
             let time = get_block_timestamp();
@@ -350,7 +338,7 @@ pub mod QuestComponent {
         /// completed). Removes the quest from the held list; the later entries move up. The
         /// counts of the interval are kept.
         fn abandon(ref self: ComponentState<TContractState>, player_id: felt252, quest_id: u32) {
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
             assert(!definition.retired, errors::RETIRED);
             let interval_id =
@@ -401,13 +389,13 @@ pub mod QuestComponent {
         fn definition(
             self: @ComponentState<TContractState>, quest_id: u32,
         ) -> (QuestDefinition, Span<QuestTask>, Span<u32>) {
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
-            let quest_tasks = self.Quest_tasks.read(quest_id);
+            let quest_tasks = self.get_definition_tasks(quest_id);
             let conditions = if definition.condition_count == 0 {
                 array![].span()
             } else {
-                conditions_span(@self.Quest_conditions.read(quest_id), definition.condition_count)
+                self.get_definition_conditions(quest_id, definition.condition_count)
             };
             (definition, tasks_span(@quest_tasks, definition.task_count), conditions)
         }
@@ -431,7 +419,7 @@ pub mod QuestComponent {
 
         /// The interval id now; `None` outside the schedule or for a quest not defined.
         fn current_interval(self: @ComponentState<TContractState>, quest_id: u32) -> Option<u64> {
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             if !definition.defined {
                 return Option::None;
             }
@@ -443,7 +431,7 @@ pub mod QuestComponent {
         fn is_unlocked(
             self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
         ) -> bool {
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             assert(definition.defined, errors::DOES_NOT_EXIST);
             if definition.condition_count == 0
                 || self.Quest_records.read((player_id, quest_id)).unlocked {
@@ -457,7 +445,7 @@ pub mod QuestComponent {
         fn is_accepted(
             self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
         ) -> bool {
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             if !definition.defined || definition.retired {
                 return false;
             }
@@ -499,7 +487,7 @@ pub mod QuestComponent {
             // 1. A; skip a retired quest (a hook of an earlier quest of this call may retire it),
             // then an acceptance of another interval (expired at rollover) or outside the
             // schedule
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             if definition.retired {
                 return false;
             }
@@ -513,7 +501,7 @@ pub mod QuestComponent {
                 return false;
             }
             // 3. B, and every batched count of the quest's tasks at once
-            let quest_tasks = self.Quest_tasks.read(quest_id);
+            let quest_tasks = self.get_definition_tasks(quest_id);
             let (progress, changed, completed) = progress_add(
                 progress, @quest_tasks, definition.task_count, batch,
             );
@@ -567,7 +555,7 @@ pub mod QuestComponent {
             self: @ComponentState<TContractState>, player_id: felt252, entry: QuestHeld, time: u64,
         ) -> bool {
             let QuestHeld { quest_id, interval_id, acceptance: _ } = entry;
-            let definition = self.Quest_definitions.read(quest_id);
+            let definition = self.get_definition_head(quest_id);
             if definition.retired
                 || schedule_interval_id(@definition.schedule, time) != Option::Some(interval_id) {
                 return false;
@@ -673,8 +661,7 @@ pub mod QuestComponent {
             quest_id: u32,
             condition_count: u8,
         ) -> bool {
-            let conditions = self.Quest_conditions.read(quest_id);
-            for condition in conditions_span(@conditions, condition_count) {
+            for condition in self.get_definition_conditions(quest_id, condition_count) {
                 if self.Quest_records.read((player_id, *condition)).completions == 0 {
                     return false;
                 }

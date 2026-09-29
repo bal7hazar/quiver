@@ -119,6 +119,16 @@ All of them are under 20 M, by snforge's prices and by the network's.
 back into it costs 712 750 instead of 1 084 240 (about 640 000 instead of 1 053 500 at the
 network's prices). The worst calls are not worse; the reasons are in `GAS.md`.
 
+## The store of a model (ARC-06, `quiver_quest` Unreleased)
+
+Measured 2026-09-29 at `852f546`, ARC-06 fix loop 1 ([research](research/ARC-06-model-store.md#4-cost), detail in
+[packages/quest/GAS.md](../packages/quest/GAS.md#the-store-and-the-definition-model-arc-06-unreleased)).
+The store costs what the same code costs by hand, for untracked and tracked models, created and
+overwritten slots, and reads: `set` 454 530 created and 52 530 overwritten, plus 45 020 for a
+tracked model's event; `get` 29 420 (against a read-shaped baseline). The quest definition through the store: write 1 652 890
+(1 657 450 by hand), read 130 400 (130 430). `define`'s worst case is 2 583 680 (2 590 440 in the
+table above); the worst calls are unchanged.
+
 ## `quiver_quest`: the library
 
 Measured 2026-09-29 at `21f3066`, as written in `packages/quest/GAS.md`
