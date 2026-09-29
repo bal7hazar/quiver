@@ -18,8 +18,10 @@ Results, storage layout, events and error strings are unchanged.
   `DefinitionStorage` (the model over the slots A, B, C of 0.1.0) and `DefinitionTracked`. Not to
   be confused with `quiver_quest::logic::QuestDefinition`, slot A, unchanged.
 - `quiver_quest::store`: the trait `Tracked<M>` (a tracked model and its event) and `StoreTrait`
-  on the component's state: `get_definition`, `has_definition`, `set_definition`, which emits
-  `QuestDefined`.
+  on the component's state. For the model: `get_definition`, and `set_definition`, which emits
+  `QuestDefined`. Focused reads for the paths that need less than the model: `has_definition`,
+  `get_definition_head` (slot A), `get_definition_tasks` (B), `get_definition_conditions` (C).
+  And `set_definition_status`, which writes the quest's status in A and emits nothing.
 - `quiver_quest::events`: `QuestDefined` is declared in `events::index`, and
   `DefinedTrait::new` builds it from the model. It is still exported as
   `quiver_quest::component::QuestComponent::QuestDefined`, with the same selector, keys and data.
@@ -27,7 +29,9 @@ Results, storage layout, events and error strings are unchanged.
 ### Changed
 
 - `define` validates with `DefinitionTrait::new` and writes through `Store::set_definition`. The
-  checks, their order, the writes and the event are those of 0.1.0. The worst case costs 2 583 680
+  checks, their order, the writes and the event are those of 0.1.0.
+- Every read of a definition slot, and every write of the quest's status, goes through the store.
+  Only the component's code changed; the reads, the writes and their costs are those of 0.1.0. The worst case costs 2 583 680
   L2 gas instead of 2 590 440. Every test that defines a quest is cheaper, and the others are
   unchanged.
 

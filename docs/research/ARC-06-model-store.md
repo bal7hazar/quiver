@@ -7,7 +7,8 @@
 | Rule | [CAIRO.md](../CAIRO.md) §7 and §8 (the owner's rule D-143) |
 | Reference | `cartridge-gg/arcade` at `c53fadc`, `packages/quest/src/`: `models/definition.cairo`, `models/index.cairo`, `store.cairo`, `events/` |
 | Reference model | [`packages/quest/src/models/definition.cairo`](../../packages/quest/src/models/definition.cairo), with [`models/index.cairo`](../../packages/quest/src/models/index.cairo), [`events/`](../../packages/quest/src/events/) and [`store.cairo`](../../packages/quest/src/store.cairo) |
-| Figures | [`packages/quest/GAS.md`](../../packages/quest/GAS.md#the-store-and-the-definition-model-arc-06-unreleased), snforge 0.61, L2 gas, commit `0227486` |
+| Figures | [`packages/quest/GAS.md`](../../packages/quest/GAS.md#the-store-and-the-definition-model-arc-06-unreleased), snforge 0.61, L2 gas, commit `852f546` (fix loop 1) |
+| Fix loop 1 | The audits of GPT-6-Sol (organisation) and GPT-6-Astra (cost): §1.2, §1.3, §1.4, §4, §5 and §6 changed or added |
 
 **Summary.**
 
@@ -16,11 +17,21 @@
   compile time; nothing is looked up at run time.
 - **The component's state is the store.** `StoreTrait` is implemented on the component's
   `ComponentState`; nothing is built. `set_x` writes the model. For a tracked model only, it then
-  emits `Tracked::event(@model)` through `HasComponent::emit`. A `set_x` that emits for a model
-  with no `Tracked` impl does not compile.
+  emits `Tracked::event(@model)` through `HasComponent::emit`.
+- **What the compiler enforces, and what it does not.** The compiler fixes each tracked model's
+  one event type, and refuses `Tracked::event` for a model without the impl. It does not force a
+  tracked `set_x` to emit, nor prevent a double emit or a hand-written emit in an untracked
+  setter: that is the convention, checked by one test per model (§1.2, §1.4).
+- **Every read of definition data goes through the store.** Paths that need less than the model
+  use focused methods named for what they return: `get_definition_head` (slot A),
+  `get_definition_tasks` (B), `get_definition_conditions` (C). The quest's status is written by
+  `set_definition_status`. Every benchmark of the component is the same to the unit.
 - **Cost.** The store costs **exactly** what the same code costs by hand, to the unit of gas. This
   holds for an untracked and a tracked model, for a created and an overwritten slot, and for a
   read. A tracked `set` costs the untracked `set` plus 45 020, which is the event.
+- **A tracked model holds every field its event carries** (§6). For the achievement's `points`,
+  that is 16 free bits of a slot written anyway: +200 on a created `set`, measured on an
+  equivalent model.
 - **The model is passed to `set_x` by value.** Passing it by snapshot costs 3 steps more.
 - **The quest definition is one model over the three slots of 0.1.0**, whose layout is
   unchanged. Writing it through the store is 4 560 cheaper than 0.1.0's code. `define` is 6 760
@@ -66,24 +77,62 @@ is the store:
 #[generate_trait]
 pub impl StoreImpl<TContractState, +HasComponent<TContractState>, +Drop<TContractState>>
     of StoreTrait<TContractState> {
+    // The model
     fn get_definition(self: @ComponentState<TContractState>, id: u32) -> QuestDefinition { … }
-    fn has_definition(self: @ComponentState<TContractState>, id: u32) -> bool { … }
     fn set_definition(ref self: ComponentState<TContractState>, definition: QuestDefinition) {
         // the writes of the model, then, because it is tracked:
         HasComponent::emit(ref self, Tracked::event(@definition));
     }
+    // Focused reads, named for what they return, for paths that need less than the model
+    fn has_definition(self: @…, id: u32) -> bool { … }                                   // A
+    fn get_definition_head(self: @…, id: u32) -> DefinitionHead { … }                    // A
+    fn get_definition_tasks(self: @…, id: u32) -> QuestTasks { … }                       // B
+    fn get_definition_conditions(self: @…, id: u32, condition_count: u8) -> Span<u32> { … } // C
+    // The quest's status in A, untracked (§1.3)
+    fn set_definition_status(ref self: …, id: u32, head: DefinitionHead) { … }
 }
 ```
+
+`DefinitionHead` is slot A of 0.1.0 (`quiver_quest::logic::QuestDefinition`): the definition's
+schedule and counts, and the quest's status. Since fix loop 1 **the component reads and writes no
+definition slot by hand**:
+
+| Path | Store method | Slots |
+|---|---|---|
+| `define`: presence | `has_definition` | A |
+| `define`: each prerequisite's status | `get_definition_head`, `set_definition_status` | A of the prerequisite: 1 read, 1 write |
+| `define`: the definition | `set_definition` | A, B, C (with conditions), `QuestDefined` |
+| `retire` | `get_definition_head`, `get_definition_conditions`, `set_definition_status` | A; C with conditions; A of each prerequisite |
+| `accept`, `abandon`, `progress_many` (per held quest), `held_is_live`, `is_unlocked`, `is_accepted`, `current_interval` | `get_definition_head` | A, once |
+| `progress_many`: the tasks of a held quest | `get_definition_tasks` | B |
+| `prerequisites_are_met` | `get_definition_conditions` | C |
+| the view `quest_definition` | `get_definition_head`, `get_definition_tasks`, `get_definition_conditions` | A, B, C with conditions: the reads of 0.1.0 |
+
+The focused methods keep the reads of 0.1.0: every benchmark of the component is the same to the
+unit as before fix loop 1 (`GAS.md`). The view returns slot A with its status, so it reads the
+head rather than the model; `get_definition` is the model's read.
 
 Inside the component, a call is `self.set_definition(definition)`. An untracked model's `set_x` is
 the write alone (`MockModels::set_plain` in the tests).
 
-What the compiler guarantees: `Tracked::event(@model)` resolves only for a model with a `Tracked`
-impl, so an untracked model cannot emit. Cairo also requires the impl to be imported where it is
-used, so the imports of `store.cairo` name the tracked models.
+**What the compiler enforces:**
 
-What it does not guarantee: that a tracked model's `set_x` does emit. One test per model covers
-this (§1.4).
+- a tracked model has exactly one event type, its `Tracked` impl's `Event`;
+- `Tracked::event(@x)` does not compile for a model without the impl;
+- the impl must be imported where it is used, so the imports of `store.cairo` name the tracked
+  models.
+
+**What it does not enforce, and the convention and the tests do:**
+
+- that a tracked model's `set_x` emits at all: `set_x` could forget the call;
+- that it emits once: a second `emit` compiles;
+- that an untracked model's `set_x` emits nothing: a hand-written `emit` of any event compiles.
+
+The convention: a tracked `set_x` ends with the one line `HasComponent::emit(ref self,
+Tracked::event(@x))`, and no other `set_x` calls `emit`. The check each package needs is one test
+per model. For a tracked model, its `set_x` emits exactly its event once per write: created,
+changed, and rewritten unchanged. For an untracked model, its `set_x` emits nothing (§1.4). The
+store's doc comment says the same.
 
 ### 1.3 A model over several slots
 
@@ -97,7 +146,7 @@ Three options were considered.
 
 | Option | Verdict |
 |---|---|
-| **One model over A, B, C** (`QuestDefinition { id, schedule, tasks, conditions }`, arcade's shape), `DefinitionStorage::into_slots` and `from_slots` | **Chosen.** `get_definition` reads A, then B, then C only with conditions: as 0.1.0's view. `set_definition` writes C only with conditions: as 0.1.0's `define`. Reads 69 210 against 69 240 by hand; writes 1 652 890 against 1 657 450 |
+| **One model over A, B, C** (`QuestDefinition { id, schedule, tasks, conditions }`, arcade's shape), `DefinitionStorage::into_slots` and `from_slots` | **Chosen.** `get_definition` reads A, then B, then C only with conditions: as 0.1.0's view. `set_definition` writes C only with conditions: as 0.1.0's `define`. Reads 130 400 against 130 430 by hand; writes 1 652 890 against 1 657 450 |
 | One model per slot (A, B, C) | Rejected. `QuestDefined` carries all three, so it would be the event of none of them, and a tracked model must emit its own event on every write |
 | One model that includes the status (`retired`, `live_dependents`) | Rejected. A tracked model emits on every write. In 0.1.0, A's status is written by `retire`, which emits `QuestRetired`, and by the `define` of every dependent quest (`live_dependents + 1`), which emits nothing. Tracking the status with `QuestDefined` would add events that 0.1.0 does not emit |
 
@@ -113,10 +162,28 @@ The storage conversion reuses the packings of 0.1.0 (`QuestDefinitionPacking`,
 `definition_new`, for 1 to 3 tasks and 0 to 7 conditions (`definition_storage_is_the_layout_of_0_1_0`).
 The store also writes exactly 0.1.0's felts (`store_set_definition_writes_the_slots_of_0_1_0`).
 
-**For ARC-07**, the status becomes its own untracked model over A. It must be read and written
-as the whole of A (one read, one write, as 0.1.0 does), with the definition's bits written back
-unchanged. Writing only the status bits would need a second read of A, because a storage write
-sets a whole felt (§4, question 1).
+**The status in ARC-06.** It stays outside the definition model, and is read and written through
+the store:
+
+- `get_definition_head` returns A, status included, in one read;
+- `set_definition_status` writes A back with a changed status. It is untracked and emits nothing
+  (`store_status_write_emits_nothing_and_keeps_the_definition`);
+- `retire` emits `QuestRetired` itself, as an action event (§6).
+
+**How ARC-07 models it.** A model `QuestStatus { id, defined, retired, live_dependents }`,
+untracked, **sharing slot A with the definition**. Slot A is then the storage of two models: the
+definition's schedule and counts, written once by `set_definition`, and the status, written by a
+dependent's `define` and by `retire`. The rules:
+
+1. **Slot A is read once per path.** A path that needs the schedule and the status (`accept`,
+   `progress_many`, `retire`) reads A once and gets both, as `get_definition_head` does now.
+   Reading the status and the definition's head separately would double that read.
+2. **The status is written as the whole of A, from the A that was read**, with the definition's
+   bits written back unchanged, in one write. Writing the status bits alone would need a second
+   read of A, about 30 000 per prerequisite in `define` and `retire`, because a storage write
+   sets a whole felt.
+3. **The status is untracked.** Its writes emit nothing; `retire` emits `QuestRetired` as an
+   action event.
 
 **Presence.** `get_definition` of a quest not defined reads A alone and returns a model with no
 task. The `define` check uses `has_definition`, which reads A alone. It is cheaper on every path
@@ -126,14 +193,15 @@ than `get_definition(..).assert_does_not_exist()` (§2.3).
 
 | Property | Checked by |
 |---|---|
-| An untracked `set` emits nothing | `store_untracked_set_emits_nothing` (created, overwritten, rewritten unchanged: 0 events) |
-| A tracked `set` emits exactly its event on every write | `store_tracked_set_emits_its_event_on_every_write` (4 writes: overwritten, created, changed, rewritten unchanged; 4 events with their keys and data); `store_set_definition_emits_quest_defined_once`; `test_component_events` (0.1.0's keys and data of `QuestDefined`, unchanged) |
-| The store writes and reads what the hand writes | `store_writes_what_the_hand_writes`, `store_set_definition_writes_the_slots_of_0_1_0`, `store_get_definition_reads_the_model_back` |
+| An untracked `set` emits nothing | `store_untracked_set_emits_nothing` (created, overwritten, rewritten unchanged: 0 events); the quest's status: `store_status_write_emits_nothing_and_keeps_the_definition` |
+| A tracked `set` emits exactly its event on every write | `store_tracked_set_emits_its_event_on_every_write` (4 writes: overwritten, created, changed, rewritten unchanged; 4 events with their keys and data); `store_set_definition_emits_quest_defined_once` (1 event after one write, 2 after two); `test_component_events` (0.1.0's keys and data of `QuestDefined`, unchanged) |
+| The store writes and reads what the hand writes | `store_writes_what_the_hand_writes`, `store_set_definition_writes_the_slots_of_0_1_0`, `store_get_definition_reads_the_model_back`, `store_focused_reads_return_the_slots` |
 | The model's checks, their order and strings are those of 0.1.0 | `test_model_definition` (`definition_rejects_*`, `definition_errors_are_those_of_0_1_0`) and the component's existing tests, all passing unchanged |
 | The model's behaviour | `definition_schedule_matches_the_oracle`: `is_active` and `interval_id` against `schedule_is_active` and `schedule_interval_id` (8 schedules × 17 times) |
 
 For an auditor (§8.3), `grep -n "of Tracked<"` lists the tracked models. Every `set_x` of those
-models must call `Tracked::event`, and no other `set_x` may emit.
+models must call `Tracked::event` once, and no other `set_x` may call `emit`. The tests above
+are the check the compiler does not make.
 
 ## 2. Options considered
 
@@ -194,13 +262,22 @@ indexer reads events, not traits. If a shared package is later wanted, `quiver_m
 4. `store.cairo`: `Tracked`, then `StoreImpl` on `ComponentState`. It has `get_x`, `set_x`
    (model by value), and `has_x` when presence is cheaper than the model. A tracked `set_x` ends
    with `HasComponent::emit(ref self, Tracked::event(@x))`. Every function is `#[inline]`.
-5. Tests: per model, a tracked `set` emits exactly its event on every write, or an untracked `set`
-   emits nothing; the model's checks in order; the storage against its layout.
+5. Tests: per tracked model, its `set_x` emits exactly its event once per write; per untracked
+   model, its `set_x` emits nothing; the model's checks in order; the storage against its layout.
+6. Focused reads, named for what they return (`get_definition_head`), where a path needs less
+   than the model, so that no path reads more than 0.1.0 did.
+7. A tracked model holds every field its event carries (§6).
 
 ## 4. Cost
 
-From the table of `packages/quest/GAS.md` (commit `0227486`). A cost is the benchmark minus its
+From the table of `packages/quest/GAS.md` (commit `852f546`). A cost is the benchmark minus its
 baseline, both through a dispatcher.
+
+Since fix loop 1, reads are measured against baselines of the same shape: an id in, a value
+out, asserted (`baseline_models_get`, `baseline_definition_read`). Before, they were measured
+against write-shaped no-ops, which gave 32 590 for `get`, and 69 240 and 69 210 for the
+definition's read. Those absolute figures were wrong; the comparison between hand and store was
+not.
 
 | Operation | Slot | By hand | Store | Store − hand |
 |---|---|---|---|---|
@@ -208,9 +285,10 @@ baseline, both through a dispatcher.
 | `set`, untracked | overwritten | 52 530 | 52 530 | 0 |
 | `set`, tracked (write + event) | created | 499 550 | 499 550 | 0 |
 | `set`, tracked (write + event) | overwritten | 97 550 | 97 550 | 0 |
-| `get` | existing | 32 590 | 32 590 | 0 |
+| `get` | existing | 29 420 | 29 420 | 0 |
 | quest definition, write (3 tasks, 7 conditions; A, B, C created; `QuestDefined`) | created | 1 657 450 | 1 652 890 | −4 560 |
-| quest definition, read (A, B, C) | existing | 69 240 | 69 210 | −30 |
+| quest definition, read (A, B, C) | existing | 130 430 | 130 400 | −30 |
+| `set` untracked, a third field (u16) in free bits | created | — | 454 730 | +200 against two fields |
 
 The tracked `set` minus the untracked `set` is 45 020, created or overwritten: the event, and
 nothing else.
@@ -222,19 +300,63 @@ nothing else.
 | `progress_many`, H = 8, created | 11 430 213 | 11 430 213 |
 | `retire`, 7 conditions | 1 003 240 | 1 003 240 |
 
-No test of the package is more expensive than in 0.1.0's table; no budget was raised.
+No test of the package is more expensive than in 0.1.0's table. After fix loop 1, every test is
+the same to the unit as at `0227486`, except one test that was extended to write twice. Its
+budget was raised, with its `// gas: raised` note.
 
 ## 5. Questions for ARC-07
 
-1. **The status model over A.** It could be read and written as the whole of A, with the
-   definition's bits written back unchanged: 1 read, 1 write, as 0.1.0 does. The other way is to
-   write the status bits only, which needs an extra read, about 30 000 per prerequisite in
-   `define` and `retire`. The first is recommended.
+1. **The status model over A**: as §1.3 says, sharing slot A with the definition, read once,
+   written as the whole of A.
 2. **The name `QuestDefinition`.** It is now two types: the model
    (`quiver_quest::models::definition::QuestDefinition`) and slot A of 0.1.0
    (`quiver_quest::logic::QuestDefinition`, public, returned by the view `quest_definition`).
    ARC-07 should rename slot A to the status model.
-3. **The view `definition()`** still reads its slots by hand, since it returns slot A with its
-   status. Through the store, it would become `get_definition` plus the status model.
+3. **The view `definition()`** reads through the store's focused methods, because it returns
+   slot A with its status. With the status model, it becomes one read of A, plus B and C.
 4. **`QuestRetired` and the other events of the component** are not model events. They stay
-   events of actions, like arcade's `store.complete`, emitted by the store without a model.
+   events of actions, like arcade's `store.complete`, emitted by the store without a model (§6).
+5. **The cost audit's notes** (GPT-6-Astra, fix loop 1):
+   - **Keep selective reads.** Read B only for a held quest, C only with conditions, R only on
+     completion. No path reads a whole model it does not need.
+   - **Read slot A once** when the status model is added (§1.3, rule 1).
+   - **Distinguish model writes from action events.** The prerequisites' counter and partial
+     progress emit nothing today, and must not start to. Tracking progress or the record must
+     not add events, nor duplicate `QuestCompleted` (§6).
+
+## 6. Events that carry a field not stored, and the other models (fix loop 1)
+
+**The case.** `quiver_achievement` 0.1.0 emits `AchievementDefined { achievement_id, window,
+tasks, points }`, but does not store `points`. Its slot A holds `start`, `end`, `task_count`,
+`defined`, `retired` and `t0`; bits [196, 252) are reserved. A definition read back by `get_x`
+therefore cannot produce its event: `Tracked::event(@model)` cannot build it from the model.
+
+**Two ways**, and the choice:
+
+| Rule | Verdict |
+|---|---|
+| **A tracked model holds every field its event carries** | **Chosen.** The event is then a function of the model, so a model read back and written again produces the same event, as a Dojo world's `write_model` does. `Tracked::event(@x)` needs nothing else. For achievements, `points` (u16) goes in 16 free bits of slot A, [196, 212), which `define` writes anyway: no extra slot. Measured here on an equivalent model, a third u16 field in the free bits of a one-felt model (`bench_store_set_wide_created`): **+200** on a created `set`, 2 steps of packing. `quiver_achievement` is outside this task's allowlist; ARC-07 measures its `define` with the field |
+| `Tracked::event` takes what the store does not hold (`fn event(self: @M, extra: …)`) | Rejected. The event would no longer be a function of the model, the signature of `Tracked` would differ per model, and a model rewritten by another path could not emit its event |
+
+**The rule for any model** whose event carries a field it does not store:
+
+1. **Store the field in the model**, in free bits of a slot the model writes anyway, when there
+   are free bits. The cost is the packing, a few steps.
+2. **When there are no free bits** and the field would need a slot of its own (459 106 to
+   create), **the event is not the model's**. The model is untracked, and the entrypoint emits
+   that event as an **action event**, through a store method named for the action (arcade's
+   `store.complete`), with the reason written next to it.
+
+**Every other model of both packages**, against the convention:
+
+| Model (package, slot) | Written by | Events today | Fits as |
+|---|---|---|---|
+| Quest definition (`quiver_quest`, A's head, B, C) | `define` | `QuestDefined`, on every write | **Tracked** (this task) |
+| Quest status (`quiver_quest`, A's `defined`, `retired`, `live_dependents`) | `define` (sets `defined`, and a dependent's `+1`), `retire` (sets `retired`, and the prerequisites' `−1`) | `QuestRetired` on `retire` only; nothing on the counter | **Untracked**, sharing slot A (§1.3). `QuestRetired` is an action event |
+| Quest progress P (`quiver_quest`, per player, quest, interval) | `progress_many` (every count), `claim` | `QuestCompleted` on completion only, `QuestClaimed` on claim; nothing on a partial count | **Untracked**. Tracking it would emit on every partial count, which 0.1.0 does not do. `QuestCompleted` and `QuestClaimed` stay action events, emitted once |
+| Quest record R (`quiver_quest`, per player, quest) | completion, `claim`, the unlock cached by `accept` | `QuestCompleted` and `QuestClaimed` (the same actions as P); nothing on the unlock | **Untracked**. Tracking it would duplicate `QuestCompleted`, since P and R are written by the same completion, and add an event on the unlock |
+| Held list (`quiver_quest`, per player, slot) | `accept`, `abandon` | none | **Untracked**: nothing is indexed |
+| Quest reporters (`quiver_quest`) | `set_reporter` | `QuestReporterSet { reporter, allowed }`, on every write | **Tracked**: the event carries the key and the one stored value, on every write |
+| Achievement definition (`quiver_achievement`, A, B) | `define`, `retire` | `AchievementDefined` (with `points`, not stored); `AchievementRetired` | **Tracked**, once `points` is stored in A's free bits (rule 1). Its `retired` bit is status: an untracked status sharing A, as for quests, with `AchievementRetired` as an action event |
+| Achievement reporters (`quiver_achievement`) | `set_reporter` | `AchievementReporterSet`, on every write | **Tracked**, as quest reporters |
+| Achievement progress (`quiver_achievement`, event mode only) | nothing stored | `AchievementProgressed` | Not a model: an action event |
