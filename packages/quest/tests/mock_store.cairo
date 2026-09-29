@@ -4,7 +4,7 @@
 //! benchmark sets the one against the other. And `MockDefinitionStore`, which embeds
 //! `QuestComponent` to set the quest definition's store against the hand-written code of 0.1.0.
 
-use quiver_quest::logic::{QuestDefinition as DefinitionSlot, QuestSchedule, QuestTask};
+use quiver_quest::logic::{QuestDefinition as DefinitionSlot, QuestSchedule, QuestTask, QuestTasks};
 use quiver_quest::models::definition::QuestDefinition;
 use quiver_quest::store::Tracked;
 use starknet::storage_access::StorePacking;
@@ -44,6 +44,39 @@ pub impl ValuesPacking of StorePacking<Values, felt252> {
     }
 }
 
+/// `Values` and a third field in its free bits: `c` [128, 144). For the cost of storing one more
+/// field in a slot that is written anyway (ARC-06 fix loop 1, point 2).
+#[derive(Drop, Copy, Serde, PartialEq, Debug)]
+pub struct Wide {
+    pub id: u32,
+    pub a: u64,
+    pub b: u64,
+    pub c: u16,
+}
+
+#[derive(Drop, Copy, Serde, PartialEq, Debug)]
+pub struct WideValues {
+    pub a: u64,
+    pub b: u64,
+    pub c: u16,
+}
+
+pub impl WideValuesPacking of StorePacking<WideValues, felt252> {
+    fn pack(value: WideValues) -> felt252 {
+        value.a.into()
+            + value.b.into() * 0x10000000000000000
+            + value.c.into() * 0x100000000000000000000000000000000
+    }
+
+    fn unpack(value: felt252) -> WideValues {
+        let value: u256 = value.into();
+        let (b, a) = DivRem::div_rem(value.low, 0x10000000000000000);
+        WideValues {
+            a: a.try_into().unwrap(), b: b.try_into().unwrap(), c: value.high.try_into().unwrap(),
+        }
+    }
+}
+
 #[derive(Drop, PartialEq, Debug, starknet::Event)]
 pub struct LoggedSet {
     #[key]
@@ -64,12 +97,13 @@ pub impl LoggedTracked of Tracked<Logged> {
 #[starknet::component]
 pub mod ModelsComponent {
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
-    use super::{LoggedSet, Values};
+    use super::{LoggedSet, Values, WideValues};
 
     #[storage]
     pub struct Storage {
         pub Mock_plain: Map<u32, Values>,
         pub Mock_logged: Map<u32, Values>,
+        pub Mock_wide: Map<u32, WideValues>,
     }
 
     #[event]
@@ -103,7 +137,7 @@ pub mod ModelsComponent {
 pub mod models_store {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use super::ModelsComponent::{ComponentState, HasComponent};
-    use super::{Logged, LoggedTracked, Plain, Tracked, Values};
+    use super::{Logged, LoggedTracked, Plain, Tracked, Values, Wide, WideValues};
 
     #[generate_trait]
     pub impl StoreImpl<
@@ -127,6 +161,12 @@ pub mod models_store {
             Logged { id, a, b }
         }
 
+        /// Untracked, three fields in one felt.
+        #[inline]
+        fn set_wide(ref self: ComponentState<TContractState>, wide: Wide) {
+            self.Mock_wide.write(wide.id, WideValues { a: wide.a, b: wide.b, c: wide.c });
+        }
+
         /// Tracked: the write, then its event.
         #[inline]
         fn set_logged(ref self: ComponentState<TContractState>, logged: Logged) {
@@ -139,6 +179,10 @@ pub mod models_store {
 #[starknet::interface]
 pub trait IMockModels<TState> {
     fn noop(ref self: TState, id: u32, a: u64, b: u64);
+    /// The baseline of the reads: an id in, a value out.
+    fn noop_get(self: @TState, id: u32) -> (u64, u64);
+    fn noop_wide(ref self: TState, id: u32, a: u64, b: u64, c: u16);
+    fn store_set_wide(ref self: TState, id: u32, a: u64, b: u64, c: u16);
     fn hand_set_plain(ref self: TState, id: u32, a: u64, b: u64);
     fn store_set_plain(ref self: TState, id: u32, a: u64, b: u64);
     fn hand_set_logged(ref self: TState, id: u32, a: u64, b: u64);
@@ -151,7 +195,7 @@ pub trait IMockModels<TState> {
 #[starknet::contract]
 pub mod MockModels {
     use super::models_store::StoreTrait;
-    use super::{IMockModels, Logged, ModelsComponent, Plain};
+    use super::{IMockModels, Logged, ModelsComponent, Plain, Wide};
 
     component!(path: ModelsComponent, storage: models, event: ModelsEvent);
 
@@ -173,6 +217,16 @@ pub mod MockModels {
     #[abi(embed_v0)]
     impl MockModelsImpl of IMockModels<ContractState> {
         fn noop(ref self: ContractState, id: u32, a: u64, b: u64) {}
+
+        fn noop_get(self: @ContractState, id: u32) -> (u64, u64) {
+            (1, 1)
+        }
+
+        fn noop_wide(ref self: ContractState, id: u32, a: u64, b: u64, c: u16) {}
+
+        fn store_set_wide(ref self: ContractState, id: u32, a: u64, b: u64, c: u16) {
+            self.models.set_wide(Wide { id, a, b, c });
+        }
 
         fn hand_set_plain(ref self: ContractState, id: u32, a: u64, b: u64) {
             self.models.hand_set_plain(id, a, b);
@@ -240,6 +294,17 @@ pub trait IMockDefinitionStore<TState> {
     /// The benchmarks' reads: the same as the two above, returning one number.
     fn hand_read_definition(self: @TState, quest_id: u32) -> u32;
     fn store_read_definition(self: @TState, quest_id: u32) -> u32;
+    /// The baseline of the reads: an id in, a value out.
+    fn noop_read_definition(self: @TState, quest_id: u32) -> u32;
+    /// The store's focused reads and the status write.
+    fn store_get_definition_head(self: @TState, quest_id: u32) -> DefinitionSlot;
+    fn store_get_definition_tasks(self: @TState, quest_id: u32) -> QuestTasks;
+    fn store_get_definition_conditions(
+        self: @TState, quest_id: u32, condition_count: u8,
+    ) -> Span<u32>;
+    fn store_set_definition_status(
+        ref self: TState, quest_id: u32, retired: bool, live_dependents: u16,
+    );
 }
 
 #[starknet::contract]
@@ -247,7 +312,7 @@ pub mod MockDefinitionStore {
     use quiver_quest::component::QuestComponent;
     use quiver_quest::component::QuestComponent::QuestDefined;
     use quiver_quest::logic::{
-        QuestDefinition as DefinitionSlot, QuestSchedule, QuestTask, conditions_span,
+        QuestDefinition as DefinitionSlot, QuestSchedule, QuestTask, QuestTasks, conditions_span,
         definition_new, tasks_span,
     };
     use quiver_quest::models::definition::{DefinitionTrait, QuestDefinition};
@@ -345,6 +410,35 @@ pub mod MockDefinitionStore {
         fn store_read_definition(self: @ContractState, quest_id: u32) -> u32 {
             let definition = self.quest.get_definition(quest_id);
             definition.schedule.duration + definition.tasks.len() + definition.conditions.len()
+        }
+
+        fn noop_read_definition(self: @ContractState, quest_id: u32) -> u32 {
+            70
+        }
+
+        fn store_get_definition_head(self: @ContractState, quest_id: u32) -> DefinitionSlot {
+            self.quest.get_definition_head(quest_id)
+        }
+
+        fn store_get_definition_tasks(self: @ContractState, quest_id: u32) -> QuestTasks {
+            self.quest.get_definition_tasks(quest_id)
+        }
+
+        fn store_get_definition_conditions(
+            self: @ContractState, quest_id: u32, condition_count: u8,
+        ) -> Span<u32> {
+            self.quest.get_definition_conditions(quest_id, condition_count)
+        }
+
+        fn store_set_definition_status(
+            ref self: ContractState, quest_id: u32, retired: bool, live_dependents: u16,
+        ) {
+            let head = self.quest.get_definition_head(quest_id);
+            self
+                .quest
+                .set_definition_status(
+                    quest_id, DefinitionSlot { retired, live_dependents, ..head },
+                );
         }
     }
 }

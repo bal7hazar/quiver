@@ -124,16 +124,16 @@ pub impl DefinitionStorage of DefinitionStorageTrait {
             live_dependents: 0,
         };
         let slot_b = QuestTasks {
-            t0: task_at(tasks, 0), t1: task_at(tasks, 1), t2: task_at(tasks, 2),
+            t0: tasks.task_or_zero(0), t1: tasks.task_or_zero(1), t2: tasks.task_or_zero(2),
         };
         let slot_c = QuestConditions {
-            q0: id_at(conditions, 0),
-            q1: id_at(conditions, 1),
-            q2: id_at(conditions, 2),
-            q3: id_at(conditions, 3),
-            q4: id_at(conditions, 4),
-            q5: id_at(conditions, 5),
-            q6: id_at(conditions, 6),
+            q0: conditions.id_or_zero(0),
+            q1: conditions.id_or_zero(1),
+            q2: conditions.id_or_zero(2),
+            q3: conditions.id_or_zero(3),
+            q4: conditions.id_or_zero(4),
+            q5: conditions.id_or_zero(5),
+            q6: conditions.id_or_zero(6),
         };
         (slot_a, slot_b, slot_c)
     }
@@ -241,21 +241,24 @@ pub impl DefinitionAssert of AssertTrait {
     }
 }
 
-// Helpers: the entry of a span at an index, or zero; no type owns them, and a trait would add
-// nothing but a name (D-143, "a free function remains only where no type owns it").
-
-#[inline(always)]
-fn task_at(tasks: Span<QuestTask>, index: u32) -> QuestTask {
-    match tasks.get(index) {
-        Option::Some(task) => *task.unbox(),
-        Option::None => NO_TASK,
+/// For `DefinitionStorage::into_slots` only: the entry of a span at an index, or zero, the
+/// value of an unused entry of B or C. Private to this file, and called as a method of the span
+/// (`tasks.task_or_zero(1)`), so that no free function remains (fix loop 1, point 4).
+#[generate_trait]
+impl SlotEntries of SlotEntriesTrait {
+    #[inline(always)]
+    fn task_or_zero(self: Span<QuestTask>, index: u32) -> QuestTask {
+        match self.get(index) {
+            Option::Some(task) => *task.unbox(),
+            Option::None => NO_TASK,
+        }
     }
-}
 
-#[inline(always)]
-fn id_at(ids: Span<u32>, index: u32) -> u32 {
-    match ids.get(index) {
-        Option::Some(id) => *id.unbox(),
-        Option::None => 0,
+    #[inline(always)]
+    fn id_or_zero(self: Span<u32>, index: u32) -> u32 {
+        match self.get(index) {
+            Option::Some(id) => *id.unbox(),
+            Option::None => 0,
+        }
     }
 }

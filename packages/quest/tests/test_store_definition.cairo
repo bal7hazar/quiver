@@ -44,8 +44,9 @@ fn slots(store: IMockDefinitionStoreDispatcher, quest_id: u32) -> (felt252, felt
 
 // Behaviour
 
+// gas: raised, the test now writes a second definition, to show one event per write (fix loop 1)
 #[test]
-#[available_gas(l2_gas: 1985802)]
+#[available_gas(l2_gas: 3256575)]
 fn store_set_definition_emits_quest_defined_once() {
     let store = deploy();
     let mut spy = spy_events();
@@ -55,6 +56,9 @@ fn store_set_definition_emits_quest_defined_once() {
         );
     let events = spy.get_events().events;
     assert!(events.len() == 1);
+    // Exactly once per write
+    store.store_set_definition(2, one_off(), array![task(8, 5)].span(), array![].span());
+    assert!(spy.get_events().events.len() == 2);
     let (from, defined) = events.at(0);
     assert!(*from == store.contract_address);
     // The keys and data of 0.1.0 (`test_component_events`)
@@ -133,9 +137,9 @@ fn defined() -> IMockDefinitionStoreDispatcher {
 }
 
 #[test]
-#[available_gas(l2_gas: 2265753)]
-fn baseline_definition_defined() {
-    defined().noop(1, worst_schedule(), worst_tasks(), worst_conditions());
+#[available_gas(l2_gas: 2201504)]
+fn baseline_definition_read() {
+    assert!(defined().noop_read_definition(1) == 70);
 }
 
 #[test]
@@ -148,4 +152,40 @@ fn bench_hand_get_definition_worst() {
 #[available_gas(l2_gas: 2338424)]
 fn bench_store_get_definition_worst() {
     assert!(defined().store_read_definition(1) == 70);
+}
+
+// The focused reads and the status write (fix loop 1, point 1)
+
+/// Slot A, B and C as the component reads them on its paths.
+#[test]
+#[available_gas(l2_gas: 3276242)]
+fn store_focused_reads_return_the_slots() {
+    let store = defined();
+    let head = store.store_get_definition_head(1);
+    let (_, tasks, conditions) = store.hand_get_definition(1);
+    assert!(head.defined && !head.retired && head.live_dependents == 0);
+    assert!(head.schedule == worst_schedule() && head.task_count == 3 && head.condition_count == 7);
+    let slot_b = store.store_get_definition_tasks(1);
+    assert!(array![slot_b.t0, slot_b.t1, slot_b.t2].span() == tasks);
+    assert!(store.store_get_definition_conditions(1, 7) == conditions);
+    assert!(store.store_get_definition_conditions(1, 2) == array![2, 3].span());
+    assert!(!store.store_get_definition_head(5).defined);
+}
+
+/// The status is untracked: its write emits nothing, and leaves the definition as it was.
+#[test]
+#[available_gas(l2_gas: 3441543)]
+fn store_status_write_emits_nothing_and_keeps_the_definition() {
+    let store = defined();
+    let before = store.store_get_definition(1);
+    let (slot_a, slot_b, slot_c) = slots(store, 1);
+    let mut spy = spy_events();
+    store.store_set_definition_status(1, true, 0xffff);
+    store.store_set_definition_status(1, true, 3);
+    assert!(spy.get_events().events.len() == 0);
+    let head = store.store_get_definition_head(1);
+    assert!(head.retired && head.live_dependents == 3);
+    assert!(store.store_get_definition(1) == before);
+    let (new_a, new_b, new_c) = slots(store, 1);
+    assert!(new_a != slot_a && new_b == slot_b && new_c == slot_c);
 }

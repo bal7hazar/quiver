@@ -161,7 +161,14 @@ fn bench_store_set_tracked_overwritten() {
     deploy_existing().store_set_logged(ID, A, B);
 }
 
-// Benchmarks: reads (baseline `baseline_models_existing`)
+// Benchmarks: reads, against a baseline of the same shape (an id in, a value out, asserted)
+
+#[test]
+#[available_gas(l2_gas: 1174184)]
+fn baseline_models_get() {
+    let (a, _) = deploy_existing().noop_get(ID);
+    assert!(a == 1);
+}
 
 #[test]
 #[available_gas(l2_gas: 1205075)]
@@ -175,4 +182,19 @@ fn bench_hand_get() {
 fn bench_store_get() {
     let (a, _) = deploy_existing().store_get_plain(ID);
     assert!(a == 1);
+}
+
+// Benchmark: one more field in the free bits of a slot written anyway (fix loop 1, point 2).
+// Against `bench_store_set_untracked_created` - `baseline_models`.
+
+#[test]
+#[available_gas(l2_gas: 295575)]
+fn baseline_models_wide() {
+    deploy().noop_wide(ID, A, B, 0x1234);
+}
+
+#[test]
+#[available_gas(l2_gas: 773042)]
+fn bench_store_set_wide_created() {
+    deploy().store_set_wide(ID, A, B, 0x1234);
 }
