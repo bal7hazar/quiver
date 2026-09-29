@@ -48,6 +48,12 @@ pub impl StoreImpl<
         DefinitionStorage::from_slots(id, slot_a, slot_b, slot_c)
     }
 
+    /// Whether `id` is defined, from A alone: the check of `define`, which needs no more.
+    #[inline]
+    fn has_definition(self: @ComponentState<TContractState>, id: u32) -> bool {
+        self.Quest_definitions.read(id).defined
+    }
+
     /// Writes A, B, and C when the definition has conditions; emits `QuestDefined` (tracked). A
     /// definition never changes once written: the caller writes one for a quest not defined
     /// (`DefinitionAssert::assert_does_not_exist`), since A is written with the status of a new

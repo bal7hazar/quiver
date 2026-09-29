@@ -154,7 +154,7 @@ pub mod QuestComponent {
             conditions: Span<u32>,
         ) {
             let definition = DefinitionTrait::new(quest_id, schedule, tasks, conditions);
-            self.get_definition(quest_id).assert_does_not_exist();
+            assert(!self.has_definition(quest_id), errors::ALREADY_DEFINED);
             // Conditions: at most MAX_CONDITIONS, checked by DefinitionTrait::new. The status in
             // their A is not part of the definition model: written here as in 0.1.0 (ARC-07)
             for condition in conditions {
