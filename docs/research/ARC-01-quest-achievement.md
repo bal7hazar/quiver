@@ -280,6 +280,13 @@ event-mode progress reverts.
 | `quest_modes_do_not_mix` | Q, total 10 | `progress(P, T, 6, Event)` then `progress(P, T, 6, Storage)` | Stored count is 6, not completed |
 | `achievement_event_mode_emits_only_progressed` (and the three above, for achievements) | Achievement A (task T) | Same | Same |
 
+> **Amended by the decision of 2026-09-29** (`quiver_achievement` 0.1.0 is event mode only, §3.10).
+> `achievement_event_mode_emits_only_progressed` is kept, without a `mode` argument: `progress(P, T,
+> 3)` emits exactly one `AchievementProgressed { player_id: P, task_id: T, count: 3 }` and
+> `achievement_definition(A)` is unchanged. The three others are **dropped**: there is no completion
+> hook (`calls_no_hook` holds by construction), no claim (`cannot_be_claimed`), and one mode only
+> (`modes_do_not_mix`).
+
 ### D-2 — Unlock fires on every decrement (point 4a): **confirmed**
 
 `quest/src/component.cairo:262-272` decrements, writes, calls `on_quest_unlock` and emits
@@ -449,6 +456,11 @@ extra model write per associated achievement per call. Quest has the same double
 |---|---|---|---|
 | `achievement_progress_writes_one_slot` | A (1 task) | `progress(P, T, 1, Storage)`, not completing | Gas within the budget of "1 write" (§5); `achievement_progress(P, A)` is the only changed entry |
 
+> **Amended by the decision of 2026-09-29**: `achievement_progress_writes_one_slot` is **dropped**;
+> there is no per-player record to write. Its place is taken by
+> `achievement_progress_writes_nothing`: a progress call's storage writes are 0, counted with
+> `snforge test --detailed-resources` and guarded by gas (`packages/achievement/GAS.md`).
+
 ### D-11 — Achievement validation is inconsistent between event and storage mode: **confirmed** (new)
 
 - `CreationAssert::assert_valid_tasks` exists but `CreationTrait::new` never calls it
@@ -489,6 +501,13 @@ See §1.7. Anyone who can reach a consumer's entrypoint can progress, create or 
 | `quest_claim_requires_player_authorization` | `authorize_player(X, P) == false` | X calls `claim(P, Q, 0)` | Reverts `'Quest: not authorized'` |
 | `quest_define_admin_only` | `authorize_admin(X) == false` | X calls `define` | Reverts `'Quest: not admin'` |
 | (the same six for `achievement_`) | | | |
+
+> **Amended by the decision of 2026-09-29**: for `achievement_`, five of the six are kept
+> (`progress_rejects_unregistered_caller`, `progress_accepts_registered_reporter`,
+> `set_reporter_admin_only`, `reporter_revoked`, `define_admin_only`), with
+> `retire_admin_only`, `progress_many_rejects_unregistered_caller` and
+> `internal_layer_not_reachable_from_abi` added; `claim_requires_player_authorization` is
+> **dropped**: there is no claim and no `authorize_player`.
 
 ### D-14 — Minor points, kept as notes
 
@@ -557,6 +576,21 @@ These are defects of reading and documentation. None needs a test.
 | `achievement_retire_frees_slot` | 28 achievements on T; one retired | Define one more on T | Succeeds |
 | `achievement_retired_completed_kept` | A completed, then retired | `achievement_progress(P, A)`; `claim(P, A)` | Still completed; claim succeeds |
 | `achievement_empty_slot_reads_undefined` | Nothing defined | `achievement_definition(5)` | Reverts `'Achievement: does not exist'` |
+
+> **Amended by the decision of 2026-09-29** (event mode only, §3.10), for the `achievement_` rows
+> above. **Kept**: `achievement_batch_above_bound_reverts`, `achievement_empty_slot_reads_undefined`.
+> **Dropped**, since they assume storage mode: `achievement_tiers_share_task` (tiers completing),
+> `achievement_tier_kept`, `achievement_batch_two_tasks_one_write`,
+> `achievement_retired_completed_kept`; and `achievement_retire_frees_slot`, since there are no task
+> pages and no cap of achievements per task. **Added** in their place:
+>
+> | Test | Given | When | Then |
+> |---|---|---|---|
+> | `achievement_tiers_share_task_one_event` | A1 (T, 10), A2 (T, 50), A3 (T, 100) | `progress(P, T, 60)` | One `AchievementProgressed { P, T, 60 }`; the indexer derives A1 and A2 reached |
+> | `achievement_many_on_one_task` | 29 achievements on T (above A-G1's 28) | Define them | Each succeeds |
+> | `achievement_retired_progress_still_emits` | A on T, retired | `progress(P, T, 1)` | One event: progress reads no definition; the indexer ignores it for A |
+> | `achievement_retire_twice_reverts`, `achievement_redefine_retired_reverts` | A retired | `retire(A)`; `define(A, …)` | `'Achievement: retired'`; `'Achievement: already defined'` |
+> | `achievement_batch_merges_duplicates`, `achievement_batch_duplicates_count_toward_bound`, `achievement_batch_rejects_task_zero` | — | As the `quest_` cases | As the `quest_` cases |
 
 ---
 
@@ -1277,31 +1311,40 @@ mod Persistent {
 
 ### 3.10 `quiver_achievement` — library (`quiver_achievement::logic`)
 
-The same shape as quest, without intervals, prerequisites or acceptance. `Mode` and
-`TaskProgress` are defined again in this package, so that it does not depend on
-`quiver_quest` (Q-13).
+> **Amended by the decision of 2026-09-29**
+> ([achievement 0.1.0 in event mode only](../decisions/2026-09-29-achievement-event-only.md);
+> ARC-04). The design accepted at A-G1 listed each achievement on its tasks' pages (28 live per
+> task) and wrote one progress record per achievement reached in storage mode; its worst call
+> writes 448 records, about 200 M L2 gas, ten times the cap of the
+> [A-G1 amendment](../decisions/2026-09-28-A-G1-amendment-cost-cap.md). `quiver_achievement` 0.1.0
+> is therefore **event mode only**: definitions are stored, progress is emitted as events, and
+> there is no per-player storage, no task page, no completion and no claim. `Mode`,
+> `AchievementIdPage`, `AchievementProgress`, `ACHIEVEMENTS_PER_PAGE`, `MAX_PAGES`,
+> `task_index_of`, `batch_first_position`, `progress_add`, `claim` and the `page_*` functions of
+> the A-G1 design are **removed, not deprecated**: a consumer cannot ask for storage mode, because
+> the code that would do it does not exist. A storage design with per-task counters (option (b)
+> of the decision) is planned for a later minor version; 0.1.0 reserves none of its layout. The
+> package's `README.md`, `CHANGELOG.md` and `GAS.md` (`packages/achievement/`) are the reference
+> for `quiver_achievement` 0.1.0.
+
+The shape of quest's library, without intervals, prerequisites, acceptance or per-player state.
+`TaskProgress` is defined again in this package, so that it does not depend on `quiver_quest`
+(Q-13).
 
 ```cairo
-pub const MAX_TASKS: u8 = 3;
-pub const ACHIEVEMENTS_PER_PAGE: u8 = 7;
-pub const MAX_PAGES: u8 = 4;               // MAX_ACHIEVEMENTS_PER_TASK = 28 live achievements
-pub const MAX_ENTRIES: u32 = 16;           // entries (distinct tasks) per progress_many call (Q-19)
+pub const MAX_TASKS: u8 = 3;               // tasks per achievement
+pub const MAX_ENTRIES: u32 = 16;           // entries per progress_many call, before merging (Q-19)
 
-pub enum Mode { #[default] Storage, Event }
 pub struct AchievementWindow { pub start: u64, pub end: u64 }    // 0 = open on that side
 pub struct AchievementTask { pub task_id: u32, pub total: u32 }
-pub struct AchievementDefinition {          // slot A: window, count and the first task inline
+pub struct AchievementDefinition {          // slot A: window, count, presence bits, first task
     pub window: AchievementWindow,
     pub task_count: u8,                     // 1..=MAX_TASKS
     pub defined: bool,                      // presence bit
-    pub retired: bool,                      // set by retire(); off every page
+    pub retired: bool,                      // set by retire()
     pub t0: AchievementTask,
 }
 pub struct AchievementExtraTasks { pub t1: AchievementTask, pub t2: AchievementTask }  // slot B
-pub struct AchievementIdPage { pub len: u8, pub a0: u32, pub a1: u32, pub a2: u32, pub a3: u32,
-                               pub a4: u32, pub a5: u32, pub a6: u32 }
-pub struct AchievementProgress { pub c0: u32, pub c1: u32, pub c2: u32,
-                                 pub completed: bool, pub claimed: bool }
 pub struct TaskProgress { pub task_id: u32, pub count: u32 }
 
 pub fn window_validate(window: @AchievementWindow);          // 'Achievement: invalid window' unless
@@ -1309,27 +1352,28 @@ pub fn window_validate(window: @AchievementWindow);          // 'Achievement: in
 pub fn window_is_active(window: @AchievementWindow, time: u64) -> bool;  // start <= time && (end == 0 || time < end)
 pub fn definition_new(achievement_id: u32, window: AchievementWindow, tasks: Span<AchievementTask>)
     -> (AchievementDefinition, AchievementExtraTasks);
-    // 'Achievement: invalid id', 'Achievement: invalid tasks' (empty, > 3, id 0, total 0, repeated)
-pub fn task_index_of(definition: @AchievementDefinition, extra: @AchievementExtraTasks, task_id: u32) -> Option<u8>;
+    // 'Achievement: invalid id', 'Achievement: invalid window',
+    // 'Achievement: invalid tasks' (empty, > 3, id 0, total 0, repeated)
+pub fn tasks_span(definition: @AchievementDefinition, extra: @AchievementExtraTasks) -> Span<AchievementTask>;
 pub fn batch_merge(entries: Span<TaskProgress>) -> Span<TaskProgress>;
-    // 'Achievement: too many entries' above MAX_ENTRIES; 'Achievement: invalid task' on task_id 0;
-    // drops zero counts, merges duplicates (saturating)
+    // 'Achievement: too many entries' above MAX_ENTRIES (counted before merging);
+    // 'Achievement: invalid task' on task_id 0; drops zero counts, merges duplicates (saturating)
 pub fn batch_count_of(batch: Span<TaskProgress>, task_id: u32) -> u32;
-pub fn batch_first_position(batch: Span<TaskProgress>, definition: @AchievementDefinition,
-                            extra: @AchievementExtraTasks) -> Option<u32>;
-pub fn progress_add(progress: AchievementProgress, definition: @AchievementDefinition,
-                    extra: @AchievementExtraTasks, batch: Span<TaskProgress>)
-    -> (AchievementProgress, bool /* changed */, bool /* completed by this call */);   // saturating
-pub fn claim(progress: AchievementProgress) -> AchievementProgress;
-    // 'Achievement: not completed', 'Achievement: already claimed'
-pub fn page_push(page: AchievementIdPage, achievement_id: u32) -> AchievementIdPage;
-pub fn page_span(page: @AchievementIdPage) -> Span<u32>;
-pub fn page_position(page: @AchievementIdPage, achievement_id: u32) -> Option<u8>;
-pub fn page_set(page: AchievementIdPage, position: u8, achievement_id: u32) -> AchievementIdPage;
-pub fn page_pop(page: AchievementIdPage) -> (AchievementIdPage, u32);
 ```
 
+`points` is not in the definition: it is emitted in `AchievementDefined` only (Q-8), since no
+rule reads it. `window_is_active` is not called by the component, which reads no definition on
+progress: it states the rule the indexer applies.
+
 ### 3.11 `quiver_achievement` — component
+
+> **Amended by the decision of 2026-09-29** (see §3.10). The storage keeps the definitions and
+> the reporter registry only. `Achievement_task_pages`, `Achievement_progress`,
+> `AchievementCompleted`, `AchievementClaimed`, `claim`, `progress_of`, `achievement_progress`,
+> the hooks `authorize_player`, `on_achievement_complete` and `on_achievement_claim`, the `mode`
+> parameter and the errors `'Achievement: task full'`, `'Achievement: not completed'`,
+> `'Achievement: already claimed'` and `'Achievement: not authorized'` are gone. `definition` and
+> `achievement_definition` return the whole slot A (with `retired`) and the tasks, as quest's do.
 
 **Storage:**
 
@@ -1338,67 +1382,56 @@ pub fn page_pop(page: AchievementIdPage) -> (AchievementIdPage, u32);
 pub struct Storage {
     Achievement_definitions: Map<u32, AchievementDefinition>,          // slot A
     Achievement_extra_tasks: Map<u32, AchievementExtraTasks>,          // slot B, only if task_count > 1
-    Achievement_task_pages: Map<(u32, u8), AchievementIdPage>,
-    Achievement_progress: Map<(felt252, u32), AchievementProgress>,    // key (player_id, achievement_id)
     Achievement_reporters: Map<ContractAddress, bool>,
 }
 ```
 
 | Slot | Bits | Width and reason |
 |---|---|---|
-| A `AchievementDefinition` | `start` [0, 64) · `end` [64, 128) · `task_count` [128, 130) · `defined` [130] · `retired` [131] · `t0.task_id` [132, 164) · `t0.total` [164, 196) | **196 bits**. The first task is inline, so a single-task achievement (every tier of a title) costs one definition read |
-| B `AchievementExtraTasks` | `t1` [0, 64) · `t2` [64, 128) | 128 bits, read only when `task_count > 1` |
-| Page | 7 × `u32` [0, 224) · `len` [224, 227) | As for quests, contiguous |
-| `AchievementProgress` | `c0..c2` [0, 96) · `completed` [96] · `claimed` [97] | 98 bits. Completion is permanent: **a tier once reached is kept** (T-3) |
+| A `AchievementDefinition` | `start` [0, 64) · `end` [64, 128) · `task_count` [128, 130) · `defined` [130] · `retired` [131] · `t0.task_id` [132, 164) · `t0.total` [164, 196) | **196 bits**; [196, 252) reserved. The first task is inline, so a single-task achievement (every tier of a title) is one slot |
+| B `AchievementExtraTasks` | `t1` [0, 64) · `t2` [64, 128) | 128 bits; [128, 252) reserved. Written and read only when `task_count > 1` |
+
+Two slots is the fewest for three tasks: the window (128 bits), the count and the bits (4) and
+three tasks (192) are 324 bits, above a felt's 251.
 
 **Presence bits**, as for quests. `define` writes A with `defined = 1` (`+ 2^130`), and
 unpacking reads bit 130 as `defined` and bit 131 as `retired`. A slot never written reads as
 `0`, which gives `defined == false`: `definition` and `achievement_definition` revert
 `'Achievement: does not exist'`, and `define` refuses to overwrite a defined A
-(`'Achievement: already defined'`).
+(`'Achievement: already defined'`, retired or not). Packing refuses a `task_count` above 3
+(`'Packing: field out of range'`); unpacking refuses a felt with a reserved bit set
+(`'Packing: reserved bits set'`).
 
 **Events:**
 
 ```cairo
 #[event]
-#[derive(Drop, starknet::Event)]
+#[derive(Drop, PartialEq, Debug, starknet::Event)]
 pub enum Event {
     AchievementDefined: AchievementDefined,
     AchievementProgressed: AchievementProgressed,
-    AchievementCompleted: AchievementCompleted,
-    AchievementClaimed: AchievementClaimed,
     AchievementRetired: AchievementRetired,
     AchievementReporterSet: AchievementReporterSet,
 }
 
-#[derive(Drop, starknet::Event)]
+#[derive(Drop, PartialEq, Debug, starknet::Event)]
 pub struct AchievementDefined {
     #[key] pub achievement_id: u32,
     pub window: AchievementWindow,
     pub tasks: Span<AchievementTask>,
     pub points: u16,
 }
-#[derive(Drop, starknet::Event)]
-pub struct AchievementProgressed {     // Mode::Event only; one per merged, non-zero entry
+#[derive(Drop, PartialEq, Debug, starknet::Event)]
+pub struct AchievementProgressed {     // one per merged, non-zero entry
     #[key] pub player_id: felt252,
     #[key] pub task_id: u32,
     pub count: u32,
 }
-#[derive(Drop, starknet::Event)]
-pub struct AchievementCompleted {      // Mode::Storage, once per completion
-    #[key] pub player_id: felt252,
-    #[key] pub achievement_id: u32,
-}
-#[derive(Drop, starknet::Event)]
-pub struct AchievementClaimed {
-    #[key] pub player_id: felt252,
-    #[key] pub achievement_id: u32,
-}
-#[derive(Drop, starknet::Event)]
+#[derive(Drop, PartialEq, Debug, starknet::Event)]
 pub struct AchievementRetired {
     #[key] pub achievement_id: u32,
 }
-#[derive(Drop, starknet::Event)]
+#[derive(Drop, PartialEq, Debug, starknet::Event)]
 pub struct AchievementReporterSet {
     #[key] pub reporter: ContractAddress,
     pub allowed: bool,
@@ -1417,56 +1450,42 @@ of 100: that was a limit of Cartridge's controller (`achievement/src/events/crea
 ```cairo
 pub trait AchievementHooksTrait<TContractState> {
     fn authorize_admin(self: @ComponentState<TContractState>, caller: ContractAddress) -> bool;
-    fn authorize_player(self: @ComponentState<TContractState>, caller: ContractAddress, player_id: felt252) -> bool;
-    fn on_achievement_complete(ref self: ComponentState<TContractState>, player_id: felt252, achievement_id: u32);
-    fn on_achievement_claim(ref self: ComponentState<TContractState>, player_id: felt252, achievement_id: u32);
 }
 ```
 
-**Internal functions.** These are trusted, as for quests:
+**Internal functions.** These are trusted, as for quests: none checks the caller.
 
 ```cairo
 fn define(ref self: ComponentState<TContractState>, achievement_id: u32, window: AchievementWindow,
           tasks: Span<AchievementTask>, points: u16);
-    // validates + not already defined ('Achievement: already defined') + room on each task
-    // ('Achievement: task full'); writes A (defined = 1), B if needed, one page per task;
-    // emits AchievementDefined
+    // validates (definition_new) + not already defined ('Achievement: already defined');
+    // writes A (defined = 1), B if task_count > 1; emits AchievementDefined. Any number of
+    // achievements may share a task
 fn retire(ref self: ComponentState<TContractState>, achievement_id: u32);
-    // 'Achievement: does not exist', 'Achievement: retired'; as quest retire (§3.5); completed
-    // progress stays completed and claimable
+    // 'Achievement: does not exist', 'Achievement: retired'; sets retired; emits AchievementRetired
 fn set_reporter(ref self: ComponentState<TContractState>, reporter: ContractAddress, allowed: bool);
-fn progress(ref self: ComponentState<TContractState>, player_id: felt252, task_id: u32, count: u32, mode: Mode);
+fn progress(ref self: ComponentState<TContractState>, player_id: felt252, task_id: u32, count: u32);
     // exactly progress_many with one entry
-fn progress_many(ref self: ComponentState<TContractState>, player_id: felt252, entries: Span<TaskProgress>, mode: Mode);
-    // 'Achievement: too many entries' above MAX_ENTRIES
-fn claim(ref self: ComponentState<TContractState>, player_id: felt252, achievement_id: u32);
+fn progress_many(ref self: ComponentState<TContractState>, player_id: felt252, entries: Span<TaskProgress>);
+    // 'Achievement: too many entries' above MAX_ENTRIES, 'Achievement: invalid task' on a task id 0;
+    // one AchievementProgressed per merged, non-zero entry; reads and writes nothing
 fn assert_reporter(self: @ComponentState<TContractState>, caller: ContractAddress);   // 'Achievement: not reporter'
-fn definition(self: @ComponentState<TContractState>, achievement_id: u32) -> (AchievementWindow, Span<AchievementTask>);
-    // 'Achievement: does not exist'
-fn progress_of(self: @ComponentState<TContractState>, player_id: felt252, achievement_id: u32) -> AchievementProgress;
+fn definition(self: @ComponentState<TContractState>, achievement_id: u32)
+    -> (AchievementDefinition, Span<AchievementTask>);                                // 'Achievement: does not exist'
 ```
 
-`progress_many` in storage mode works as for quests (§3.5), without intervals, records or
-acceptance:
-
-1. `batch = batch_merge(entries)`. If it is empty, return.
-2. For each entry at position `i`, read the task's pages. For each achievement on them:
-   1. Read A, and B if `task_count > 1`. Skip unless `batch_first_position == Some(i)`.
-   2. Skip if the window is inactive.
-   3. Read P; skip if it is completed.
-   4. Apply `progress_add(P, A, B, batch)`; skip if nothing changed.
-   5. **Write P once.**
-   6. On completion: emit `AchievementCompleted`, then call `on_achievement_complete`.
-
-In event mode it emits one `AchievementProgressed` per merged, non-zero entry, and nothing
-else.
+Progress reads no definition: it does not know which achievements use a task, and it does not
+check windows or retirement. **The indexer derives the tiers** from `AchievementDefined`,
+`AchievementRetired` and `AchievementProgressed`: for each achievement, the sum of the counts
+reported on each of its tasks while its window is open and before its retirement, saturated at
+each task's total; the achievement is reached when every task is at its total, and is kept once
+reached (T-3).
 
 Errors, in `quiver_achievement::errors`: `'Achievement: invalid id'`,
 `'Achievement: invalid tasks'`, `'Achievement: invalid window'`,
 `'Achievement: already defined'`, `'Achievement: does not exist'`, `'Achievement: retired'`,
-`'Achievement: task full'`, `'Achievement: invalid task'`, `'Achievement: too many entries'`, `'Achievement: not completed'`,
-`'Achievement: already claimed'`, `'Achievement: not reporter'`, `'Achievement: not admin'`,
-`'Achievement: not authorized'`.
+`'Achievement: invalid task'`, `'Achievement: too many entries'`, `'Achievement: not reporter'`,
+`'Achievement: not admin'`.
 
 **External ABI**, optional as for quests:
 
@@ -1477,25 +1496,24 @@ pub trait IAchievement<TState> {
               tasks: Span<AchievementTask>, points: u16);                    // authorize_admin
     fn retire(ref self: TState, achievement_id: u32);                        // authorize_admin
     fn set_reporter(ref self: TState, reporter: ContractAddress, allowed: bool); // authorize_admin
-    fn progress(ref self: TState, player_id: felt252, task_id: u32, count: u32, mode: Mode);  // reporter
-    fn progress_many(ref self: TState, player_id: felt252, entries: Span<TaskProgress>, mode: Mode); // reporter
-    fn claim(ref self: TState, player_id: felt252, achievement_id: u32);        // authorize_player
+    fn progress(ref self: TState, player_id: felt252, task_id: u32, count: u32);          // reporter
+    fn progress_many(ref self: TState, player_id: felt252, entries: Span<TaskProgress>);  // reporter
 }
 #[starknet::interface]
 pub trait IAchievementView<TState> {
-    fn achievement_definition(self: @TState, achievement_id: u32) -> (AchievementWindow, Span<AchievementTask>);
-    fn achievement_progress(self: @TState, player_id: felt252, achievement_id: u32) -> AchievementProgress;
+    fn achievement_definition(self: @TState, achievement_id: u32) -> (AchievementDefinition, Span<AchievementTask>);
     fn achievement_is_reporter(self: @TState, reporter: ContractAddress) -> bool;
 }
 ```
 
-Access control, modes and "not kept" are as for quests (§3.6, §3.7, §3.9). For Grim World,
-titles run in **event mode** (ADR-0007, D-63 revised). The game's results path calls
-`progress_many(adventurer_id or account, …, Mode::Event)`, which costs one event per distinct
-non-zero task and no storage. The indexer evaluates the tiers from `AchievementDefined`.
+Access control is as for quests (§3.6), without the player's actions: `define`, `retire` and
+`set_reporter` through `authorize_admin`, `progress` and `progress_many` through the reporter
+registry. For Grim World, titles are events (ADR-0007, D-63 revised, D-131): the game's results
+path calls the internal `progress_many(adventurer_id or account, …)`, which costs one event per
+distinct non-zero task and no storage. The indexer evaluates the tiers from `AchievementDefined`.
 
-A consumer sketch is the same as §3.8, with `AchievementComponent` and the four hooks. For
-event-mode titles, both `on_achievement_*` hooks are empty and `authorize_*` return false.
+A consumer sketch is the same as §3.8, with `AchievementComponent` and the one hook
+`authorize_admin`.
 
 ---
 
