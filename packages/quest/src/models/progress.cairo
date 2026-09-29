@@ -50,6 +50,7 @@ pub impl ProgressImpl of ProgressTrait {
     /// Unrolled over the 3 slots; each lookup visits at most `MAX_ENTRIES` entries of a merged
     /// batch. (One pass over the batch for the 3 slots was measured more costly: its loop carries
     /// more state than three tight scans.)
+    #[inline]
     fn add(
         ref self: QuestProgress, tasks: @TasksSlot, task_count: u8, batch: Span<TaskProgress>,
     ) -> (bool, bool) {

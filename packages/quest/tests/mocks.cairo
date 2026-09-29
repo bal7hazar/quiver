@@ -37,12 +37,14 @@ pub trait IMockConsumer<TState> {
     fn define_quest(
         ref self: TState,
         quest_id: u32,
-        schedule: quiver_quest::logic::QuestSchedule,
-        tasks: Span<quiver_quest::logic::QuestTask>,
+        schedule: quiver_quest::types::schedule::QuestSchedule,
+        tasks: Span<quiver_quest::types::task::QuestTask>,
         conditions: Span<u32>,
     );
     fn submit_results(
-        ref self: TState, adventurer_id: felt252, progress: Span<quiver_quest::logic::TaskProgress>,
+        ref self: TState,
+        adventurer_id: felt252,
+        progress: Span<quiver_quest::types::batch::TaskProgress>,
     );
     fn accept_quest(ref self: TState, adventurer_id: felt252, quest_id: u32);
     fn claim_quest(
@@ -61,6 +63,9 @@ pub mod MockQuest {
     use super::{HookCall, IMockQuest};
 
     component!(path: QuestComponent, storage: quest, event: QuestEvent);
+
+    /// Every tracked model emits, as 0.1.0.
+    impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;
 
     #[abi(embed_v0)]
     impl QuestImpl = QuestComponent::QuestImpl<ContractState>;
@@ -188,12 +193,18 @@ pub mod MockQuest {
 #[starknet::contract]
 pub mod MockConsumer {
     use quiver_quest::component::QuestComponent;
-    use quiver_quest::logic::{Mode, QuestSchedule, QuestTask, TaskProgress};
+    use quiver_quest::types::batch::TaskProgress;
+    use quiver_quest::types::mode::Mode;
+    use quiver_quest::types::schedule::QuestSchedule;
+    use quiver_quest::types::task::QuestTask;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use super::IMockConsumer;
 
     component!(path: QuestComponent, storage: quest, event: QuestEvent);
+
+    /// Every tracked model emits, as 0.1.0.
+    impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;
 
     #[abi(embed_v0)]
     impl QuestViewImpl = QuestComponent::QuestViewImpl<ContractState>;
@@ -295,6 +306,9 @@ pub mod MockBenchHook {
 
     component!(path: QuestComponent, storage: quest, event: QuestEvent);
 
+    /// Every tracked model emits, as 0.1.0.
+    impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;
+
     #[abi(embed_v0)]
     impl QuestImpl = QuestComponent::QuestImpl<ContractState>;
     #[abi(embed_v0)]
@@ -358,6 +372,9 @@ pub mod MockBench {
     use starknet::ContractAddress;
 
     component!(path: QuestComponent, storage: quest, event: QuestEvent);
+
+    /// Every tracked model emits, as 0.1.0.
+    impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;
 
     #[abi(embed_v0)]
     impl QuestImpl = QuestComponent::QuestImpl<ContractState>;

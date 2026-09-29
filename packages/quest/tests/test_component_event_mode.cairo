@@ -4,14 +4,15 @@
 use quiver_quest::component::QuestComponent::{Event, QuestProgressed};
 use quiver_quest::errors;
 use quiver_quest::interface::{IQuestSafeDispatcherTrait, IQuestViewDispatcherTrait};
-use quiver_quest::logic::{Mode, QuestProgress};
+use quiver_quest::models::progress::ProgressSlot;
+use quiver_quest::types::mode::Mode;
 use snforge_std::{EventSpyAssertionsTrait, EventSpyTrait, spy_events};
 use super::helpers::{entry, no_progress, no_record, one_off};
 use super::mocks::IMockQuestDispatcherTrait;
 use super::setup::{PLAYER, as_owner, assert_error, define_held, deploy, report, report_many, stop};
 
 #[test]
-#[available_gas(l2_gas: 5864635)]
+#[available_gas(l2_gas: 5856193)]
 fn quest_event_mode_emits_only_progressed() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -35,7 +36,7 @@ fn quest_event_mode_emits_only_progressed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5626610)]
+#[available_gas(l2_gas: 5617328)]
 fn quest_event_mode_calls_no_hook() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -50,7 +51,7 @@ fn quest_event_mode_calls_no_hook() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 6132217)]
+#[available_gas(l2_gas: 6123460)]
 fn quest_event_mode_cannot_be_claimed() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
@@ -61,18 +62,18 @@ fn quest_event_mode_cannot_be_claimed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6668815)]
+#[available_gas(l2_gas: 6657864)]
 fn quest_modes_do_not_mix() {
     let q = deploy();
     define_held(q, 1, one_off(), 7, 10);
     report(q, PLAYER, 7, 6, Mode::Event);
     report(q, PLAYER, 7, 6, Mode::Storage);
     let progress = q.view.quest_progress(PLAYER, 1, 0);
-    assert!(progress == QuestProgress { c0: 6, c1: 0, c2: 0, completed: false, claimed: false });
+    assert!(progress == ProgressSlot { c0: 6, c1: 0, c2: 0, completed: false, claimed: false });
 }
 
 #[test]
-#[available_gas(l2_gas: 5932499)]
+#[available_gas(l2_gas: 5922902)]
 fn quest_batch_event_mode_one_event_per_task() {
     let q = deploy();
     define_held(q, 1, one_off(), 1, 10);

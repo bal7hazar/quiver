@@ -15,8 +15,8 @@ use super::mock_store::Logged;
 #[starknet::component]
 pub mod TrackingComponent {
     use starknet::storage::{Map, StorageMapWriteAccess};
-    use super::super::mock_store::{LoggedSet, LoggedTracked, Values};
     use super::Logged;
+    use super::super::mock_store::{LoggedSet, LoggedTracked, Values};
 
     #[storage]
     pub struct Storage {
@@ -82,8 +82,8 @@ pub mod TrackingComponent {
 /// The ready choices, outside the traits' module: there, the compiler would find them as well as
 /// the consumer's own impl and refuse the call as ambiguous.
 pub mod choices {
-    use super::super::mock_store::{Logged, LoggedTracked};
     use super::TrackingComponent::{ComponentState, HasComponent, LoggedEmitter, TrackingTrait};
+    use super::super::mock_store::{Logged, LoggedTracked};
 
     pub impl TrackAll<TContractState> of TrackingTrait<TContractState> {
         const LOGGED: bool = true;
@@ -106,7 +106,6 @@ pub mod choices {
         #[inline]
         fn emit_logged(ref self: ComponentState<TContractState>, logged: @Logged) {}
     }
-
 }
 
 #[starknet::interface]

@@ -73,9 +73,7 @@ pub impl ScheduleAssert of AssertTrait {
     #[inline]
     fn assert_valid(self: @QuestSchedule) {
         let schedule = *self;
-        assert(
-            schedule.end == 0 || schedule.end > schedule.start, errors::SCHEDULE_INVALID_WINDOW,
-        );
+        assert(schedule.end == 0 || schedule.end > schedule.start, errors::SCHEDULE_INVALID_WINDOW);
         let valid_interval = if schedule.duration == 0 {
             schedule.interval == 0
         } else {

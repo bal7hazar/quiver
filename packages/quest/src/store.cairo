@@ -188,7 +188,9 @@ pub impl StoreImpl<
     fn get_record(
         self: @ComponentState<TContractState>, player_id: felt252, quest_id: u32,
     ) -> QuestRecord {
-        RecordStorage::from_slot(player_id, quest_id, self.Quest_records.read((player_id, quest_id)))
+        RecordStorage::from_slot(
+            player_id, quest_id, self.Quest_records.read((player_id, quest_id)),
+        )
     }
 
     #[inline]

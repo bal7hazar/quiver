@@ -22,7 +22,8 @@ use core::testing::get_available_gas;
 use quiver_quest::interface::{
     IQuestDispatcher, IQuestDispatcherTrait, IQuestViewDispatcher, IQuestViewDispatcherTrait,
 };
-use quiver_quest::logic::{Mode, TaskProgress};
+use quiver_quest::types::batch::TaskProgress;
+use quiver_quest::types::mode::Mode;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, test_address};
 use super::helpers::{entry, one_off, task};
 use super::setup::PLAYER;
@@ -77,7 +78,7 @@ fn assert_gas(used: u128, reference: u128) {
 }
 
 #[test]
-#[available_gas(l2_gas: 6649898)]
+#[available_gas(l2_gas: 6626326)]
 fn quest_progress_completing_writes_p_and_r() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 2)].span()), COMPLETING);
@@ -85,7 +86,7 @@ fn quest_progress_completing_writes_p_and_r() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6019457)]
+#[available_gas(l2_gas: 5994982)]
 fn quest_progress_not_completing_writes_p_only() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 1)].span()), NOT_COMPLETING);
@@ -93,7 +94,7 @@ fn quest_progress_not_completing_writes_p_only() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6062279)]
+#[available_gas(l2_gas: 6037804)]
 fn quest_progress_duplicate_entries_write_p_once() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(7, 1), entry(7, 0), entry(7, 0)].span()), DUPLICATES);
@@ -102,7 +103,7 @@ fn quest_progress_duplicate_entries_write_p_once() {
 
 /// Two tasks of one quest in one call, completing: P once and R once.
 #[test]
-#[available_gas(l2_gas: 6606445)]
+#[available_gas(l2_gas: 6582873)]
 fn quest_progress_two_tasks_write_p_and_r_once() {
     let bench = setup();
     assert_gas(call_gas(bench, array![entry(8, 1), entry(9, 1)].span()), TWO_TASKS_COMPLETING);
@@ -126,7 +127,7 @@ fn write_costs_58_820_sierra_gas() {
 
 /// Fix loop 3: two tasks of one quest in one call, not completing: P once, no R.
 #[test]
-#[available_gas(l2_gas: 6035424)]
+#[available_gas(l2_gas: 6010948)]
 fn quest_progress_two_tasks_not_completing_write_p_once() {
     let bench = setup_totals_two();
     assert_gas(call_gas(bench, array![entry(8, 1), entry(9, 1)].span()), TWO_TASKS_NOT_COMPLETING);
@@ -137,7 +138,7 @@ fn quest_progress_two_tasks_not_completing_write_p_once() {
 /// Fix loop 3: duplicate entries with several positive counts on two tasks, merged: each
 /// quest's P once, two writes in all, no R.
 #[test]
-#[available_gas(l2_gas: 6738591)]
+#[available_gas(l2_gas: 6715491)]
 fn quest_progress_duplicates_several_counts_write_each_p_once() {
     let bench = setup_totals_two();
     assert_gas(
@@ -152,14 +153,14 @@ fn quest_progress_duplicates_several_counts_write_each_p_once() {
 /// The setup alone, for the write counts of `snforge test --detailed-resources`: a test's
 /// `StorageWrite` minus this baseline's is its call's writes.
 #[test]
-#[available_gas(l2_gas: 4680575)]
+#[available_gas(l2_gas: 4662179)]
 fn baseline_writes_setup() {
     setup();
 }
 
 /// The setup of the fix loop 3 fixtures alone.
 #[test]
-#[available_gas(l2_gas: 4680575)]
+#[available_gas(l2_gas: 4662179)]
 fn baseline_writes_setup_totals_two() {
     setup_totals_two();
 }

@@ -3,8 +3,9 @@
 //! model back. The benchmarks set the store against 0.1.0's hand-written code: the cost of an
 //! operation is its benchmark minus its baseline.
 
-use quiver_quest::logic::{QuestSchedule, QuestTask};
 use quiver_quest::models::definition::{DefinitionTrait, QuestDefinition};
+use quiver_quest::types::schedule::QuestSchedule;
+use quiver_quest::types::task::QuestTask;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, load, map_entry_address,
     spy_events,
@@ -180,8 +181,8 @@ fn store_status_write_emits_nothing_and_keeps_the_definition() {
     let before = store.store_get_definition(1);
     let (slot_a, slot_b, slot_c) = slots(store, 1);
     let mut spy = spy_events();
-    store.store_set_definition_status(1, true, 0xffff);
-    store.store_set_definition_status(1, true, 3);
+    store.store_set_status(1, true, 0xffff);
+    store.store_set_status(1, true, 3);
     assert!(spy.get_events().events.len() == 0);
     let head = store.store_get_definition_head(1);
     assert!(head.retired && head.live_dependents == 3);

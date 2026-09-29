@@ -7,7 +7,8 @@ use quiver_quest::errors;
 use quiver_quest::interface::{
     IQuestSafeDispatcherTrait, IQuestViewDispatcherTrait, IQuestViewSafeDispatcherTrait,
 };
-use quiver_quest::logic::{QuestDefinition, QuestTask};
+use quiver_quest::models::definition::HeadSlot;
+use quiver_quest::types::task::QuestTask;
 use snforge_std::{EventSpyAssertionsTrait, EventSpyTrait, spy_events};
 use super::helpers::{one_off, schedule, task};
 use super::setup::{
@@ -58,7 +59,7 @@ fn quest_define_stores_and_emits() {
     assert!(spy.get_events().events.len() == 1);
     let (definition, stored_tasks, conditions) = q.view.quest_definition(2);
     assert!(
-        definition == QuestDefinition {
+        definition == HeadSlot {
             schedule: quest_schedule,
             task_count: 3,
             condition_count: 1,
@@ -161,7 +162,7 @@ fn quest_define_counts_dependents() {
 /// whose overflow `accept` refuses (`'Quest: too many held'`).
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 49848624)]
+#[available_gas(l2_gas: 49813103)]
 fn quest_define_rejects_association_overflow() {
     let q = deploy();
     let old_cap: u32 = 28;

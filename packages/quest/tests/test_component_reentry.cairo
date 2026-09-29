@@ -7,7 +7,9 @@ use quiver_quest::interface::{
     IQuestDispatcher, IQuestDispatcherTrait, IQuestSafeDispatcher, IQuestSafeDispatcherTrait,
     IQuestViewDispatcher, IQuestViewDispatcherTrait,
 };
-use quiver_quest::logic::{Mode, QuestProgress, QuestRecord};
+use quiver_quest::models::progress::ProgressSlot;
+use quiver_quest::models::record::RecordSlot;
+use quiver_quest::types::mode::Mode;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpy, EventSpyTrait, declare, map_entry_address,
     spy_events, store, test_address,
@@ -102,7 +104,7 @@ fn hook_calls(r: Reentrant) -> Array<HookCall> {
 /// second, which the call read from the held list before.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 14330407)]
+#[available_gas(l2_gas: 14312326)]
 fn quest_retired_by_hook_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -126,7 +128,7 @@ fn quest_retired_by_hook_not_progressed() {
 /// Progress from `on_quest_complete` on the same quest, same interval: no second completion, no
 /// second hook call.
 #[test]
-#[available_gas(l2_gas: 11539933)]
+#[available_gas(l2_gas: 11529549)]
 fn quest_reentrant_progress_same_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, true);
@@ -138,7 +140,7 @@ fn quest_reentrant_progress_same_quest_completes_once() {
             .view
             .quest_progress(
                 PLAYER, 1, 0,
-            ) == QuestProgress { c0: 1, c1: 0, c2: 0, completed: true, claimed: false },
+            ) == ProgressSlot { c0: 1, c1: 0, c2: 0, completed: true, claimed: false },
     );
     assert!(r.view.quest_record(PLAYER, 1).completions == 1);
     assert!(completed_events(ref spy, r.address, 1) == 1);
@@ -148,7 +150,7 @@ fn quest_reentrant_progress_same_quest_completes_once() {
 /// Progress from the first quest's hook on the same task completes the second quest inside the
 /// hook; the outer call then reaches the second quest, finds it completed, and skips it.
 #[test]
-#[available_gas(l2_gas: 18831112)]
+#[available_gas(l2_gas: 18810826)]
 fn quest_reentrant_progress_later_quest_completes_once() {
     let r = deploy();
     define(r, 1, T, true);
@@ -169,7 +171,7 @@ fn quest_reentrant_progress_later_quest_completes_once() {
 /// reverts the outer claim; nothing is claimed twice.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 12571531)]
+#[available_gas(l2_gas: 12561587)]
 fn quest_reentrant_claim_same_quest_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -200,7 +202,7 @@ fn quest_reentrant_claim_same_quest_refused() {
 /// which reverts the outer progress.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 7954303)]
+#[available_gas(l2_gas: 7943834)]
 fn quest_reentrant_accept_after_completion_refused() {
     let r = deploy();
     define(r, 1, T, true);
@@ -208,9 +210,7 @@ fn quest_reentrant_accept_after_completion_refused() {
     assert_error(r.safe.progress(PLAYER, T, 1, Mode::Storage), errors::ALREADY_COMPLETED);
     assert!(r.view.quest_progress(PLAYER, 1, 0) == no_progress());
     assert!(
-        r
-            .view
-            .quest_record(PLAYER, 1) == QuestRecord { completions: 0, claims: 0, unlocked: false },
+        r.view.quest_record(PLAYER, 1) == RecordSlot { completions: 0, claims: 0, unlocked: false },
     );
     assert!(r.view.quest_is_accepted(PLAYER, 1));
     // snforge's spy keeps the events emitted before the revert; a receipt would not. The
@@ -246,8 +246,8 @@ fn other_quests_setup() -> Reentrant {
 /// The outer call's state, events and hook calls, for quests 1 and 2.
 #[derive(Drop, PartialEq, Debug)]
 struct Outer {
-    progress: (QuestProgress, QuestProgress),
-    records: (QuestRecord, QuestRecord),
+    progress: (ProgressSlot, ProgressSlot),
+    records: (RecordSlot, RecordSlot),
     events: Array<(felt252, felt252, felt252)>,
     hooks: Array<HookCall>,
 }
@@ -294,28 +294,28 @@ fn assert_outer_unchanged(reentry: Reentry) -> Reentrant {
 }
 
 #[test]
-#[available_gas(l2_gas: 66577655)]
+#[available_gas(l2_gas: 66459939)]
 fn quest_reentrant_progress_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'progress', 0, 8));
     assert!(r.view.quest_progress(PLAYER, 3, 0).completed);
 }
 
 #[test]
-#[available_gas(l2_gas: 64574060)]
+#[available_gas(l2_gas: 64460828)]
 fn quest_reentrant_claim_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'claim', 4, 0));
     assert!(r.view.quest_progress(PLAYER, 4, 0).claimed);
 }
 
 #[test]
-#[available_gas(l2_gas: 62780502)]
+#[available_gas(l2_gas: 62656739)]
 fn quest_reentrant_accept_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'accept', 5, 0));
     assert!(r.view.quest_is_accepted(PLAYER, 5));
 }
 
 #[test]
-#[available_gas(l2_gas: 61929908)]
+#[available_gas(l2_gas: 61811342)]
 fn quest_reentrant_abandon_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'abandon', 6, 0));
     assert!(!r.view.quest_is_accepted(PLAYER, 6));
@@ -325,7 +325,7 @@ fn quest_reentrant_abandon_other_quest_leaves_outer_unchanged() {
 }
 
 #[test]
-#[available_gas(l2_gas: 61275789)]
+#[available_gas(l2_gas: 61165634)]
 fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
     let r = assert_outer_unchanged(on_complete(1, 'retire', 6, 0));
     let (definition, _, _) = r.view.quest_definition(6);
@@ -337,7 +337,7 @@ fn quest_reentrant_retire_other_quest_leaves_outer_unchanged() {
 
 /// A hook of quest 1 abandons quest 2, later in the list: quest 2 is not progressed.
 #[test]
-#[available_gas(l2_gas: 21719845)]
+#[available_gas(l2_gas: 21680071)]
 fn quest_reentrant_abandon_later_quest_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -361,7 +361,7 @@ fn quest_reentrant_abandon_later_quest_not_progressed() {
 /// A hook of quest 1 accepts quest 2 on the same task: quest 2 is held from then on, but this
 /// call, whose batch was reported before the acceptance, does not progress it.
 #[test]
-#[available_gas(l2_gas: 17778298)]
+#[available_gas(l2_gas: 17756878)]
 fn quest_reentrant_accept_not_progressed_by_the_call() {
     let r = deploy();
     define(r, 1, T, true);
@@ -385,7 +385,7 @@ fn quest_reentrant_accept_not_progressed_by_the_call() {
 
 /// Quest 1's hook abandons quest 2, then accepts it again, in the same interval.
 #[test]
-#[available_gas(l2_gas: 18660634)]
+#[available_gas(l2_gas: 18621826)]
 fn quest_reentrant_abandon_then_accept_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -405,7 +405,7 @@ fn quest_reentrant_abandon_then_accept_not_progressed() {
 
 /// Quest 1's hook accepts quest 2, abandons it, and accepts it again.
 #[test]
-#[available_gas(l2_gas: 13194517)]
+#[available_gas(l2_gas: 13155068)]
 fn quest_reentrant_accept_abandon_accept_not_progressed() {
     let r = deploy();
     define(r, 1, T, true);
@@ -420,7 +420,7 @@ fn quest_reentrant_accept_abandon_accept_not_progressed() {
 /// Quest 2 held when the call starts, renewed by the hook of quest 1; quest 3, held throughout,
 /// still counts after it.
 #[test]
-#[available_gas(l2_gas: 21064225)]
+#[available_gas(l2_gas: 21015064)]
 fn quest_reentrant_renewed_not_progressed_others_are() {
     let r = deploy();
     define(r, 1, T, true);
@@ -460,7 +460,7 @@ fn wrapped_prehistory() -> Reentrant {
 /// tuple as the entry the call started with. It is still a new acceptance, and the call must not
 /// progress it.
 #[test]
-#[available_gas(l2_gas: 18789102)]
+#[available_gas(l2_gas: 18749874)]
 fn quest_reentrant_renewal_after_counter_wrap_not_progressed() {
     let r = wrapped_prehistory();
     r.mock.set_reentry(on_complete(1, 'abandon_accept', 2, 0));
@@ -478,7 +478,7 @@ fn quest_reentrant_renewal_after_counter_wrap_not_progressed() {
 
 /// Without a renewal, the wrapped counter changes nothing: both held quests count.
 #[test]
-#[available_gas(l2_gas: 14824348)]
+#[available_gas(l2_gas: 14803054)]
 fn quest_counter_wrap_without_renewal_progresses_both() {
     let r = wrapped_prehistory();
     r.quest.progress(PLAYER, T, 1, Mode::Storage);
@@ -509,7 +509,7 @@ fn prehistory_other_accept() -> Reentrant {
 }
 
 #[test]
-#[available_gas(l2_gas: 16871917)]
+#[available_gas(l2_gas: 16835094)]
 fn quest_hook_accepting_another_quest_keeps_counts_after_16_bit_wrap() {
     let r = prehistory_other_accept();
     r.mock.set_reentry(on_complete(1, 'accept', 3, 0));
@@ -532,7 +532,7 @@ fn quest_hook_accepting_another_quest_keeps_counts_after_16_bit_wrap() {
 // that is the only way two outstanding acceptances can share a whole entry.
 
 #[test]
-#[available_gas(l2_gas: 26720293)]
+#[available_gas(l2_gas: 26677695)]
 fn quest_acceptance_counter_wraps_at_2_30() {
     let r = deploy();
     define(r, 1, T, true);

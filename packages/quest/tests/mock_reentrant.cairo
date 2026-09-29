@@ -30,7 +30,7 @@ pub trait IMockReentrant<TState> {
 #[starknet::contract]
 pub mod MockReentrant {
     use quiver_quest::component::QuestComponent;
-    use quiver_quest::logic::Mode;
+    use quiver_quest::types::mode::Mode;
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
@@ -40,6 +40,9 @@ pub mod MockReentrant {
     use super::{IMockReentrant, Reentry};
 
     component!(path: QuestComponent, storage: quest, event: QuestEvent);
+
+    /// Every tracked model emits, as 0.1.0.
+    impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;
 
     #[abi(embed_v0)]
     impl QuestImpl = QuestComponent::QuestImpl<ContractState>;

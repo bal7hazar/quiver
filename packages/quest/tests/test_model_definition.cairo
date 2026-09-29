@@ -1,18 +1,17 @@
 //! The model `QuestDefinition` (ARC-06): its constructor and checks, in the order and with the
-//! strings of 0.1.0; its behaviour against the functions of `quiver_quest::logic` as oracles; its
+//! strings of 0.1.0; its behaviour against 0.1.0's functions as oracles (`super::oracle`); its
 //! storage against the slots of `definition_new`; its event.
 
 use quiver_quest::component::QuestComponent::QuestDefined;
 use quiver_quest::errors;
-use quiver_quest::logic::{
-    QuestConditions, QuestDefinition as DefinitionSlot, QuestTask, QuestTasks, definition_new,
-    schedule_interval_id, schedule_is_active,
-};
 use quiver_quest::models::definition::{
-    DefinitionAssert, DefinitionStorage, DefinitionTracked, DefinitionTrait, QuestDefinition,
-    errors as definition_errors,
+    ConditionsSlot, DefinitionAssert, DefinitionStorage, DefinitionTracked, DefinitionTrait,
+    HeadSlot as DefinitionSlot, QuestDefinition, TasksSlot, errors as definition_errors,
 };
+use quiver_quest::types::schedule::errors as schedule_errors;
+use quiver_quest::types::task::QuestTask;
 use super::helpers::{one_off, schedule, task};
+use super::oracle::{definition_new, schedule_interval_id, schedule_is_active};
 
 fn one(task_id: u32) -> Span<QuestTask> {
     array![task(task_id, 1)].span()
@@ -39,8 +38,8 @@ fn definition_new_keeps_its_inputs() {
 #[available_gas(l2_gas: 14406)]
 fn definition_errors_are_those_of_0_1_0() {
     assert!(definition_errors::DEFINITION_INVALID_ID == errors::INVALID_ID);
-    assert!(definition_errors::DEFINITION_INVALID_WINDOW == errors::INVALID_WINDOW);
-    assert!(definition_errors::DEFINITION_INVALID_INTERVAL == errors::INVALID_INTERVAL);
+    assert!(schedule_errors::SCHEDULE_INVALID_WINDOW == errors::INVALID_WINDOW);
+    assert!(schedule_errors::SCHEDULE_INVALID_INTERVAL == errors::INVALID_INTERVAL);
     assert!(definition_errors::DEFINITION_INVALID_TASKS == errors::INVALID_TASKS);
     assert!(definition_errors::DEFINITION_TOO_MANY_CONDITIONS == errors::TOO_MANY_CONDITIONS);
     assert!(definition_errors::DEFINITION_INVALID_CONDITION == errors::INVALID_CONDITION);
@@ -204,12 +203,12 @@ fn zero_a() -> DefinitionSlot {
     }
 }
 
-fn zero_b() -> QuestTasks {
-    QuestTasks { t0: task(0, 0), t1: task(0, 0), t2: task(0, 0) }
+fn zero_b() -> TasksSlot {
+    TasksSlot { t0: task(0, 0), t1: task(0, 0), t2: task(0, 0) }
 }
 
-fn zero_c() -> QuestConditions {
-    QuestConditions { q0: 0, q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0 }
+fn zero_c() -> ConditionsSlot {
+    ConditionsSlot { q0: 0, q1: 0, q2: 0, q3: 0, q4: 0, q5: 0, q6: 0 }
 }
 
 /// For 1 to 3 tasks and 0 to 7 conditions: the slots are those of 0.1.0, and read back as the

@@ -98,7 +98,10 @@ pub impl StatusStorage of StatusStorageTrait {
     #[inline(always)]
     fn status(self: @HeadSlot, id: u32) -> QuestStatus {
         QuestStatus {
-            id, defined: *self.defined, retired: *self.retired, live_dependents: *self.live_dependents,
+            id,
+            defined: *self.defined,
+            retired: *self.retired,
+            live_dependents: *self.live_dependents,
         }
     }
 

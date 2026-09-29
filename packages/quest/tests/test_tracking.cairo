@@ -36,7 +36,7 @@ fn read_slot(mock: IMockTrackingDispatcher, id: u32) -> felt252 {
 // Behaviour
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 2098247)]
 fn track_all_emits_once_per_write() {
     let mock = all();
     let mut spy = spy_events();
@@ -61,7 +61,7 @@ fn track_all_emits_once_per_write() {
 }
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 1714062)]
 fn track_none_emits_nothing() {
     let mock = none();
     let mut spy = spy_events();
@@ -78,25 +78,25 @@ fn track_none_emits_nothing() {
 // Benchmarks: created slots, `TrackNone` against the write with no event code
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 294273)]
 fn baseline_track_none() {
     none().noop(ID, A, B);
 }
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 771530)]
 fn bench_track_none_hand_silent() {
     none().hand_set_silent(ID, A, B);
 }
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 771530)]
 fn bench_track_none_by_constant() {
     none().set_by_constant(ID, A, B);
 }
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 771530)]
 fn bench_track_none_by_emitter() {
     none().set_by_emitter(ID, A, B);
 }
@@ -104,25 +104,25 @@ fn bench_track_none_by_emitter() {
 // Benchmarks: created slots, `TrackAll` against the write then `emit`
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 294273)]
 fn baseline_track_all() {
     all().noop(ID, A, B);
 }
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 818801)]
 fn bench_track_all_hand_emitted() {
     all().hand_set_emitted(ID, A, B);
 }
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 818801)]
 fn bench_track_all_by_constant() {
     all().set_by_constant(ID, A, B);
 }
 
 #[test]
-#[available_gas(l2_gas: 10000000)]
+#[available_gas(l2_gas: 818801)]
 fn bench_track_all_by_emitter() {
     all().set_by_emitter(ID, A, B);
 }

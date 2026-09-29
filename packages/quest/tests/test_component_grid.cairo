@@ -4,7 +4,7 @@
 //! call; the call's cost is their difference. `grid_h0` is an empty list.
 
 use quiver_quest::interface::IQuestDispatcherTrait;
-use quiver_quest::logic::Mode;
+use quiver_quest::types::mode::Mode;
 use super::grid::{COMPLETE, COUNT, DONE, EXPIRED, MISS, deploy, seed, worst_entries};
 use super::setup::PLAYER;
 
@@ -17,7 +17,7 @@ fn baseline_grid_h0() {
 }
 
 #[test]
-#[available_gas(l2_gas: 2005042)]
+#[available_gas(l2_gas: 2004727)]
 fn grid_h0() {
     let grid = deploy();
     seed(grid, 0, COMPLETE);
@@ -33,7 +33,7 @@ fn baseline_grid_h1_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4626671)]
+#[available_gas(l2_gas: 4624540)]
 fn grid_h1_complete() {
     let grid = deploy();
     seed(grid, 1, COMPLETE);
@@ -49,7 +49,7 @@ fn baseline_grid_h1_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4055093)]
+#[available_gas(l2_gas: 4052059)]
 fn grid_h1_count() {
     let grid = deploy();
     seed(grid, 1, COUNT);
@@ -65,7 +65,7 @@ fn baseline_grid_h1_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3579170)]
+#[available_gas(l2_gas: 3575285)]
 fn grid_h1_miss() {
     let grid = deploy();
     seed(grid, 1, MISS);
@@ -97,7 +97,7 @@ fn baseline_grid_h1_expired() {
 }
 
 #[test]
-#[available_gas(l2_gas: 3388102)]
+#[available_gas(l2_gas: 3388018)]
 fn grid_h1_expired() {
     let grid = deploy();
     seed(grid, 1, EXPIRED);
@@ -113,7 +113,7 @@ fn baseline_grid_h2_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 6921971)]
+#[available_gas(l2_gas: 6918023)]
 fn grid_h2_complete() {
     let grid = deploy();
     seed(grid, 2, COMPLETE);
@@ -129,7 +129,7 @@ fn baseline_grid_h2_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5720414)]
+#[available_gas(l2_gas: 5714660)]
 fn grid_h2_count() {
     let grid = deploy();
     seed(grid, 2, COUNT);
@@ -145,7 +145,7 @@ fn baseline_grid_h2_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 4768568)]
+#[available_gas(l2_gas: 4761113)]
 fn grid_h2_miss() {
     let grid = deploy();
     seed(grid, 2, MISS);
@@ -193,7 +193,7 @@ fn baseline_grid_h4_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 11905240)]
+#[available_gas(l2_gas: 11897659)]
 fn grid_h4_complete() {
     let grid = deploy();
     seed(grid, 4, COMPLETE);
@@ -209,7 +209,7 @@ fn baseline_grid_h4_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 9443620)]
+#[available_gas(l2_gas: 9432427)]
 fn grid_h4_count() {
     let grid = deploy();
     seed(grid, 4, COUNT);
@@ -225,7 +225,7 @@ fn baseline_grid_h4_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 7539928)]
+#[available_gas(l2_gas: 7525333)]
 fn grid_h4_miss() {
     let grid = deploy();
     seed(grid, 4, MISS);
@@ -273,7 +273,7 @@ fn baseline_grid_h8_complete() {
 }
 
 #[test]
-#[available_gas(l2_gas: 21819371)]
+#[available_gas(l2_gas: 21804524)]
 fn grid_h8_complete() {
     let grid = deploy();
     seed(grid, 8, COMPLETE);
@@ -289,7 +289,7 @@ fn baseline_grid_h8_count() {
 }
 
 #[test]
-#[available_gas(l2_gas: 16837625)]
+#[available_gas(l2_gas: 16815554)]
 fn grid_h8_count() {
     let grid = deploy();
     seed(grid, 8, COUNT);
@@ -305,7 +305,7 @@ fn baseline_grid_h8_miss() {
 }
 
 #[test]
-#[available_gas(l2_gas: 13030241)]
+#[available_gas(l2_gas: 13001366)]
 fn grid_h8_miss() {
     let grid = deploy();
     seed(grid, 8, MISS);

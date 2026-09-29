@@ -5,7 +5,7 @@ use quiver_quest::errors;
 use quiver_quest::interface::{
     IQuestSafeDispatcherTrait, IQuestViewDispatcherTrait, IQuestViewSafeDispatcherTrait,
 };
-use quiver_quest::logic::QuestTask;
+use quiver_quest::types::task::QuestTask;
 use snforge_std::{map_entry_address, store};
 use starknet::storage_access::StorePacking;
 use super::helpers::{one_off, task};

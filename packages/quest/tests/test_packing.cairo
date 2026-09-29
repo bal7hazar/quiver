@@ -5,10 +5,11 @@
 //! packing is tested against (docs/CAIRO.md §2). It never runs in the library.
 
 use core::num::traits::Pow;
-use quiver_quest::logic::{
-    ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT, QuestConditions, QuestDefinition, QuestHeldSlot,
-    QuestProgress, QuestRecord, QuestTasks,
-};
+use quiver_quest::constants::{ACCEPTANCE_LIMIT, HELD_INTERVAL_LIMIT};
+use quiver_quest::models::definition::{ConditionsSlot, HeadSlot, TasksSlot};
+use quiver_quest::models::held::HeldSlot;
+use quiver_quest::models::progress::ProgressSlot;
+use quiver_quest::models::record::RecordSlot;
 use starknet::storage_access::StorePacking;
 use super::helpers::{
     U32_MAX, U64_MAX, held, held_slot, held_slot0, held_slot_k, ids, progress, record, schedule,
@@ -51,7 +52,7 @@ fn assert_below_2_251(packed: felt252) {
     assert!(value < pow2(251), "packed value not below 2^251");
 }
 
-fn oracle_definition(d: QuestDefinition) -> felt252 {
+fn oracle_definition(d: HeadSlot) -> felt252 {
     let mut acc: u256 = 0;
     put(ref acc, d.schedule.start.into(), 0, 64);
     put(ref acc, d.schedule.end.into(), 64, 64);
@@ -66,7 +67,7 @@ fn oracle_definition(d: QuestDefinition) -> felt252 {
     to_felt(acc)
 }
 
-fn oracle_tasks(t: QuestTasks) -> felt252 {
+fn oracle_tasks(t: TasksSlot) -> felt252 {
     let mut acc: u256 = 0;
     put(ref acc, t.t0.task_id.into(), 0, 32);
     put(ref acc, t.t0.total.into(), 32, 32);
@@ -78,7 +79,7 @@ fn oracle_tasks(t: QuestTasks) -> felt252 {
     to_felt(acc)
 }
 
-fn oracle_conditions(c: QuestConditions) -> felt252 {
+fn oracle_conditions(c: ConditionsSlot) -> felt252 {
     let mut acc: u256 = 0;
     put(ref acc, c.q0.into(), 0, 32);
     put(ref acc, c.q1.into(), 32, 32);
@@ -91,7 +92,7 @@ fn oracle_conditions(c: QuestConditions) -> felt252 {
     to_felt(acc)
 }
 
-fn oracle_held_slot(h: QuestHeldSlot) -> felt252 {
+fn oracle_held_slot(h: HeldSlot) -> felt252 {
     let mut acc: u256 = 0;
     put(ref acc, h.e0.quest_id.into(), 0, 32);
     put(ref acc, h.e0.interval_id.into(), 32, 48);
@@ -105,7 +106,7 @@ fn oracle_held_slot(h: QuestHeldSlot) -> felt252 {
     to_felt(acc)
 }
 
-fn oracle_progress(p: QuestProgress) -> felt252 {
+fn oracle_progress(p: ProgressSlot) -> felt252 {
     let mut acc: u256 = 0;
     put(ref acc, p.c0.into(), 0, 32);
     put(ref acc, p.c1.into(), 32, 32);
@@ -116,7 +117,7 @@ fn oracle_progress(p: QuestProgress) -> felt252 {
     to_felt(acc)
 }
 
-fn oracle_record(r: QuestRecord) -> felt252 {
+fn oracle_record(r: RecordSlot) -> felt252 {
     let mut acc: u256 = 0;
     put(ref acc, r.completions.into(), 0, 64);
     put(ref acc, r.claims.into(), 64, 64);
@@ -127,46 +128,46 @@ fn oracle_record(r: QuestRecord) -> felt252 {
 
 // One check per type: the packing equals the oracle, is below 2^251, and unpacks to the value
 
-fn check_definition(d: QuestDefinition) {
-    let packed = StorePacking::<QuestDefinition, felt252>::pack(d);
+fn check_definition(d: HeadSlot) {
+    let packed = StorePacking::<HeadSlot, felt252>::pack(d);
     assert!(packed == oracle_definition(d));
     assert_below_2_251(packed);
-    assert!(StorePacking::<QuestDefinition, felt252>::unpack(packed) == d);
+    assert!(StorePacking::<HeadSlot, felt252>::unpack(packed) == d);
 }
 
-fn check_tasks(t: QuestTasks) {
-    let packed = StorePacking::<QuestTasks, felt252>::pack(t);
+fn check_tasks(t: TasksSlot) {
+    let packed = StorePacking::<TasksSlot, felt252>::pack(t);
     assert!(packed == oracle_tasks(t));
     assert_below_2_251(packed);
-    assert!(StorePacking::<QuestTasks, felt252>::unpack(packed) == t);
+    assert!(StorePacking::<TasksSlot, felt252>::unpack(packed) == t);
 }
 
-fn check_conditions(c: QuestConditions) {
-    let packed = StorePacking::<QuestConditions, felt252>::pack(c);
+fn check_conditions(c: ConditionsSlot) {
+    let packed = StorePacking::<ConditionsSlot, felt252>::pack(c);
     assert!(packed == oracle_conditions(c));
     assert_below_2_251(packed);
-    assert!(StorePacking::<QuestConditions, felt252>::unpack(packed) == c);
+    assert!(StorePacking::<ConditionsSlot, felt252>::unpack(packed) == c);
 }
 
-fn check_held_slot(h: QuestHeldSlot) {
-    let packed = StorePacking::<QuestHeldSlot, felt252>::pack(h);
+fn check_held_slot(h: HeldSlot) {
+    let packed = StorePacking::<HeldSlot, felt252>::pack(h);
     assert!(packed == oracle_held_slot(h));
     assert_below_2_251(packed);
-    assert!(StorePacking::<QuestHeldSlot, felt252>::unpack(packed) == h);
+    assert!(StorePacking::<HeldSlot, felt252>::unpack(packed) == h);
 }
 
-fn check_progress(p: QuestProgress) {
-    let packed = StorePacking::<QuestProgress, felt252>::pack(p);
+fn check_progress(p: ProgressSlot) {
+    let packed = StorePacking::<ProgressSlot, felt252>::pack(p);
     assert!(packed == oracle_progress(p));
     assert_below_2_251(packed);
-    assert!(StorePacking::<QuestProgress, felt252>::unpack(packed) == p);
+    assert!(StorePacking::<ProgressSlot, felt252>::unpack(packed) == p);
 }
 
-fn check_record(r: QuestRecord) {
-    let packed = StorePacking::<QuestRecord, felt252>::pack(r);
+fn check_record(r: RecordSlot) {
+    let packed = StorePacking::<RecordSlot, felt252>::pack(r);
     assert!(packed == oracle_record(r));
     assert_below_2_251(packed);
-    assert!(StorePacking::<QuestRecord, felt252>::unpack(packed) == r);
+    assert!(StorePacking::<RecordSlot, felt252>::unpack(packed) == r);
 }
 
 fn definition(
@@ -179,8 +180,8 @@ fn definition(
     defined: bool,
     retired: bool,
     live_dependents: u16,
-) -> QuestDefinition {
-    QuestDefinition {
+) -> HeadSlot {
+    HeadSlot {
         schedule: schedule(start, end, duration, interval),
         task_count,
         condition_count,
@@ -190,14 +191,14 @@ fn definition(
     }
 }
 
-// QuestDefinition (slot A)
+// HeadSlot (slot A)
 
 #[test]
 #[available_gas(l2_gas: 2507999)]
 fn quest_packing_round_trip_definition_zero() {
     let zero = definition(0, 0, 0, 0, 0, 0, false, false, 0);
     check_definition(zero);
-    assert!(StorePacking::<QuestDefinition, felt252>::pack(zero) == 0);
+    assert!(StorePacking::<HeadSlot, felt252>::pack(zero) == 0);
 }
 
 #[test]
@@ -232,11 +233,11 @@ fn quest_packing_round_trip_definition_mixed() {
 #[available_gas(l2_gas: 1165805)]
 fn quest_packing_presence_bits_at_their_positions() {
     let defined = definition(0, 0, 0, 0, 0, 0, true, false, 0);
-    assert!(StorePacking::<QuestDefinition, felt252>::pack(defined) == to_felt(pow2(197)));
+    assert!(StorePacking::<HeadSlot, felt252>::pack(defined) == to_felt(pow2(197)));
     let retired = definition(0, 0, 0, 0, 0, 0, false, true, 0);
-    assert!(StorePacking::<QuestDefinition, felt252>::pack(retired) == to_felt(pow2(198)));
+    assert!(StorePacking::<HeadSlot, felt252>::pack(retired) == to_felt(pow2(198)));
     let packed = StorePacking::<
-        QuestDefinition, felt252,
+        HeadSlot, felt252,
     >::pack(definition(U64_MAX, U64_MAX, U32_MAX, U32_MAX, 3, 7, true, false, 0xffff));
     assert!(get(packed, 197, 1) == 1);
     assert!(get(packed, 198, 1) == 0);
@@ -245,13 +246,13 @@ fn quest_packing_presence_bits_at_their_positions() {
 #[test]
 #[available_gas(l2_gas: 37065)]
 fn quest_empty_slot_reads_undefined() {
-    let empty = StorePacking::<QuestDefinition, felt252>::unpack(0);
+    let empty = StorePacking::<HeadSlot, felt252>::unpack(0);
     assert!(!empty.defined);
     assert!(!empty.retired);
     assert!(empty == definition(0, 0, 0, 0, 0, 0, false, false, 0));
 }
 
-// QuestTasks (slot B)
+// TasksSlot (slot B)
 
 #[test]
 #[available_gas(l2_gas: 15891383)]
@@ -266,11 +267,11 @@ fn quest_packing_round_trip_tasks() {
     check_tasks(tasks(task(0, 0), task(0, 0), task(0, U32_MAX)));
     check_tasks(tasks(task(0x12345678, 10), task(0x9abcdef0, 1), task(7, 0x80000000)));
     assert!(
-        StorePacking::<QuestTasks, felt252>::pack(tasks(task(0, 0), task(0, 0), task(0, 0))) == 0,
+        StorePacking::<TasksSlot, felt252>::pack(tasks(task(0, 0), task(0, 0), task(0, 0))) == 0,
     );
 }
 
-// QuestConditions (slot C)
+// ConditionsSlot (slot C)
 
 #[test]
 #[available_gas(l2_gas: 20233017)]
@@ -288,7 +289,7 @@ fn quest_packing_round_trip_conditions() {
     check_conditions(ids(1, 0x80000000, 0x12345678, 3, 0xdeadbeef, 0x7fffffff, 42));
 }
 
-// QuestHeldSlot
+// HeldSlot
 
 #[test]
 #[available_gas(l2_gas: 42076577)]
@@ -318,10 +319,10 @@ fn quest_packing_round_trip_held_slot() {
     check_held_slot(held_slot_k(stamped(3, 1, 1), none, 0, false));
     // every field at its maximum: the largest value, below 2^251
     let full = StorePacking::<
-        QuestHeldSlot, felt252,
+        HeldSlot, felt252,
     >::pack(held_slot_k(stamped(U32_MAX, iv, n), stamped(U32_MAX, iv, n), n, true));
     assert!(full == to_felt(pow2(251) - 1));
-    assert!(StorePacking::<QuestHeldSlot, felt252>::pack(held_slot(none, none)) == 0);
+    assert!(StorePacking::<HeldSlot, felt252>::pack(held_slot(none, none)) == 0);
 }
 
 /// Fix loop 4: an interval id or a number wider than its field is refused, not truncated.
@@ -329,30 +330,24 @@ fn quest_packing_round_trip_held_slot() {
 #[should_panic(expected: 'Packing: field out of range')]
 #[available_gas(l2_gas: 16296)]
 fn quest_packing_rejects_held_interval_2_48() {
-    StorePacking::<
-        QuestHeldSlot, felt252,
-    >::pack(held_slot(held(1, HELD_INTERVAL_LIMIT), held(0, 0)));
+    StorePacking::<HeldSlot, felt252>::pack(held_slot(held(1, HELD_INTERVAL_LIMIT), held(0, 0)));
 }
 
 #[test]
 #[should_panic(expected: 'Packing: field out of range')]
 #[available_gas(l2_gas: 16296)]
 fn quest_packing_rejects_held_acceptance_2_30() {
-    StorePacking::<
-        QuestHeldSlot, felt252,
-    >::pack(held_slot(held(1, 0), stamped(2, 0, ACCEPTANCE_LIMIT)));
+    StorePacking::<HeldSlot, felt252>::pack(held_slot(held(1, 0), stamped(2, 0, ACCEPTANCE_LIMIT)));
 }
 
 #[test]
 #[should_panic(expected: 'Packing: field out of range')]
 #[available_gas(l2_gas: 16296)]
 fn quest_packing_rejects_held_counter_2_30() {
-    StorePacking::<
-        QuestHeldSlot, felt252,
-    >::pack(held_slot0(held(1, 0), held(0, 0), ACCEPTANCE_LIMIT));
+    StorePacking::<HeldSlot, felt252>::pack(held_slot0(held(1, 0), held(0, 0), ACCEPTANCE_LIMIT));
 }
 
-// QuestProgress
+// ProgressSlot
 
 #[test]
 #[available_gas(l2_gas: 12504681)]
@@ -368,7 +363,7 @@ fn quest_packing_round_trip_progress() {
     check_progress(progress(0x80000000, 1, 0x7fffffff, false, true));
 }
 
-// QuestRecord
+// RecordSlot
 
 #[test]
 #[available_gas(l2_gas: 7500749)]
@@ -385,8 +380,8 @@ fn quest_packing_round_trip_record() {
 // Fix loop 1: packing never lets a field spill into its neighbour (§3.3 widths), and unpacking
 // rejects a felt the package did not write (a bit set outside the encoding).
 
-fn pack_definition(d: QuestDefinition) -> felt252 {
-    StorePacking::<QuestDefinition, felt252>::pack(d)
+fn pack_definition(d: HeadSlot) -> felt252 {
+    StorePacking::<HeadSlot, felt252>::pack(d)
 }
 
 #[test]
@@ -422,28 +417,28 @@ fn quest_packing_rejects_condition_count_16() {
 #[should_panic(expected: 'Packing: reserved bits set')]
 #[available_gas(l2_gas: 446376)]
 fn quest_unpacking_rejects_definition_bit_215() {
-    StorePacking::<QuestDefinition, felt252>::unpack(to_felt(pow2(215)));
+    StorePacking::<HeadSlot, felt252>::unpack(to_felt(pow2(215)));
 }
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
 #[available_gas(l2_gas: 33159)]
 fn quest_unpacking_rejects_definition_felt_minus_one() {
-    StorePacking::<QuestDefinition, felt252>::unpack(-1);
+    StorePacking::<HeadSlot, felt252>::unpack(-1);
 }
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
 #[available_gas(l2_gas: 377202)]
 fn quest_unpacking_rejects_tasks_bit_192() {
-    StorePacking::<QuestTasks, felt252>::unpack(to_felt(pow2(192)));
+    StorePacking::<TasksSlot, felt252>::unpack(to_felt(pow2(192)));
 }
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
 #[available_gas(l2_gas: 396113)]
 fn quest_unpacking_rejects_conditions_bit_224() {
-    StorePacking::<QuestConditions, felt252>::unpack(to_felt(pow2(224)));
+    StorePacking::<ConditionsSlot, felt252>::unpack(to_felt(pow2(224)));
 }
 
 #[test]
@@ -452,14 +447,14 @@ fn quest_unpacking_rejects_conditions_bit_224() {
 fn quest_unpacking_rejects_held_bit_251() {
     // bit 250 is `kept`; bit 251, the only one above the layout, is reserved
     StorePacking::<
-        QuestHeldSlot, felt252,
+        HeldSlot, felt252,
     >::unpack(0x800000000000000000000000000000000000000000000000000000000000000);
 }
 
 #[test]
 #[available_gas(l2_gas: 450114)]
 fn quest_unpacking_reads_held_bit_250_as_kept() {
-    let h = StorePacking::<QuestHeldSlot, felt252>::unpack(to_felt(pow2(250)));
+    let h = StorePacking::<HeldSlot, felt252>::unpack(to_felt(pow2(250)));
     assert!(h == held_slot_k(held(0, 0), held(0, 0), 0, true));
 }
 
@@ -467,29 +462,29 @@ fn quest_unpacking_reads_held_bit_250_as_kept() {
 #[should_panic(expected: 'Packing: reserved bits set')]
 #[available_gas(l2_gas: 373884)]
 fn quest_unpacking_rejects_progress_bit_98() {
-    StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(98)));
+    StorePacking::<ProgressSlot, felt252>::unpack(to_felt(pow2(98)));
 }
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
 #[available_gas(l2_gas: 360234)]
 fn quest_unpacking_rejects_progress_bit_128() {
-    StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(128)));
+    StorePacking::<ProgressSlot, felt252>::unpack(to_felt(pow2(128)));
 }
 
 #[test]
 #[should_panic(expected: 'Packing: reserved bits set')]
 #[available_gas(l2_gas: 373842)]
 fn quest_unpacking_rejects_record_bit_129() {
-    StorePacking::<QuestRecord, felt252>::unpack(to_felt(pow2(129)));
+    StorePacking::<RecordSlot, felt252>::unpack(to_felt(pow2(129)));
 }
 
 #[test]
 #[available_gas(l2_gas: 724049)]
 fn quest_unpacking_progress_reads_bit_97_alone() {
-    let p = StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(97)));
+    let p = StorePacking::<ProgressSlot, felt252>::unpack(to_felt(pow2(97)));
     assert!(p == progress(0, 0, 0, false, true));
-    let p = StorePacking::<QuestProgress, felt252>::unpack(to_felt(pow2(96)));
+    let p = StorePacking::<ProgressSlot, felt252>::unpack(to_felt(pow2(96)));
     assert!(p == progress(0, 0, 0, true, false));
 }
 
