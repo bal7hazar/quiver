@@ -1,35 +1,26 @@
 # Status
 
-**2026-09-29 12:30 UTC** (paused), written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-09-30 15:45 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
-## Pause 2026-09-29
+## Resumed 2026-09-30, under Nexus (D-162)
 
-Paused at 12:30 UTC by the project manager for the owner (the app's quota at 95 %, reset
-2026-09-30 14:00 UTC). Nothing runs; resume only on the owner's or the project manager's message
-after the reset.
+Resumed after the pause under the standard roles of Nexus (the game's OPERATIONS.md, D-162): every
+pull request gets a Codex review (`nexus review`) before its merge, audits go through `nexus audit`,
+implementers still through `scripts/agent.sh`, and `nexus accounts` and `nexus resources` are read
+before any launch.
 
-| | |
-|---|---|
-| Last commit on `main` | `24fb49e` (docs: ARC-07a closed, reports archived; the lot waits for the owner's review) |
-| Open pull requests | None |
-| Branches | `main` only; every task branch merged and deleted |
-| Agents | None running; slot `quiver-1` free. No agent to resume: every task is closed |
-| Worktrees | The orchestrator's own only; every task worktree removed |
+**The owner accepted ARC-07a (D-167)**: "clean and close to the target". Two remarks: (1) a mapping
+of Arcade's models and events to `quiver_quest` 0.2.0's, with the reasons, for the owner to read:
+[docs/research/ARC-07a-arcade-mapping.md](docs/research/ARC-07a-arcade-mapping.md); (2) a new rule,
+docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mod tests`.
 
 | Task | State | Next step |
 |---|---|---|
-| ARC-07a, `quiver_quest` 0.2.0 on the pattern (D-143, D-147) | Done: [#20](https://github.com/bal7hazar/quiver/pull/20) merged (`5571876`), audits PASS (`[GPT-6-Sol]`) and PASS WITH FINDINGS (`[GPT-6-Astra]`); version 0.2.0 in `Scarb.toml`, **not published** | The owner's verdict on the lot |
-| ARC-07b, `quiver_achievement` 0.2.0 on the pattern | **Not briefed, not launched**: waits for the owner's verdict on ARC-07a | Brief it on the verdict (the rule for events carrying unstored fields: `points` stored in free bits of slot A, ARC-06 research §6), then launch through `scripts/agent.sh` (new agent, no session to resume) |
-| Publication of both packages as 0.2.0 | Not asked | After ARC-07b: one `PENDING-publish-*` file per package, as for 0.1.0 (D-132) |
+| ARC-07a, `quiver_quest` 0.2.0 | Done ([#20](https://github.com/bal7hazar/quiver/pull/20)), **accepted (D-167)**; not published | The owner reads the mapping and may bring a model back |
+| ARC-07b, `quiver_achievement` 0.2.0 | **Briefed** ([brief](docs/briefs/ARC-07b-achievement-0.2.0.md)): the pattern, `points` stored in slot A, the first lot under D-167's rule of tests | Launch through `scripts/agent.sh` (Opus 5.5); audits `[GPT-6-Sol]` organisation and `[GPT-6-Astra]` cost through `nexus audit`; Codex review before the merge; shown to the owner |
+| ARC-07c, `quiver_quest`'s tests into their modules | Planned, after ARC-07b | Brief after ARC-07b; Sonnet 5.5 |
+| Publication of both packages as 0.2.0 | Not asked | After ARC-07c: one `PENDING-publish-*` file per package (D-132) |
 | ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
-
-**Waiting for the owner**: the verdict on `quiver_quest` 0.2.0 (ARC-07a), sent to the project manager
-at 12:15 UTC: the store (`packages/quest/src/store.cairo`, `TrackAll` / `TrackNone` in
-`store::tracking`), the models (`packages/quest/src/models/`), the consumer's one-line choice
-(`packages/quest/README.md`), the mechanism and its cost (`docs/research/ARC-06-model-store.md` §7);
-including **whether action events (`QuestCompleted`, `QuestClaimed`, `QuestProgressed`,
-`QuestRetired`) become optional too**: today only models' events are optional, and action events are
-always emitted where 0.1.0 emits them.
 
 ## Where we are
 
