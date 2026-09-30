@@ -21,9 +21,10 @@ version becomes **0.2.0** (its module paths change).
 ## Context
 - **The rule**: [docs/CAIRO.md](../CAIRO.md) §7 and §8; the owner's rule D-143; the owner's review of
   ARC-06, D-147 (`logic/` removed; a model's event optional for the consumer).
-- **The owner's verdict on ARC-07a**: VERDICT — filled in by the orchestrator when the project
-  manager relays it (its decision number, what it keeps, what it asks to change). Every rule it
-  sets for `quiver_quest` 0.2.0 applies here too.
+- **The owner's verdict on ARC-07a, D-167** (`cd /home/claude/projects/grimworld && git fetch -q origin && git show origin/pm/d-167-tests-in-file:docs/decisions/2026-09-30-arc-07a-owner-review.md`
+  until it is merged on the game's `main`, then `origin/main`): ARC-07a is **accepted** ("clean and
+  close to the target"); follow its shape. It adds **the rule of tests** (docs/CAIRO.md §2, "Where a
+  test lives"), which this lot is the first to apply (below). The owner is shown this lot.
 - **The finished example, to follow in shape and names**: `packages/quest/` at `main` (0.2.0):
   `src/store.cairo` (`Tracked`, `QuestTracking`, `store::tracking::{TrackAll, TrackNone}`,
   `get_x`/`set_x` on the component's state), `src/models/` (`index.cairo`, `definition.cairo`,
@@ -69,21 +70,32 @@ hand-written twin; under `TrackAll` the write plus the event. ARC-07a measured t
 the compiler on Cairo 2.19: measure it again here on this package's models (definition with 1 and 3
 tasks, reporter), in the tables of `GAS.md`.
 
-### If the owner's verdict makes action events optional too
+**Action events stay emitted whatever the consumer tracks**, as in `quiver_quest` 0.2.0, which the
+owner accepted: `AchievementRetired` and `AchievementProgressed` (in event mode, the only record of
+progress) are not the consumer's choice.
 
-The owner may ask that **action events** also become the consumer's choice (for `quiver_quest`:
-`QuestCompleted`, `QuestClaimed`, `QuestProgressed`, `QuestRetired`; here: `AchievementRetired` and
-`AchievementProgressed`). VERDICT — this section is kept or removed by the orchestrator when the
-verdict comes. If kept:
+## Where tests live (D-167, docs/CAIRO.md §2)
 
-- Each action event gets its constant in the same trait (`RETIRED`, `PROGRESSED`), emitted through a
-  store method named for the action (arcade's `store.complete`), under the same criterion (no event
-  code when off, measured to the unit), with tests under `TrackAll` and `TrackNone`.
-- **In event mode, `AchievementProgressed` is the only record of progress.** A consumer that turns it
-  off has achievements no indexer can follow. Say so in the README next to the choice, and in the
-  report; the verdict decides whether `TrackNone` turns it off or keeps it.
-- The same change to `quiver_quest` 0.2.0, if the verdict asks for it, is in scope here and added to
-  the allowlist below, with its own tests and figures; else it is a lot of its own.
+This lot is the first under the owner's rule, and the owner reads it for that too:
+
+- **The unit tests of a module are in that module's file**, under `#[cfg(test)] mod tests` at its
+  end: a model's constructor, checks, packing and behaviour in `models/<x>.cairo`, a type's in
+  `types/<x>.cairo`, the bit helpers and the batch merge in theirs, the store's own in `store.cairo`.
+  Whoever changes the code sees its tests.
+- **Only what needs a deployed contract or several packages stays in `tests/`**: the component
+  through its entrypoints (access, define, retire, progress, the events emitted), the mocks, the
+  entrypoint gas benchmarks, the tracking benchmarks against their hand-written twins.
+- A test kept in `tests/` for a performance reason says so in a comment above it.
+- Every test keeps its budget, moved with it. **`scripts/gas.py` reads budgets in `src/`**: it scans
+  `src/` and `tests/` and follows inline `mod tests { .. }` blocks, naming `src/models/x.cairo`'s
+  tests `quiver_achievement::models::x::tests::<fn>`. The orchestrator checked its parser on a
+  sample; no real run has one yet: show it (a test in `src/` over or without a budget fails
+  `--check`), and if it does not hold, fix `scripts/gas.py` with a case in its own tests and say
+  so in the report.
+- State in the report the build time and the test run time of the package, before and after the
+  move (D-167: "a measured compile-time cost of tests in `src/` that the owner judges too high"
+  would reverse the rule).
+- `quiver_quest`'s own tests move in a later lot of their own (ARC-07c), not in this one.
 
 ## Scope
 
@@ -102,25 +114,26 @@ verdict comes. If kept:
 4. **Names**: as `quiver_quest` 0.2.0: `AchievementDefinition` is the model only; 0.1.0's slot types
    get slot-specific names (`HeadSlot`, `TasksSlot`, as the quest package); short, scoped, the
    design's words.
-5. **Kept**: event mode only (no storage mode, no per-player storage, nothing reserved for one);
+5. **Tests placed by the rule above**: unit tests in their module's file, the rest in `tests/`.
+6. **Kept**: event mode only (no storage mode, no per-player storage, nothing reserved for one);
    behaviour, events and their fields, error strings, storage layouts (except `points`, named),
-   every test (moved and renamed where the paths change), every gas budget (no raise without a
+   every test (moved where the rule or the paths say, renamed only where the paths change), every gas budget (no raise without a
    `// gas: raised, <reason>` note); the worst calls of 0.1.0 (`progress_many` 1.82M, `define`,
    `retire`, the views) not raised beyond noise, remeasured and stated.
-6. **Documents**: README (the layout, the consumer's sketch with the tracking choice), `CHANGELOG.md`
+7. **Documents**: README (the layout, the consumer's sketch with the tracking choice), `CHANGELOG.md`
    section `[0.2.0]` (not yet released: the breaking changes of paths and names, `points` stored,
    the view's ABI, the tracking choice), `GAS.md`, **`docs/BUDGETS.md`'s `quiver_achievement`
    tables refreshed**, ARC-01 §3.10–3.11 amended where the paths and names change, and a section
    "Optional tracking, ARC-07b" in `docs/research/ARC-06-model-store.md` (the figures only; the
    mechanism is §7's).
-7. `Scarb.toml` version `0.2.0`.
+8. `Scarb.toml` version `0.2.0`.
 
-**Out**: `quiver_quest` (unless the verdict's section above is kept); a storage mode; publication
+**Out**: `quiver_quest` (its tests move in ARC-07c); a storage mode; publication
 (never by an agent: D-132).
 
 **Allowlist**: `packages/achievement/**`, `docs/BUDGETS.md`, `docs/research/ARC-06-model-store.md`,
-the `achievement` parts of `docs/research/ARC-01-quest-achievement.md`. Anything else is an
-escalation.
+the `achievement` parts of `docs/research/ARC-01-quest-achievement.md`; `scripts/gas.py` and its
+tests only if it does not read budgets in `src/`. Anything else is an escalation.
 
 ## Acceptance criteria
 - [ ] AC-1 No `logic/` folder; the layers of §7, in the shape and names of `quiver_quest` 0.2.0; no
@@ -131,9 +144,12 @@ escalation.
       a write with no event code (measured); tests for `TrackAll` and `TrackNone`.
 - [ ] AC-4 Event mode only; behaviour, events, errors and layouts of 0.1.0 kept (or each change named
       and measured); every test kept; worst calls not raised beyond noise.
-- [ ] AC-5 README, CHANGELOG `[0.2.0]`, GAS.md, BUDGETS refreshed, ARC-01 amended, ARC-06 research
+- [ ] AC-5 Unit tests in their module's file under `#[cfg(test)] mod tests`; `tests/` holds only
+      what needs a deployed contract; `scripts/gas.py --check` counts the tests in `src/` (shown);
+      build and test times before and after in the report.
+- [ ] AC-6 README, CHANGELOG `[0.2.0]`, GAS.md, BUDGETS refreshed, ARC-01 amended, ARC-06 research
       section; version 0.2.0.
-- [ ] AC-6 The pull request's CI is green.
+- [ ] AC-7 The pull request's CI is green.
 
 ## Verification
 `scripts/lock.sh scarb --manifest-path packages/achievement/Scarb.toml build`,
@@ -144,5 +160,5 @@ escalation.
 ## Report
 `REPORT.md` (COMMON.md §6): the layout, the tracking figures against 0.1.0, **the paths the owner
 should read** (the tracking trait, the definition model with `points`, the store), the gas table
-against 0.1.0, deviations, escalations. Branch `feat/ARC-07b-achievement-0.2.0`; pull request
+against 0.1.0, where the tests went and the build and test times, deviations, escalations. Branch `feat/ARC-07b-achievement-0.2.0`; pull request
 `[Opus 5.5] ARC-07b achievement 0.2.0`. Foreground only; your turn ends when `REPORT.md` is written.

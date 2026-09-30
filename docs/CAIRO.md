@@ -5,7 +5,8 @@ These are the owner's rules (2026-09-28); the map library `origami_hexmap` is th
 reference for how they are applied.
 
 > Copied unchanged from `docs/CAIRO.md` of `bal7hazar/grimworld` at `d41299d` (§7 and §8 added by
-> the owner's rule D-143; §2 updated), where the rules
+> the owner's rule D-143; §2 updated), with §2's row "Where a test lives" of D-167 (the game's
+> branch `pm/d-167-tests-in-file`, 2026-09-30), where the rules
 > are owned. Its examples speak of the game (goblins, instances, the pillar on paid
 > transactions); for quiver read them as "the consumer's call". The game's copy wins if the two
 > ever differ; the orchestrator keeps this one in step. Where a rule names a script of the game
@@ -47,6 +48,7 @@ saves nothing measurable is not made.
 | Reports carry them | `REPORT.md` has a gas table: before, after, budget, for everything the lot touched |
 | Raising a budget | Needs a reason, written as `// gas: raised, <reason>` above the attribute (checked by `scripts/gas_budgets.py`) and in the pull request, and the orchestrator's agreement, given at review from the `raised` notes of the gas table. Lowering one needs nothing |
 | Oracles | An optimised algorithm is tested against a plain, obviously correct version kept in the tests (a scalar flood against the bit-parallel one) |
+| **Where a test lives** (owner, 2026-09-30, D-167) | The unit tests of a module are **in that module's file**, under `#[cfg(test)] mod tests`, so that whoever changes the code sees its tests. Only what needs a deployed contract or several packages (integration, an entrypoint's gas benchmark, a parity table) is in `tests/`. A test kept apart for a performance reason says so above it |
 
 ## 3. Order of preference
 
