@@ -51,7 +51,9 @@ code must be updated.
 - **Storage layout: `points` is stored** in slot A, bits [196, 212), which 0.1.0 reserved; [212,
   252) stay reserved and are checked on unpacking. A tracked model holds every field its event
   carries (ARC-06 §6, rule 1). No new slot: `define` writes A anyway. A slot A written by 0.1.0
-  reads with `points` 0.
+  reads with `points` 0: a consumer upgraded in place from 0.1.0 gets `points` 0 from the view and
+  the store for the achievements it defined before, and nothing re-emits them; for those, the
+  `AchievementDefined` emitted by 0.1.0 stays the source of `points`.
 - **The view's ABI: `achievement_definition` returns `(HeadSlot, Span<AchievementTask>)`**, slot A
   with `points` as its last field: one more felt in the output, after `t0`. An ABI client of 0.1.0
   that decodes the struct must read it.
