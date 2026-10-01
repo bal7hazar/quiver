@@ -331,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 41402)]
+    #[available_gas(l2_gas: 40562)]
     fn definition_new_three_tasks() {
         let tasks = array![task(1, 5), task(2, 6), task(3, 7)].span();
         let (definition, extra) = definition_new(5, always(), tasks);
@@ -353,7 +353,7 @@ mod tests {
 
     /// `points` is the model's and A's (ARC-07b); the model comes back from its slots.
     #[test]
-    #[available_gas(l2_gas: 60000)]
+    #[available_gas(l2_gas: 55115)]
     fn definition_points_stored_and_read_back() {
         let tasks = array![task(1, 5), task(2, 6)].span();
         let definition = DefinitionTrait::new(9, window(3, 4), tasks, U16_MAX);
@@ -433,7 +433,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid tasks')]
-    #[available_gas(l2_gas: 21966)]
+    #[available_gas(l2_gas: 21126)]
     fn definition_new_rejects_repeated_task() {
         definition_new(5, always(), array![task(1, 1), task(2, 1), task(1, 2)].span());
     }
@@ -625,7 +625,7 @@ mod tests {
     // Benchmarks, on the worst case of each (docs/CAIRO.md §2)
 
     #[test]
-    #[available_gas(l2_gas: 21966)]
+    #[available_gas(l2_gas: 21126)]
     fn bench_definition_new_three_tasks() {
         definition_new(1, always(), array![task(1, 1), task(2, 1), task(3, 1)].span());
     }

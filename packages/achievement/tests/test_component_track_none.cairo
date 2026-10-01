@@ -23,7 +23,7 @@ fn deploy() -> (IAchievementDispatcher, IAchievementViewDispatcher) {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 3891285)]
 fn track_none_component_emits_action_events_only() {
     let (achievement, view) = deploy();
     let mut spy = spy_events();

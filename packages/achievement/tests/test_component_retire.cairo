@@ -62,7 +62,7 @@ fn achievement_retire_undefined_reverts() {
 
 /// Retiring one tier leaves the others on the task untouched.
 #[test]
-#[available_gas(l2_gas: 3951266)]
+#[available_gas(l2_gas: 3948956)]
 fn achievement_retire_one_tier_only() {
     let a = deploy();
     define_simple(a, 1, 7, 10);

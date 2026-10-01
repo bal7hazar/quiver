@@ -65,7 +65,7 @@ fn write_definitions(store: IMockStoreDispatcher) {
 // Tracked models under `TrackAll`: one event per write
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 2225160)]
 fn track_all_definition_emits_once_per_write() {
     let store = all();
     let mut spy = spy_events();
@@ -88,7 +88,7 @@ fn track_all_definition_emits_once_per_write() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 1044036)]
 fn track_all_reporter_emits_once_per_write() {
     let store = all();
     let mut spy = spy_events();
@@ -113,7 +113,7 @@ fn track_all_reporter_emits_once_per_write() {
 // Tracked models under `TrackNone`: no event, the same felts
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 3810954)]
 fn track_none_definition_emits_nothing_and_writes_the_same() {
     let tracked = all();
     let silent = none();
@@ -137,7 +137,7 @@ fn track_none_definition_emits_nothing_and_writes_the_same() {
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 1917731)]
 fn track_none_reporter_emits_nothing_and_writes_the_same() {
     let tracked = all();
     let silent = none();
@@ -160,7 +160,7 @@ fn track_none_reporter_emits_nothing_and_writes_the_same() {
 /// The status never emits, whatever the consumer tracks, and its write keeps the definition's
 /// bits of A.
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 2390031)]
 fn status_never_emits() {
     let tracked = all();
     let silent = none();
@@ -187,7 +187,7 @@ fn status_never_emits() {
 // Reads
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 2791058)]
 fn get_definition_reads_the_model_back() {
     let store = all();
     store.store_set_definition(1, always(), one(4, 2), 10);

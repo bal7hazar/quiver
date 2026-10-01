@@ -19,10 +19,11 @@ pub mod errors {
 
 #[generate_trait]
 pub impl ReporterAssert of AssertTrait {
-    /// `'Achievement: not reporter'` unless allowed.
+    /// `'Achievement: not reporter'` unless allowed. By value: by snapshot costs 5 steps more on
+    /// every progress call (measured, ARC-07b).
     #[inline(always)]
-    fn assert_is_allowed(self: @AchievementReporter) {
-        assert(*self.allowed, errors::REPORTER_NOT_ALLOWED);
+    fn assert_is_allowed(self: AchievementReporter) {
+        assert(self.allowed, errors::REPORTER_NOT_ALLOWED);
     }
 }
 

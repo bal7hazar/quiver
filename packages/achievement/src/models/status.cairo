@@ -41,22 +41,22 @@ pub impl StatusImpl of StatusTrait {
 pub impl StatusAssert of AssertTrait {
     /// `'Achievement: does not exist'` unless defined.
     #[inline(always)]
-    fn assert_does_exist(self: @AchievementStatus) {
-        assert(*self.defined, errors::STATUS_NOT_EXIST);
+    fn assert_does_exist(self: AchievementStatus) {
+        assert(self.defined, errors::STATUS_NOT_EXIST);
     }
 
     /// `'Achievement: already defined'` once defined, retired or not.
     #[inline(always)]
-    fn assert_does_not_exist(self: @AchievementStatus) {
-        assert(!*self.defined, errors::STATUS_ALREADY_DEFINED);
+    fn assert_does_not_exist(self: AchievementStatus) {
+        assert(!self.defined, errors::STATUS_ALREADY_DEFINED);
     }
 
     /// Defined and not retired: `'Achievement: does not exist'`, `'Achievement: retired'`, in this
     /// order.
     #[inline(always)]
-    fn assert_can_retire(self: @AchievementStatus) {
+    fn assert_can_retire(self: AchievementStatus) {
         self.assert_does_exist();
-        assert(!*self.retired, errors::STATUS_RETIRED);
+        assert(!self.retired, errors::STATUS_RETIRED);
     }
 }
 
@@ -66,14 +66,14 @@ pub impl StatusAssert of AssertTrait {
 pub impl StatusStorage of StatusStorageTrait {
     /// The status of achievement `id` in its slot A.
     #[inline(always)]
-    fn status(self: @HeadSlot, id: u32) -> AchievementStatus {
-        AchievementStatus { id, defined: *self.defined, retired: *self.retired }
+    fn status(self: HeadSlot, id: u32) -> AchievementStatus {
+        AchievementStatus { id, defined: self.defined, retired: self.retired }
     }
 
     /// Slot A with this status, the definition's bits of `head` unchanged.
     #[inline(always)]
-    fn into_slot(self: @AchievementStatus, head: HeadSlot) -> HeadSlot {
-        HeadSlot { defined: *self.defined, retired: *self.retired, ..head }
+    fn into_slot(self: AchievementStatus, head: HeadSlot) -> HeadSlot {
+        HeadSlot { defined: self.defined, retired: self.retired, ..head }
     }
 }
 
@@ -93,7 +93,7 @@ mod tests {
 
     /// Retiring changes `retired` only: the definition's bits of A are written back unchanged.
     #[test]
-    #[available_gas(l2_gas: 60000)]
+    #[available_gas(l2_gas: 28434)]
     fn status_retire_keeps_the_definition_bits() {
         let head = head();
         let mut status = head.status(5);
@@ -106,14 +106,14 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Achievement: does not exist')]
-    #[available_gas(l2_gas: 20000)]
+    #[available_gas(l2_gas: 16296)]
     fn status_cannot_retire_undefined() {
         AchievementStatus { id: 5, defined: false, retired: false }.assert_can_retire();
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: retired')]
-    #[available_gas(l2_gas: 20000)]
+    #[available_gas(l2_gas: 16296)]
     fn status_cannot_retire_twice() {
         AchievementStatus { id: 5, defined: true, retired: true }.assert_can_retire();
     }
@@ -121,7 +121,7 @@ mod tests {
     /// Retired or not, a defined achievement cannot be defined again.
     #[test]
     #[should_panic(expected: 'Achievement: already defined')]
-    #[available_gas(l2_gas: 20000)]
+    #[available_gas(l2_gas: 16296)]
     fn status_defined_refuses_define() {
         AchievementStatus { id: 5, defined: true, retired: true }.assert_does_not_exist();
     }

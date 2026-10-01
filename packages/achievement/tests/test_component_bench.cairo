@@ -118,7 +118,7 @@ fn bench_progress_many_late_collision_with_definitions() {
 // Admin entrypoints
 
 #[test]
-#[available_gas(l2_gas: 1572102)]
+#[available_gas(l2_gas: 1567514)]
 fn bench_define_one_task() {
     let bench = deploy();
     bench.achievement.define(1, always(), one(1, 10), 10);
@@ -245,7 +245,7 @@ fn define_titles(bench: Bench) -> u32 {
 }
 
 #[test]
-#[available_gas(l2_gas: 20281097)]
+#[available_gas(l2_gas: 20161796)]
 fn bench_game_define_titles() {
     let bench = deploy();
     assert!(define_titles(bench) == 26);
@@ -258,7 +258,7 @@ fn game_setup() -> Bench {
 }
 
 #[test]
-#[available_gas(l2_gas: 20279396)]
+#[available_gas(l2_gas: 20160095)]
 fn baseline_game_defined() {
     game_setup();
 }
@@ -267,7 +267,7 @@ fn baseline_game_defined() {
 /// then the account's two (107, 108), in the one results transaction: two `progress_many` calls,
 /// one per player id.
 #[test]
-#[available_gas(l2_gas: 21150610)]
+#[available_gas(l2_gas: 21031309)]
 fn bench_game_results_call() {
     let bench = game_setup();
     let adventurer: Span<TaskProgress> = array![
@@ -280,7 +280,7 @@ fn bench_game_results_call() {
 
 /// The game's bound (A-10): 16 distinct tasks in one call, the 8 of the titles and 8 others.
 #[test]
-#[available_gas(l2_gas: 21586946)]
+#[available_gas(l2_gas: 21467645)]
 fn bench_game_results_call_sixteen() {
     let bench = game_setup();
     bench.achievement.progress_many('adventurer', distinct_entries(101, MAX_ENTRIES, 1));

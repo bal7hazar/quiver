@@ -74,7 +74,7 @@ fn achievement_define_three_tasks_writes_a_and_b() {
 
 /// `AchievementDefined`: key the id; data the window, the tasks as a span, the points.
 #[test]
-#[available_gas(l2_gas: 2979113)]
+#[available_gas(l2_gas: 2978420)]
 fn achievement_defined_event_fields() {
     let a = deploy();
     let mut spy = spy_events();
@@ -89,7 +89,7 @@ fn achievement_defined_event_fields() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3021428)]
+#[available_gas(l2_gas: 3018708)]
 fn achievement_define_twice_reverts() {
     let a = deploy();
     define_simple(a, 5, 7, 10);
@@ -103,7 +103,7 @@ fn achievement_define_twice_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3272136)]
+#[available_gas(l2_gas: 3267947)]
 fn achievement_redefine_retired_reverts() {
     let a = deploy();
     define_simple(a, 5, 7, 10);
@@ -115,7 +115,7 @@ fn achievement_redefine_retired_reverts() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 1900406)]
+#[available_gas(l2_gas: 1799112)]
 fn achievement_define_rejects_no_task() {
     let a = deploy();
     as_admin(a);
@@ -135,7 +135,7 @@ fn achievement_define_rejects_empty_window() {
 
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 2719983)]
+#[available_gas(l2_gas: 2422508)]
 fn achievement_define_rejects_invalid_id_and_tasks() {
     let a = deploy();
     as_admin(a);
@@ -164,7 +164,7 @@ fn achievement_empty_slot_reads_undefined() {
 
 /// No cap of achievements per task (A-G1's 28 is gone with the task pages): 29 on one task.
 #[test]
-#[available_gas(l2_gas: 24061401)]
+#[available_gas(l2_gas: 23932503)]
 fn achievement_many_on_one_task() {
     let a = deploy();
     as_admin(a);

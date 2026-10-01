@@ -178,7 +178,7 @@ fn achievement_internal_layer_not_reachable_from_abi() {
 /// internal layer checks no reporter.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3193319)]
+#[available_gas(l2_gas: 3190432)]
 fn achievement_consumer_calls_the_internal_layer() {
     let (address, consumer, view) = deploy_consumer();
     let safe = IMockConsumerSafeDispatcher { contract_address: address };

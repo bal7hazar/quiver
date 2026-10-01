@@ -41,55 +41,55 @@ fn three_tasks() -> Span<AchievementTask> {
 // `TrackNone`: the store against the write with no event code
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 307398)]
 fn baseline_track_none_one_task() {
     none().noop(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 798704)]
 fn bench_track_none_definition_one_task_store() {
     none().store_set_definition(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 798704)]
 fn bench_track_none_definition_one_task_hand() {
     none().hand_set_definition(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 319620)]
 fn baseline_track_none_three_tasks() {
     none().noop(ID, window(1, 2), three_tasks(), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 1292540)]
 fn bench_track_none_definition_three_tasks_store() {
     none().store_set_definition(ID, window(1, 2), three_tasks(), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 1292540)]
 fn bench_track_none_definition_three_tasks_hand() {
     none().hand_set_definition(ID, window(1, 2), three_tasks(), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 293003)]
 fn baseline_track_none_reporter() {
     none().noop_reporter(reporter(), true);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 770364)]
 fn bench_track_none_reporter_store() {
     none().store_set_reporter(reporter(), true);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 770364)]
 fn bench_track_none_reporter_hand() {
     none().hand_set_reporter(reporter(), true);
 }
@@ -97,55 +97,55 @@ fn bench_track_none_reporter_hand() {
 // `TrackAll`: the store against the write then `emit`
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 307398)]
 fn baseline_track_all_one_task() {
     all().noop(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 872393)]
 fn bench_track_all_definition_one_task_store() {
     all().store_set_definition(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 872393)]
 fn bench_track_all_definition_one_task_hand() {
     all().hand_set_definition(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 319620)]
 fn baseline_track_all_three_tasks() {
     all().noop(ID, window(1, 2), three_tasks(), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 1392038)]
 fn bench_track_all_definition_three_tasks_store() {
     all().store_set_definition(ID, window(1, 2), three_tasks(), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 1392038)]
 fn bench_track_all_definition_three_tasks_hand() {
     all().hand_set_definition(ID, window(1, 2), three_tasks(), POINTS);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 293003)]
 fn baseline_track_all_reporter() {
     all().noop_reporter(reporter(), true);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 813624)]
 fn bench_track_all_reporter_store() {
     all().store_set_reporter(reporter(), true);
 }
 
 #[test]
-#[available_gas(l2_gas: 99999999)]
+#[available_gas(l2_gas: 813624)]
 fn bench_track_all_reporter_hand() {
     all().hand_set_reporter(reporter(), true);
 }
