@@ -55,7 +55,10 @@ say so.
    - If a dependency cannot be made to work within the lot, stop and report: D-180's "what would
      reverse it".
 3. **Every figure re-measured.**
-   - Run `scripts/gas.py <pkg> --write` for both packages.
+   - Run `scripts/gas.py <pkg> --write` for both packages. **`--write` rewrites `GAS.md` whole and
+     drops its hand-written sections** (ARC-09's escalation): put them back after the generated
+     table, as they were, with their figures updated, and check the result against the base with
+     `git diff`.
    - Compare each test's l2_gas before (2.19.4, from `GAS.md` at the lot's base) and after
      (2.20.1). Report the count of tests that moved and the largest moves, up and down.
    - Re-measure the hand-written figures that move: each package's `GAS.md` sections and
