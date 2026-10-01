@@ -1,6 +1,15 @@
 # Status
 
-**2026-10-01 14:15 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-10-01 15:38 UTC** (soft stop), written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+
+## Soft stop 2026-10-01
+
+Stopped at the owner's soft stop (relayed by the project manager): nothing runs, nothing is
+started, resumed or merged until the owner resumes. **No pull request is open.** ARC-10 was
+briefed and queued for a slot but never started: its launch loop was stopped at 15:36 UTC, and its
+worktree waits with no commit. The successor's note is
+[docs/handover/orchestrator-quiver-2026-10-01.md](docs/handover/orchestrator-quiver-2026-10-01.md),
+and its first message is [docs/handover/successor-orchestrator-quiver-2026-10-01.md](docs/handover/successor-orchestrator-quiver-2026-10-01.md).
 
 ## Resumed 2026-09-30, under Nexus (D-162)
 
@@ -19,8 +28,9 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 | ARC-07a, `quiver_quest` 0.2.0 | Done ([#20](https://github.com/bal7hazar/quiver/pull/20)), **accepted (D-167)**; not published | The owner reads the mapping and may bring a model back |
 | ARC-07b, `quiver_achievement` 0.2.0 | **Done**: [#25](https://github.com/bal7hazar/quiver/pull/25) merged (`4243132`), [report](docs/reports/ARC-07b-report.md). Reviews by Fable, the last PASS at `970cff1` after three fix loops. Audits on Opus 5.5 (D-177: before a published interface's publication): organisation and cost and access control, both PASS WITH FINDINGS, notes only; one answered in the CHANGELOG, the others in ARC-07d | Its publication, after ARC-09 |
 | ARC-07c, `quiver_quest`'s tests into their modules | **Done**: [#28](https://github.com/bal7hazar/quiver/pull/28) merged (`7afe131`) on its review, no audit (D-177), [report](docs/reports/ARC-07c-report.md) | — |
-| ARC-09, measured and packaged builds single-threaded (D-176) | **Waiting for a slot** since 14:13 UTC: the three total slots are held by the other tracks; launched by the orchestrator's queue when one frees ([brief](docs/briefs/ARC-09-single-threaded-builds.md), `[Sonnet 5.5]`) | Its review; then the 0.2.0 publications |
-| Publication of both packages as 0.2.0 | Not asked | Drafted locally, not committed: one `PENDING-publish-*` file per package, filled in after ARC-09 (its figures may move); the go is **the owner's** (stable versions, D-132), prepared by the project manager |
+| ARC-09, measured and packaged builds single-threaded (D-176) | **Done**: [#32](https://github.com/bal7hazar/quiver/pull/32) merged (`7066040`), review only; no figure moved | — |
+| ARC-10, Scarb 2.20.1 and starknet-foundry 0.64.0 (D-180) | **Briefed, not launched** ([brief](docs/briefs/ARC-10-scarb-latest.md); single-thread pin kept, SPK-13); the soft stop came while the total slots were full | Launch on the owner's resume (the note's "Next") |
+| Publication of both packages as 0.2.0 | Not asked | Drafted locally, not committed: one `PENDING-publish-*` file per package, filled in after ARC-10 (its figures may move); the drafts are in `docs/handover/`; the go is **the owner's** (stable versions, D-132), prepared by the project manager |
 | ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
 
 **Reviews and audits while Codex has no quota** (the owner's rules of 2026-10-01): reviews by Claude
