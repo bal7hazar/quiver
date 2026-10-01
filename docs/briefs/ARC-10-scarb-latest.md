@@ -16,8 +16,9 @@ say so.
   until it is merged on the game's `main`, then `origin/main`.
 - **The single-thread pin** (D-176, ARC-09): CI, `release.yml`, `scripts/gas.py` and the manual
   release steps run the compiler with `RAYON_NUM_THREADS=1`. D-180 keeps it if the drift remains
-  on the latest Scarb. **SPK-13's result on 2.20.1**: PENDING. The orchestrator writes it here
-  before the launch: "kept" or "dropped".
+  on the latest Scarb. **SPK-13's result on 2.20.1: KEPT.** On the VPS, 20 clean builds on 2.20.1
+  split 12/8 between two programs; with `RAYON_NUM_THREADS=1`, 6 of 6 were identical (relayed by
+  the project manager, 2026-10-01). Leave every pin as ARC-09 wrote it.
   - **Kept**: leave every pin as ARC-09 wrote it.
   - **Dropped**: remove the pins and their comments, and say so in the report. Each `GAS.md` keeps
     its measures, taken single-threaded or not, because they are one value either way.
