@@ -3,7 +3,7 @@
 
 Usage: scripts/gas.py <package dir> [--check | --write]
 
-Runs `snforge test` in the package, reads each test's measured L2 gas from snforge's output and
+Runs `snforge test` in the package (with RAYON_NUM_THREADS=1 unless set, D-176), reads each test's measured L2 gas from snforge's output and
 its budget from `#[available_gas(l2_gas: N)]` in the sources (src/ and tests/), then
   --write  rewrites the package's GAS.md: test, measured, budget, date, commit;
   --check  (the default) fails, naming the test, when a test has no budget, when its budget is
@@ -14,6 +14,7 @@ Exit codes: 0 success, 1 a failed check, 2 a usage error. Standard library only.
 """
 
 import datetime
+import os
 import pathlib
 import re
 import subprocess
@@ -181,6 +182,13 @@ def git_commit():
     return out.stdout.strip() or "unknown"
 
 
+def snforge_env(environ=None):
+    """The environment of the snforge run: single-threaded compiler (D-176) unless the caller chose."""
+    env = dict(os.environ if environ is None else environ)
+    env.setdefault("RAYON_NUM_THREADS", "1")
+    return env
+
+
 def main(argv):
     args = [a for a in argv if not a.startswith("--")]
     flags = [a for a in argv if a.startswith("--")]
@@ -194,7 +202,7 @@ def main(argv):
     named = re.search(r'^name\s*=\s*"([^"]+)"', (package_dir / "Scarb.toml").read_text(), re.M)
     package = named.group(1) if named else package_dir.resolve().name
     run = subprocess.run(
-        ["snforge", "test"], cwd=package_dir, capture_output=True, text=True
+        ["snforge", "test"], cwd=package_dir, capture_output=True, text=True, env=snforge_env()
     )
     output = run.stdout + run.stderr
     measured, failed = parse_snforge_output(output)

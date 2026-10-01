@@ -199,5 +199,13 @@ class GasMd(unittest.TestCase):
         self.assertIn("abc1234", md)
 
 
+class SingleThreaded(unittest.TestCase):
+    def test_pins_one_thread_when_unset(self):
+        self.assertEqual(gas.snforge_env({"PATH": "/bin"})["RAYON_NUM_THREADS"], "1")
+
+    def test_keeps_the_callers_choice(self):
+        self.assertEqual(gas.snforge_env({"RAYON_NUM_THREADS": "4"})["RAYON_NUM_THREADS"], "4")
+
+
 if __name__ == "__main__":
     unittest.main()
