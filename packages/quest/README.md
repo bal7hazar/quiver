@@ -382,7 +382,7 @@ are unrolled, without loops.
 
 Every test has a budget; the figures are in [GAS.md](GAS.md): optional tracking in
 `test_tracking` and `test_store_models`, the store in `test_store` and `test_store_definition`,
-the types' and models' benchmarks in `test_bench`, the component's in `test_component_bench`, one per entrypoint on the worst case of
+the types' and models' benchmarks in the `mod tests` of their modules (D-167), the component's in `test_component_bench`, one per entrypoint on the worst case of
 ARC-01 §5.1; the grid over the held list in `test_component_grid`; Grim World's case in
 `test_component_game`. Per entrypoint, the measure and the budget are in
 [docs/BUDGETS.md](https://github.com/bal7hazar/quiver/blob/main/docs/BUDGETS.md).

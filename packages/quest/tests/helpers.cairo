@@ -1,11 +1,9 @@
 //! Builders shared by the tests: they keep each test to its given, when and then.
 
-use quiver_quest::models::definition::{
-    ConditionsSlot, DefinitionStorage, DefinitionTrait, HeadSlot, TasksSlot,
-};
-use quiver_quest::models::held::{HeldSlot, HeldSlotStorage, HeldSlotTrait};
-use quiver_quest::models::progress::{ProgressSlot, ProgressStorage, ProgressTrait};
-use quiver_quest::models::record::{QuestRecord, RecordSlot, RecordStorage, RecordTrait};
+use quiver_quest::models::definition::{ConditionsSlot, DefinitionStorage, TasksSlot};
+use quiver_quest::models::held::{HeldSlot, HeldSlotStorage};
+use quiver_quest::models::progress::{ProgressSlot, ProgressStorage};
+use quiver_quest::models::record::{RecordSlot, RecordStorage};
 use quiver_quest::types::batch::TaskProgress;
 use quiver_quest::types::held::QuestHeld;
 use quiver_quest::types::schedule::QuestSchedule;
@@ -17,58 +15,8 @@ use quiver_quest::types::task::QuestTask;
 const PLAYER: felt252 = 'player';
 const QUEST: u32 = 1;
 
-/// `DefinitionTrait::new`, then its storage: the slots A, B and C of 0.1.0's `definition_new`.
-pub fn definition_slots(
-    quest_id: u32, schedule: QuestSchedule, tasks: Span<QuestTask>, conditions: Span<u32>,
-) -> (HeadSlot, TasksSlot, ConditionsSlot) {
-    DefinitionTrait::new(quest_id, schedule, tasks, conditions).into_slots()
-}
-
-/// `ProgressTrait::add` on a progress slot: `(progress, changed, completed by this call)`.
-pub fn add_counts(
-    progress: ProgressSlot, tasks: @TasksSlot, task_count: u8, batch: Span<TaskProgress>,
-) -> (ProgressSlot, bool, bool) {
-    let mut model = ProgressStorage::from_slot(PLAYER, QUEST, 0, progress);
-    let (changed, completed) = model.add(tasks, task_count, batch);
-    (model.into_slot(), changed, completed)
-}
-
-/// `ProgressTrait::is_complete` on a progress slot.
-pub fn is_complete(progress: @ProgressSlot, tasks: @TasksSlot, task_count: u8) -> bool {
-    ProgressStorage::from_slot(PLAYER, QUEST, 0, *progress).is_complete(tasks, task_count)
-}
-
-/// `RecordTrait::complete` on a record slot.
-pub fn complete(record: RecordSlot) -> RecordSlot {
-    let mut model = RecordStorage::from_slot(PLAYER, QUEST, record);
-    model.complete();
-    model.into_slot()
-}
-
-/// `ProgressTrait::claim` then `RecordTrait::claim`, as the component's `claim`: `(progress,
-/// record, claim_index)`.
-pub fn claim_both(progress: ProgressSlot, record: RecordSlot) -> (ProgressSlot, RecordSlot, u64) {
-    let mut progress = ProgressStorage::from_slot(PLAYER, QUEST, 0, progress);
-    let mut record = RecordStorage::from_slot(PLAYER, QUEST, record);
-    progress.claim();
-    let claim_index = record.claim();
-    (progress.into_slot(), record.into_slot(), claim_index)
-}
-
-/// A record model, keys fixed: for `RecordTrait::all_completed`, which takes models.
-pub fn record_model(completions: u64, claims: u64, unlocked: bool) -> QuestRecord {
-    QuestRecord { player_id: PLAYER, quest_id: QUEST, completions, claims, unlocked }
-}
-
-/// `HeldSlotTrait::new`, as a slot: 0.1.0's `held_slot`.
-pub fn held_slot_of(held: Span<QuestHeld>, slot: u32, counter: u32, kept: bool) -> HeldSlot {
-    HeldSlotTrait::new(PLAYER, slot.try_into().unwrap(), held, counter, kept).into_slot()
-}
-
 pub const DAY: u32 = 86400;
 pub const U32_MAX: u32 = 0xffffffff;
-pub const U64_MAX: u64 = 0xffffffffffffffff;
-
 pub fn schedule(start: u64, end: u64, duration: u32, interval: u32) -> QuestSchedule {
     QuestSchedule { start, end, duration, interval }
 }
@@ -93,16 +41,8 @@ pub fn tasks(t0: QuestTask, t1: QuestTask, t2: QuestTask) -> TasksSlot {
     TasksSlot { t0, t1, t2 }
 }
 
-pub fn one_task(task_id: u32, total: u32) -> TasksSlot {
-    tasks(task(task_id, total), task(0, 0), task(0, 0))
-}
-
 pub fn ids(q0: u32, q1: u32, q2: u32, q3: u32, q4: u32, q5: u32, q6: u32) -> ConditionsSlot {
     ConditionsSlot { q0, q1, q2, q3, q4, q5, q6 }
-}
-
-pub fn no_ids() -> ConditionsSlot {
-    ids(0, 0, 0, 0, 0, 0, 0)
 }
 
 /// An entry with acceptance number 0.
@@ -154,12 +94,6 @@ pub fn record(completions: u64, claims: u64, unlocked: bool) -> RecordSlot {
 
 pub fn no_record() -> RecordSlot {
     record(0, 0, false)
-}
-
-/// `value`, hidden from the compiler: a benchmark's input is not folded into a constant.
-#[inline(never)]
-pub fn opaque<T, +Drop<T>>(value: T) -> T {
-    value
 }
 
 /// `n` entries naming tasks `first`, `first + 1`, ..., each with count `count`.

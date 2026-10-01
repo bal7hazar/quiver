@@ -1,13 +1,13 @@
-//! 0.1.0's functions of `quiver_quest::logic` that the models of 0.2.0 replace, kept verbatim in
+//! 0.1.0's functions of `crate::logic` that the models of 0.2.0 replace, kept verbatim in
 //! the tests (ARC-07a) as oracles (docs/CAIRO.md §2) and as the hand-written baseline of the
 //! store's benchmarks (ARC-06): the definition's slots, the schedule, and the reads of slots B and
 //! C. Only the names of the slot types changed.
 
-use quiver_quest::constants::{MAX_CONDITIONS, MAX_TASKS};
-use quiver_quest::errors;
-use quiver_quest::models::definition::{ConditionsSlot, HeadSlot, TasksSlot};
-use quiver_quest::types::schedule::QuestSchedule;
-use quiver_quest::types::task::QuestTask;
+use crate::constants::{MAX_CONDITIONS, MAX_TASKS};
+use crate::errors;
+use crate::models::definition::{ConditionsSlot, HeadSlot, TasksSlot};
+use crate::types::schedule::QuestSchedule;
+use crate::types::task::QuestTask;
 
 const NO_TASK: QuestTask = QuestTask { task_id: 0, total: 0 };
 
@@ -149,4 +149,40 @@ pub fn schedule_validate(schedule: @QuestSchedule) {
         schedule.duration <= schedule.interval
     };
     assert(valid_interval, errors::INVALID_INTERVAL);
+}
+
+/// 0.1.0's `schedule_is_active`.
+pub fn schedule_is_active(schedule: @QuestSchedule, time: u64) -> bool {
+    let schedule = *schedule;
+    if time < schedule.start || (schedule.end != 0 && time >= schedule.end) {
+        return false;
+    }
+    let interval: u64 = schedule.interval.into();
+    match interval.try_into() {
+        Option::None => true,
+        Option::Some(interval) => {
+            let (_, offset) = DivRem::div_rem(time - schedule.start, interval);
+            offset < schedule.duration.into()
+        },
+    }
+}
+
+/// 0.1.0's `schedule_interval_id`.
+pub fn schedule_interval_id(schedule: @QuestSchedule, time: u64) -> Option<u64> {
+    let schedule = *schedule;
+    if time < schedule.start || (schedule.end != 0 && time >= schedule.end) {
+        return None;
+    }
+    let interval: u64 = schedule.interval.into();
+    match interval.try_into() {
+        Option::None => Some(0),
+        Option::Some(interval) => {
+            let (id, offset) = DivRem::div_rem(time - schedule.start, interval);
+            if offset < schedule.duration.into() {
+                Some(id)
+            } else {
+                None
+            }
+        },
+    }
 }
