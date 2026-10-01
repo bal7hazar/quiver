@@ -30,6 +30,16 @@ pub mod models {
     pub mod status;
 }
 
+/// What the unit tests of the modules share (D-167): builders, the packing oracle and 0.1.0's
+/// functions as oracles. Compiled for tests only; `tests/` keeps its own copies of what the
+/// integration tests need, as it cannot reach this module.
+#[cfg(test)]
+mod testing {
+    pub mod helpers;
+    pub mod oracle;
+    pub mod packing;
+}
+
 pub mod events {
     pub mod claimed;
     pub mod completed;

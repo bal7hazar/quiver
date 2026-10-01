@@ -93,3 +93,65 @@ pub impl HeldImpl of HeldTrait {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::testing::helpers::{eight_held, held, opaque, stamped};
+    use crate::types::schedule::ScheduleAssert;
+    use super::HeldTrait;
+
+    #[test]
+    #[available_gas(l2_gas: 40782)]
+    fn held_position_finds_the_quest() {
+        let list = array![held(5, 0), held(9, 3), held(2, 3)].span();
+        assert!(HeldTrait::position(list, 5) == Some(0));
+        assert!(HeldTrait::position(list, 2) == Some(2));
+        assert!(HeldTrait::position(list, 7) == None);
+        assert!(HeldTrait::position(array![].span(), 5) == None);
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 49739)]
+    fn held_contains_needs_the_same_interval() {
+        let list = array![held(5, 0), held(9, 3)].span();
+        assert!(HeldTrait::contains(list, held(9, 3)));
+        // the same quest accepted in another interval is not this entry
+        assert!(!HeldTrait::contains(list, held(9, 4)));
+        // nor the same quest and interval under another acceptance number
+        assert!(!HeldTrait::contains(list, stamped(9, 3, 1)));
+        assert!(!HeldTrait::contains(list, held(7, 0)));
+        assert!(!HeldTrait::contains(array![].span(), held(5, 0)));
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 135629)]
+    fn held_remove_keeps_the_order() {
+        let list = array![held(1, 0), held(2, 0), held(3, 0), held(4, 0)].span();
+        assert!(HeldTrait::remove(list, 0) == array![held(2, 0), held(3, 0), held(4, 0)].span());
+        assert!(HeldTrait::remove(list, 1) == array![held(1, 0), held(3, 0), held(4, 0)].span());
+        assert!(HeldTrait::remove(list, 3) == array![held(1, 0), held(2, 0), held(3, 0)].span());
+        // outside the list: unchanged
+        assert!(HeldTrait::remove(list, 4) == list);
+        assert!(HeldTrait::remove(array![held(1, 0)].span(), 0) == array![].span());
+    }
+
+    // held list, at its capacity
+
+    #[test]
+    #[available_gas(l2_gas: 40499)]
+    fn bench_held_position_absent() {
+        assert!(HeldTrait::position(eight_held(), opaque(99)) == None);
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 43334)]
+    fn bench_held_contains_absent() {
+        assert!(!HeldTrait::contains(eight_held(), opaque(held(8, 31))));
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 48720)]
+    fn bench_held_remove_first() {
+        assert!(HeldTrait::remove(eight_held(), opaque(0)).len() == 7);
+    }
+}

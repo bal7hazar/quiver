@@ -17,30 +17,30 @@ warn: external contracts not found for selectors: `quiver_quest::*`
 
 
 Collected 1 test(s) from quiver_quest package
-Running 1 test(s) from tests/
-[PASS] quiver_quest_integrationtest::test_constants::quest_bounds_are_the_accepted_ones (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~13720)
-Running 0 test(s) from src/
+Running 1 test(s) from src/
+[PASS] quiver_quest::constants::tests::quest_bounds_are_the_accepted_ones (l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~13720)
+Running 0 test(s) from tests/
 Tests: 1 passed, 0 failed, 0 ignored, 0 filtered out
 """
 
 # Real output of the same test with `#[available_gas(l2_gas: 1)]`.
 SNFORGE_FAIL = """\
 Collected 1 test(s) from quiver_quest package
-Running 1 test(s) from tests/
-[FAIL] quiver_quest_integrationtest::test_constants::quest_bounds_are_the_accepted_ones
+Running 1 test(s) from src/
+[FAIL] quiver_quest::constants::tests::quest_bounds_are_the_accepted_ones
 
 Failure data:
 \tTest cost exceeded the available gas. Consumed l1_gas: ~0, l1_data_gas: ~0, l2_gas: ~13720
-Running 0 test(s) from src/
+Running 0 test(s) from tests/
 Tests: 0 passed, 1 failed, 0 ignored, 0 filtered out
 
 Failures:
-    quiver_quest_integrationtest::test_constants::quest_bounds_are_the_accepted_ones
+    quiver_quest::constants::tests::quest_bounds_are_the_accepted_ones
 """
 
 PKG = "quiver_quest"
 IT = "quiver_quest_integrationtest"
-PATH = IT + "::test_constants::quest_bounds_are_the_accepted_ones"
+PATH = PKG + "::constants::tests::quest_bounds_are_the_accepted_ones"
 SUMMARY_OK = (1, 0, 0, 0)
 
 
