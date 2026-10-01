@@ -1,6 +1,6 @@
 # Status
 
-**2026-10-01 09:05 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-10-01 09:55 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Resumed 2026-09-30, under Nexus (D-162)
 
@@ -17,8 +17,8 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 | Task | State | Next step |
 |---|---|---|
 | ARC-07a, `quiver_quest` 0.2.0 | Done ([#20](https://github.com/bal7hazar/quiver/pull/20)), **accepted (D-167)**; not published | The owner reads the mapping and may bring a model back |
-| ARC-07b, `quiver_achievement` 0.2.0 | **Done, waiting for its Codex audits**: [#25](https://github.com/bal7hazar/quiver/pull/25), CI green, not merged. Ran 07:33–08:02 UTC (`[Opus 5.5]`); fix loop 1 (the review's minor: no test told `DEFINITION` from `REPORTER`), fix loop 2 (three notes of an additional `[Opus 5.5]` organisation audit). Review by Fable: PASS WITH FINDINGS (`ef4e3a8`), PASS (`66ae1c8`), PASS WITH FINDINGS (`cbd420d`: a minor, four figures of `GAS.md`'s fix-loop table on the wrong baseline). The project manager accepted the cost of `points` and the test time (recorded on #25) | Fix loop 3 (the `GAS.md` figures and two notes) after ARC-07c; the review again; the Codex audits `[GPT-6-Sol]` organisation then `[GPT-6-Astra]` cost: **Codex out of quota until 2026-10-04 13:36 UTC** (the organisation audit ended `blocked_quota` and is resumed then); merge after all |
-| ARC-07c, `quiver_quest`'s tests into their modules | **Running** since 09:02 UTC, `[Sonnet 5.5]` ([brief](docs/briefs/ARC-07c-quest-tests-in-file.md)); allowlist `packages/quest/**`, disjoint from #25 | Review, then its Codex audit after 10-04 |
+| ARC-07b, `quiver_achievement` 0.2.0 | **Reviewed, waiting for its Codex audits**: [#25](https://github.com/bal7hazar/quiver/pull/25), CI green at `970cff1`, not merged. Three fix loops (the last allowed): the review's minor (tracking constants not told apart), three notes of an additional `[Opus 5.5]` organisation audit, then four `GAS.md` figures and two notes. Review by Fable: **PASS at `970cff1`** (earlier: PASS WITH FINDINGS `ef4e3a8`, PASS `66ae1c8`, PASS WITH FINDINGS `cbd420d`). The project manager accepted the cost of `points` and the test time (recorded on #25) | The Codex audits `[GPT-6-Sol]` organisation (resumed with `nexus continue`) then `[GPT-6-Astra]` cost, after **2026-10-04 13:36 UTC** when Codex has quota again; merge after both; a finding beyond a note goes to the project manager (no fix loop left) |
+| ARC-07c, `quiver_quest`'s tests into their modules | **Reviewed, waiting for its Codex audit**: [#28](https://github.com/bal7hazar/quiver/pull/28), CI green, not merged. Ran 09:02–09:31 UTC (`[Sonnet 5.5]`): 171 unit tests moved, the same gas to the unit; 2 new tests (each tracking constant alone). The orchestrator fixed `scripts/test_gas.py`'s fixture (the agent's escalation, outside its allowlist). Review by Opus: PASS WITH FINDINGS (one note on the fixture, fixed) | Its Codex audit `[GPT-6-Sol]` organisation after 2026-10-04 13:36 UTC; merge after it |
 | Publication of both packages as 0.2.0 | Not asked | Drafted locally, not committed: one `PENDING-publish-*` file per package, filled in after the merges; the go is **the owner's** (stable versions, D-132), prepared by the project manager |
 | ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
 
@@ -79,15 +79,13 @@ the game's `74c7d50`).
 
 ## Agents
 
-| Task | Model | Unit | Since | Slots |
-|---|---|---|---|---|
-| ARC-07c | `[Sonnet 5.5]` (`claude-sonnet-5-5`), profile `implement` | `quiver-ARC-07c-090234` | 2026-10-01 09:02 UTC | `total-2`, `quiver-1` |
+None running.
 
 ## Budget
 
 The game's OPERATIONS §3: caps game 2, map library 1, **quiver 1 (the slot `quiver-1`), audits
 included**, total 3, held as slot locks by the launcher (`scripts/agent.sh slots`); the game comes
-first: no quiver launch while `~/orchestrator/waiting/game` is less than 30 minutes old. `quiver-1` is held by ARC-07c.
+first: no quiver launch while `~/orchestrator/waiting/game` is less than 30 minutes old. `quiver-1` is free.
 
 ## Open
 
