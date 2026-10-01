@@ -1,6 +1,6 @@
 # Status
 
-**2026-10-01 09:55 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
+**2026-10-01 14:15 UTC**, written by the orchestrator `[Opus 5.5] Orchestrateur quiver (packages)`.
 
 ## Resumed 2026-09-30, under Nexus (D-162)
 
@@ -17,15 +17,22 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 | Task | State | Next step |
 |---|---|---|
 | ARC-07a, `quiver_quest` 0.2.0 | Done ([#20](https://github.com/bal7hazar/quiver/pull/20)), **accepted (D-167)**; not published | The owner reads the mapping and may bring a model back |
-| ARC-07b, `quiver_achievement` 0.2.0 | **Reviewed, waiting for its Codex audits**: [#25](https://github.com/bal7hazar/quiver/pull/25), CI green at `970cff1`, not merged. Three fix loops (the last allowed): the review's minor (tracking constants not told apart), three notes of an additional `[Opus 5.5]` organisation audit, then four `GAS.md` figures and two notes. Review by Fable: **PASS at `970cff1`** (earlier: PASS WITH FINDINGS `ef4e3a8`, PASS `66ae1c8`, PASS WITH FINDINGS `cbd420d`). The project manager accepted the cost of `points` and the test time (recorded on #25) | The Codex audits `[GPT-6-Sol]` organisation (resumed with `nexus continue`) then `[GPT-6-Astra]` cost, after **2026-10-04 13:36 UTC** when Codex has quota again; merge after both; a finding beyond a note goes to the project manager (no fix loop left) |
-| ARC-07c, `quiver_quest`'s tests into their modules | **Reviewed, waiting for its Codex audit**: [#28](https://github.com/bal7hazar/quiver/pull/28), CI green, not merged. Ran 09:02–09:31 UTC (`[Sonnet 5.5]`): 171 unit tests moved, the same gas to the unit; 2 new tests (each tracking constant alone). The orchestrator fixed `scripts/test_gas.py`'s fixture (the agent's escalation, outside its allowlist). Review by Opus: PASS WITH FINDINGS (one note on the fixture, fixed) | Its Codex audit `[GPT-6-Sol]` organisation after 2026-10-04 13:36 UTC; merge after it |
-| Publication of both packages as 0.2.0 | Not asked | Drafted locally, not committed: one `PENDING-publish-*` file per package, filled in after the merges; the go is **the owner's** (stable versions, D-132), prepared by the project manager |
+| ARC-07b, `quiver_achievement` 0.2.0 | **Done**: [#25](https://github.com/bal7hazar/quiver/pull/25) merged (`4243132`), [report](docs/reports/ARC-07b-report.md). Reviews by Fable, the last PASS at `970cff1` after three fix loops. Audits on Opus 5.5 (D-177: before a published interface's publication): organisation and cost and access control, both PASS WITH FINDINGS, notes only; one answered in the CHANGELOG, the others in ARC-07d | Its publication, after ARC-09 |
+| ARC-07c, `quiver_quest`'s tests into their modules | **Done**: [#28](https://github.com/bal7hazar/quiver/pull/28) merged (`7afe131`) on its review, no audit (D-177), [report](docs/reports/ARC-07c-report.md) | — |
+| ARC-09, measured and packaged builds single-threaded (D-176) | **Waiting for a slot** since 14:13 UTC: the three total slots are held by the other tracks; launched by the orchestrator's queue when one frees ([brief](docs/briefs/ARC-09-single-threaded-builds.md), `[Sonnet 5.5]`) | Its review; then the 0.2.0 publications |
+| Publication of both packages as 0.2.0 | Not asked | Drafted locally, not committed: one `PENDING-publish-*` file per package, filled in after ARC-09 (its figures may move); the go is **the owner's** (stable versions, D-132), prepared by the project manager |
 | ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
 
-**Reviews while Codex has no quota** (the owner's rule of 2026-10-01): a pull request is reviewed by
-Claude Opus 5.5, by Fable when Opus 5.5 wrote it (`nexus review --model fable`), once Nexus falls back
-by itself (bal7hazar/nexus #35). Until then code merges wait; documents merge with `Codex review:
-none — documents only`. Audits do not fall back: they wait for Codex.
+**Reviews and audits while Codex has no quota** (the owner's rules of 2026-10-01): reviews by Claude
+(Sonnet, or another model than the author's), every audit by Claude Opus 5.5; Nexus falls back by
+itself since R2. **Audits are the exception (D-177)**: the review is the routine gate; each pull
+request says why an audit was asked or that none was needed. Applied on 2026-10-01: no audit was
+queued (`nexus stop` stopped none); **two planned audits dropped**: the Codex organisation audit of
+ARC-07b (replaced by Opus) and ARC-07c's.
+
+**Reports recovered**: the task worktrees of ARC-07b and ARC-07c were removed after their merges
+with `REPORT.md` uncommitted; the orchestrator rebuilt both reports from what it had read (noted at
+their head). From now on a task's `REPORT.md` is archived before its merge.
 
 ## Where we are
 
