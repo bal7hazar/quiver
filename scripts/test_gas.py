@@ -206,6 +206,9 @@ class SingleThreaded(unittest.TestCase):
     def test_keeps_the_callers_choice(self):
         self.assertEqual(gas.snforge_env({"RAYON_NUM_THREADS": "4"})["RAYON_NUM_THREADS"], "4")
 
+    def test_pins_one_thread_when_empty(self):
+        self.assertEqual(gas.snforge_env({"RAYON_NUM_THREADS": ""})["RAYON_NUM_THREADS"], "1")
+
 
 if __name__ == "__main__":
     unittest.main()

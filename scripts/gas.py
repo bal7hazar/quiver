@@ -183,9 +183,11 @@ def git_commit():
 
 
 def snforge_env(environ=None):
-    """The environment of the snforge run: single-threaded compiler (D-176) unless the caller chose."""
+    """The environment of the snforge run: single-threaded compiler (D-176) unless the caller chose
+    a thread count; an empty value is no choice (rayon would use its default) and is pinned too."""
     env = dict(os.environ if environ is None else environ)
-    env.setdefault("RAYON_NUM_THREADS", "1")
+    if not env.get("RAYON_NUM_THREADS"):
+        env["RAYON_NUM_THREADS"] = "1"
     return env
 
 

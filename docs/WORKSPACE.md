@@ -122,8 +122,9 @@ extend `scripts/gas.py` first.
 `docs/decisions/PENDING-publish-<package>-<version>.md` (package, version, commit, what changed,
 what the consumer must do) and sending its path to the project manager, who checks the commit
 on `main` (every CI check completed and green), the audits, the changelog and version, the gas
-tables, `scarb package` from a clean checkout, the registry and the dependencies. After a go
+tables, `scarb package` from a clean checkout (pinned as in §6), the registry and the dependencies. After a go
 that names the package, the version and the commit, the orchestrator's session runs
 `RAYON_NUM_THREADS=1 scarb --manifest-path packages/<dir>/Scarb.toml publish` by hand from that
-commit (D-176: the published program is the single-threaded one). A published
+commit (D-176: its verification build is single-threaded, as CI measured; the archive holds
+sources, which each consumer compiles). A published
 version cannot be replaced.
