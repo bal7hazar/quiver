@@ -351,6 +351,20 @@ mod tests {
         assert!(d2.tasks(@e2) == two);
     }
 
+    /// The model's window decides: `start <= time` and (`end == 0` or `time < end`) (fix loop 1).
+    #[test]
+    #[available_gas(l2_gas: 26922)]
+    fn definition_is_active_inside_and_outside_its_window() {
+        let definition = DefinitionTrait::new(5, window(100, 200), one(7, 10), 25);
+        assert!(!definition.is_active(99));
+        assert!(definition.is_active(100));
+        assert!(definition.is_active(199));
+        assert!(!definition.is_active(200));
+        let open = DefinitionTrait::new(6, window(100, 0), one(7, 10), 0);
+        assert!(!open.is_active(99));
+        assert!(open.is_active(0xffffffffffffffff));
+    }
+
     /// `points` is the model's and A's (ARC-07b); the model comes back from its slots.
     #[test]
     #[available_gas(l2_gas: 55115)]

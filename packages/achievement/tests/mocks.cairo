@@ -216,3 +216,88 @@ pub mod MockBenchSilent {
         }
     }
 }
+
+/// `MockBench` under an impl of its own, as the README's tracking table documents: the
+/// definition tracked, the reporter not (fix loop 1).
+#[starknet::contract]
+pub mod MockTrackDefinitionOnly {
+    use quiver_achievement::component::AchievementComponent;
+    use quiver_achievement::store::AchievementTracking;
+    use starknet::ContractAddress;
+
+    component!(path: AchievementComponent, storage: achievement, event: AchievementEvent);
+
+    #[abi(embed_v0)]
+    impl AchievementImpl = AchievementComponent::AchievementImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl AchievementViewImpl =
+        AchievementComponent::AchievementViewImpl<ContractState>;
+
+    impl Tracking of AchievementTracking<ContractState> {
+        const DEFINITION: bool = true;
+        const REPORTER: bool = false;
+    }
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievement: AchievementComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievementEvent: AchievementComponent::Event,
+    }
+
+    impl AchievementHooks of AchievementComponent::AchievementHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @AchievementComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+    }
+}
+
+/// The mirror of `MockTrackDefinitionOnly`: the reporter tracked, the definition not.
+#[starknet::contract]
+pub mod MockTrackReporterOnly {
+    use quiver_achievement::component::AchievementComponent;
+    use quiver_achievement::store::AchievementTracking;
+    use starknet::ContractAddress;
+
+    component!(path: AchievementComponent, storage: achievement, event: AchievementEvent);
+
+    #[abi(embed_v0)]
+    impl AchievementImpl = AchievementComponent::AchievementImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl AchievementViewImpl =
+        AchievementComponent::AchievementViewImpl<ContractState>;
+
+    impl Tracking of AchievementTracking<ContractState> {
+        const DEFINITION: bool = false;
+        const REPORTER: bool = true;
+    }
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievement: AchievementComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievementEvent: AchievementComponent::Event,
+    }
+
+    impl AchievementHooks of AchievementComponent::AchievementHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @AchievementComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+    }
+}
