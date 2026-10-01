@@ -7,141 +7,144 @@ measure and that ceiling, also passes (docs/CAIRO.md §2).
 
 | Test | Measured (l2_gas) | Budget (l2_gas) | Date | Commit |
 |---|---|---|---|---|
-| `quiver_achievement::constants::tests::achievement_bounds_are_the_accepted_ones` | 13720 | 14406 | 2026-10-01 | d5514cc |
-| `quiver_achievement::errors::tests::achievement_error_strings_are_the_accepted_ones` | 13720 | 14406 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_define_rejects_id_zero` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_empty_slot_unpacks_undefined` | 31350 | 32634 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_packing_points_at_their_position` | 873150 | 916808 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_packing_presence_bits_at_their_positions` | 700910 | 735956 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_packing_rejects_task_count_above_max` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_packing_round_trip_definition` | 8636290 | 9068105 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_packing_round_trip_extra_tasks` | 3616100 | 3796905 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_packing_widths` | 699760 | 719019 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_unpacking_extra_rejects_bit_128` | 341400 | 358470 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_unpacking_rejects_bit_212` | 392860 | 396701 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::achievement_unpacking_rejects_bit_251` | 29630 | 30933 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::bench_definition_new_three_tasks` | 20120 | 21126 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::bench_pack_unpack_definition` | 34790 | 35826 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::bench_pack_unpack_extra_tasks` | 24930 | 26177 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_checks_id_first` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_checks_window_before_tasks` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_one_task_inline` | 23760 | 24003 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_empty_window` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_end_before_start` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_four_tasks` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_no_task` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_repeated_second_task` | 19120 | 19971 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_repeated_task` | 20120 | 21126 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_task_id_zero` | 16420 | 17241 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_rejects_total_zero` | 17520 | 18396 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_new_three_tasks` | 38630 | 40562 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::definition_points_stored_and_read_back` | 52490 | 55115 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::definition::tests::tasks_span_has_task_count_entries` | 44250 | 45623 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::status::tests::status_cannot_retire_twice` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::status::tests::status_cannot_retire_undefined` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::status::tests::status_defined_refuses_define` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement::models::status::tests::status_retire_keeps_the_definition_bits` | 27080 | 28434 | 2026-10-01 | d5514cc |
-| `quiver_achievement::store::tests::tracking_choices_are_all_or_none` | 15040 | 15792 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::achievement_batch_merges_duplicates` | 170289 | 178804 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_count_of_first_entry_or_zero` | 26290 | 27605 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_above_bound_reverts` | 74260 | 77973 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_bound_accepted` | 228416 | 239837 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_distinct_keeps_order_and_drops_zeros` | 51568 | 54147 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_duplicates_count_toward_bound` | 62140 | 65247 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_late_duplicate` | 1756663 | 1844497 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_modulo_collision_not_merged` | 1821523 | 1912600 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_rejects_task_zero` | 38452 | 40375 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_rejects_task_zero_after_collision` | 62209 | 65320 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_saturates` | 80115 | 84121 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::batch_merge_zero_sum_duplicate_dropped` | 79555 | 83533 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::bench_baseline_sixteen_entries` | 49990 | 52490 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::bench_batch_merge_late_duplicate` | 747613 | 784994 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::bench_batch_merge_late_modulo_collision` | 751523 | 789100 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::batch::tests::bench_batch_merge_sixteen_distinct` | 180396 | 189416 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::window::tests::window_is_active_bounds` | 15640 | 16422 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::window::tests::window_validate_accepts_open_and_ordered_windows` | 13720 | 14406 | 2026-10-01 | d5514cc |
-| `quiver_achievement::types::window::tests::window_validate_rejects_empty_window` | 15520 | 16296 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_consumer_calls_the_internal_layer` | 3038506 | 3190432 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_define_admin_only` | 2323390 | 2435979 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_internal_layer_not_reachable_from_abi` | 1730160 | 1816668 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_progress_accepts_registered_reporter` | 3008982 | 3159432 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_progress_many_rejects_unregistered_caller` | 2123860 | 2230053 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_progress_rejects_unregistered_caller` | 1962320 | 2060436 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_reporter_revoked` | 2341876 | 2458970 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_retire_admin_only` | 3102180 | 3252291 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_set_reporter_admin_only` | 2398750 | 2518688 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_access::achievement_set_reporter_event_fields` | 1833500 | 1925175 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::baseline_defined` | 1987950 | 2086151 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::baseline_deployed` | 789600 | 829080 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::baseline_game_defined` | 19200090 | 20160095 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::baseline_reporter_registered` | 1397010 | 1466861 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::baseline_sixteen_tasks_defined` | 58493900 | 61361139 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_define_one_task` | 1492870 | 1567514 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_define_worst` | 1988240 | 2085962 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_game_define_titles` | 19201710 | 20161796 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_game_results_call` | 20029818 | 21031309 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_game_results_call_sixteen` | 20445376 | 21467645 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_progress` | 998836 | 1048778 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_late_collision` | 2606413 | 2736734 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_late_collision_with_definitions` | 60310513 | 63268583 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_late_duplicate` | 2549593 | 2677073 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_sixteen_distinct` | 2035086 | 2136841 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_retire` | 2231280 | 2338949 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_set_reporter` | 1397010 | 1466861 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_set_reporter_revoke` | 1201740 | 1261827 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_set_reporter_unchanged` | 1603540 | 1683717 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_view_definition_worst` | 2205690 | 2310987 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_bench::bench_view_is_reporter` | 914290 | 960005 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_define_one_task_writes_a_only` | 2588120 | 2716718 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_define_rejects_empty_window` | 1817350 | 1906517 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_define_rejects_invalid_id_and_tasks` | 2307150 | 2422508 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_define_rejects_no_task` | 1713440 | 1799112 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_define_three_tasks_writes_a_and_b` | 3031440 | 3177920 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_define_twice_reverts` | 2874960 | 3018708 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_defined_event_fields` | 2836590 | 2978420 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_empty_slot_reads_undefined` | 1594230 | 1673763 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_many_on_one_task` | 22792860 | 23932503 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_define::achievement_redefine_retired_reverts` | 3112330 | 3267947 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_above_bound_reverts` | 1865070 | 1958324 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_bound_accepted` | 3135596 | 3292376 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_duplicates_count_toward_bound` | 1853550 | 1946228 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_one_event_per_merged_task` | 1983799 | 2082989 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_rejects_task_zero` | 1898532 | 1993459 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_event_mode_emits_only_progressed` | 3082436 | 3232495 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_progress_writes_nothing` | 2481676 | 2605760 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_progressed_event_fields` | 1822486 | 1913611 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_retired_progress_still_emits` | 3584402 | 3763623 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_tiers_share_task_one_event` | 4484176 | 4708385 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_progress::achievement_zero_count_emits_nothing` | 2363248 | 2481411 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_one_tier_only` | 3760910 | 3948956 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_sets_retired_and_keeps_the_rest` | 3694240 | 3869061 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_twice_reverts` | 3071340 | 3224088 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_undefined_reverts` | 1780420 | 1866732 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_component_track_none::track_none_component_emits_action_events_only` | 3705985 | 3891285 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_store_models::get_definition_reads_the_model_back` | 2658150 | 2791058 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_store_models::status_never_emits` | 2276220 | 2390031 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_store_models::track_all_definition_emits_once_per_write` | 2119200 | 2225160 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_store_models::track_all_reporter_emits_once_per_write` | 994320 | 1044036 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_store_models::track_none_definition_emits_nothing_and_writes_the_same` | 3629480 | 3810954 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_store_models::track_none_reporter_emits_nothing_and_writes_the_same` | 1826410 | 1917731 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::baseline_track_all_one_task` | 292760 | 307398 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::baseline_track_all_reporter` | 279050 | 293003 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::baseline_track_all_three_tasks` | 304400 | 319620 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::baseline_track_none_one_task` | 292760 | 307398 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::baseline_track_none_reporter` | 279050 | 293003 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::baseline_track_none_three_tasks` | 304400 | 319620 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_one_task_hand` | 830850 | 872393 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_one_task_store` | 830850 | 872393 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_three_tasks_hand` | 1325750 | 1392038 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_three_tasks_store` | 1325750 | 1392038 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_all_reporter_hand` | 774880 | 813624 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_all_reporter_store` | 774880 | 813624 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_one_task_hand` | 760670 | 798704 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_one_task_store` | 760670 | 798704 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_three_tasks_hand` | 1230990 | 1292540 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_three_tasks_store` | 1230990 | 1292540 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_none_reporter_hand` | 733680 | 770364 | 2026-10-01 | d5514cc |
-| `quiver_achievement_integrationtest::test_tracking::bench_track_none_reporter_store` | 733680 | 770364 | 2026-10-01 | d5514cc |
+| `quiver_achievement::constants::tests::achievement_bounds_are_the_accepted_ones` | 13720 | 14406 | 2026-10-01 | 340b085 |
+| `quiver_achievement::errors::tests::achievement_error_strings_are_the_accepted_ones` | 13720 | 14406 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_define_rejects_id_zero` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_empty_slot_unpacks_undefined` | 31350 | 32634 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_packing_points_at_their_position` | 873150 | 916808 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_packing_presence_bits_at_their_positions` | 700910 | 735956 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_packing_rejects_task_count_above_max` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_packing_round_trip_definition` | 8636290 | 9068105 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_packing_round_trip_extra_tasks` | 3616100 | 3796905 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_packing_widths` | 699760 | 719019 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_unpacking_extra_rejects_bit_128` | 341400 | 358470 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_unpacking_rejects_bit_212` | 392860 | 396701 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::achievement_unpacking_rejects_bit_251` | 29630 | 30933 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::bench_definition_new_three_tasks` | 20120 | 21126 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::bench_pack_unpack_definition` | 34790 | 35826 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::bench_pack_unpack_extra_tasks` | 24930 | 26177 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_is_active_inside_and_outside_its_window` | 25640 | 26922 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_checks_id_first` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_checks_window_before_tasks` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_one_task_inline` | 23760 | 24003 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_empty_window` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_end_before_start` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_four_tasks` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_no_task` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_repeated_second_task` | 19120 | 19971 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_repeated_task` | 20120 | 21126 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_task_id_zero` | 16420 | 17241 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_rejects_total_zero` | 17520 | 18396 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_new_three_tasks` | 38630 | 40562 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::definition_points_stored_and_read_back` | 52490 | 55115 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::definition::tests::tasks_span_has_task_count_entries` | 44250 | 45623 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::status::tests::status_cannot_retire_twice` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::status::tests::status_cannot_retire_undefined` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::status::tests::status_defined_refuses_define` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement::models::status::tests::status_retire_keeps_the_definition_bits` | 27080 | 28434 | 2026-10-01 | 340b085 |
+| `quiver_achievement::store::tests::tracking_choices_are_all_or_none` | 15040 | 15792 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::achievement_batch_merges_duplicates` | 170289 | 178804 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_count_of_first_entry_or_zero` | 26290 | 27605 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_above_bound_reverts` | 74260 | 77973 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_bound_accepted` | 228416 | 239837 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_distinct_keeps_order_and_drops_zeros` | 51568 | 54147 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_duplicates_count_toward_bound` | 62140 | 65247 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_late_duplicate` | 1756663 | 1844497 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_modulo_collision_not_merged` | 1821523 | 1912600 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_rejects_task_zero` | 38452 | 40375 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_rejects_task_zero_after_collision` | 62209 | 65320 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_saturates` | 80115 | 84121 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::batch_merge_zero_sum_duplicate_dropped` | 79555 | 83533 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::bench_baseline_sixteen_entries` | 49990 | 52490 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::bench_batch_merge_late_duplicate` | 747613 | 784994 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::bench_batch_merge_late_modulo_collision` | 751523 | 789100 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::batch::tests::bench_batch_merge_sixteen_distinct` | 180396 | 189416 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::window::tests::window_is_active_bounds` | 15640 | 16422 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::window::tests::window_validate_accepts_open_and_ordered_windows` | 13720 | 14406 | 2026-10-01 | 340b085 |
+| `quiver_achievement::types::window::tests::window_validate_rejects_empty_window` | 15520 | 16296 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_consumer_calls_the_internal_layer` | 3038506 | 3190432 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_define_admin_only` | 2323390 | 2435979 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_internal_layer_not_reachable_from_abi` | 1730160 | 1816668 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_progress_accepts_registered_reporter` | 3008982 | 3159432 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_progress_many_rejects_unregistered_caller` | 2123860 | 2230053 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_progress_rejects_unregistered_caller` | 1962320 | 2060436 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_reporter_revoked` | 2341876 | 2458970 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_retire_admin_only` | 3102180 | 3252291 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_set_reporter_admin_only` | 2398750 | 2518688 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_access::achievement_set_reporter_event_fields` | 1833500 | 1925175 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::baseline_defined` | 1987950 | 2086151 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::baseline_deployed` | 789600 | 829080 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::baseline_game_defined` | 19200090 | 20160095 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::baseline_reporter_registered` | 1397010 | 1466861 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::baseline_sixteen_tasks_defined` | 58493900 | 61361139 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_define_one_task` | 1492870 | 1567514 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_define_worst` | 1988240 | 2085962 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_game_define_titles` | 19201710 | 20161796 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_game_results_call` | 20029818 | 21031309 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_game_results_call_sixteen` | 20445376 | 21467645 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_progress` | 998836 | 1048778 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_late_collision` | 2606413 | 2736734 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_late_collision_with_definitions` | 60310513 | 63268583 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_late_duplicate` | 2549593 | 2677073 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_progress_many_sixteen_distinct` | 2035086 | 2136841 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_retire` | 2231280 | 2338949 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_set_reporter` | 1397010 | 1466861 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_set_reporter_revoke` | 1201740 | 1261827 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_set_reporter_unchanged` | 1603540 | 1683717 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_view_definition_worst` | 2205690 | 2310987 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_bench::bench_view_is_reporter` | 914290 | 960005 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_define_one_task_writes_a_only` | 2588120 | 2716718 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_define_rejects_empty_window` | 1817350 | 1906517 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_define_rejects_invalid_id_and_tasks` | 2307150 | 2422508 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_define_rejects_no_task` | 1713440 | 1799112 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_define_three_tasks_writes_a_and_b` | 3031440 | 3177920 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_define_twice_reverts` | 2874960 | 3018708 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_defined_event_fields` | 2836590 | 2978420 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_empty_slot_reads_undefined` | 1594230 | 1673763 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_many_on_one_task` | 22792860 | 23932503 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_define::achievement_redefine_retired_reverts` | 3112330 | 3267947 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_above_bound_reverts` | 1865070 | 1958324 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_bound_accepted` | 3135596 | 3292376 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_duplicates_count_toward_bound` | 1853550 | 1946228 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_one_event_per_merged_task` | 1983799 | 2082989 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_batch_rejects_task_zero` | 1898532 | 1993459 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_event_mode_emits_only_progressed` | 3082436 | 3232495 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_progress_writes_nothing` | 2481676 | 2605760 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_progressed_event_fields` | 1822486 | 1913611 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_retired_progress_still_emits` | 3584402 | 3763623 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_tiers_share_task_one_event` | 4484176 | 4708385 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_progress::achievement_zero_count_emits_nothing` | 2363248 | 2481411 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_one_tier_only` | 3760910 | 3948956 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_sets_retired_and_keeps_the_rest` | 3694240 | 3869061 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_twice_reverts` | 3071340 | 3224088 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_retire::achievement_retire_undefined_reverts` | 1780420 | 1866732 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_track_none::track_none_component_emits_action_events_only` | 3705985 | 3891285 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_track_own::own_impl_tracks_the_definition_only` | 1516920 | 1592766 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_component_track_own::own_impl_tracks_the_reporter_only` | 1469300 | 1542765 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_store_models::get_definition_reads_the_model_back` | 2658150 | 2791058 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_store_models::status_never_emits` | 2276220 | 2390031 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_store_models::track_all_definition_emits_once_per_write` | 2119200 | 2225160 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_store_models::track_all_reporter_emits_once_per_write` | 994320 | 1044036 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_store_models::track_none_definition_emits_nothing_and_writes_the_same` | 3629480 | 3810954 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_store_models::track_none_reporter_emits_nothing_and_writes_the_same` | 1826410 | 1917731 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::baseline_track_all_one_task` | 292760 | 307398 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::baseline_track_all_reporter` | 279050 | 293003 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::baseline_track_all_three_tasks` | 304400 | 319620 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::baseline_track_none_one_task` | 292760 | 307398 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::baseline_track_none_reporter` | 279050 | 293003 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::baseline_track_none_three_tasks` | 304400 | 319620 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_one_task_hand` | 830850 | 872393 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_one_task_store` | 830850 | 872393 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_three_tasks_hand` | 1325750 | 1392038 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_all_definition_three_tasks_store` | 1325750 | 1392038 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_all_reporter_hand` | 774880 | 813624 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_all_reporter_store` | 774880 | 813624 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_one_task_hand` | 760670 | 798704 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_one_task_store` | 760670 | 798704 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_three_tasks_hand` | 1230990 | 1292540 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_none_definition_three_tasks_store` | 1230990 | 1292540 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_none_reporter_hand` | 733680 | 770364 | 2026-10-01 | 340b085 |
+| `quiver_achievement_integrationtest::test_tracking::bench_track_none_reporter_store` | 733680 | 770364 | 2026-10-01 | 340b085 |
 
 ## `quiver_achievement` 0.2.0 (ARC-07b)
 
@@ -226,7 +229,7 @@ packing and benchmarks in `models/definition.cairo`, the status in `models/statu
 tracking choices in `store.cairo`, the bounds and the error strings in `constants.cairo` and
 `errors.cairo`. `tests/` holds what deploys a contract.
 
-Every test of 0.1.0 is kept (102), one renamed; 33 are new. **A moved test whose code did not
+Every test of 0.1.0 is kept (102), one renamed; 36 are new (33, then 3 in fix loop 1). **A moved test whose code did not
 change costs in `src/` what it cost in `tests/`, to the unit** (the batch's 12 and its 4 benchmarks, the
 window's 2, the bounds, the error strings, 9 of the constructor's refusals and 5 of the packing
 tests). Those whose code changed, by the model or by `points`:
@@ -244,6 +247,16 @@ In `tests/`, the component's tests are unchanged in what they do; their figures 
 calls above (`define` −4 370 on 1 task, +1 610 on 3; `retire` +2 570; the view +3 610). A refused
 `define` is now much cheaper (`achievement_define_rejects_invalid_id_and_tasks` 2 590 460 →
 2 307 150, `achievement_define_rejects_no_task` 1 809 910 → 1 713 440): budgets lowered.
+
+### Fix loop 1
+
+Three tests, each with its budget; no other figure moved. `test_component_track_own` runs the
+component under two impls of the consumer's own: `MockTrackDefinitionOnly` (`DEFINITION = true,
+REPORTER = false`; `own_impl_tracks_the_definition_only`, 1 516 920) and its mirror
+`MockTrackReporterOnly` (`own_impl_tracks_the_reporter_only`, 1 469 300). With the two constants
+swapped in the store, these two tests fail and every other test passes: they are the ones that
+tell `DEFINITION` from `REPORTER`. `models::definition::tests::definition_is_active_inside_and_outside_its_window`
+(25 640) covers `DefinitionTrait::is_active`.
 
 ## Cost model of `quiver_achievement` 0.1.0 (ARC-04, event mode only)
 
