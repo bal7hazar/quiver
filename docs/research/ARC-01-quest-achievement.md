@@ -600,7 +600,7 @@ These are defects of reading and documentation. None needs a test.
 
 | | |
 |---|---|
-| Two layers per package | `logic`: types and pure functions, state in and state out, no storage, tested without a deployment. `component`: storage, events, hooks and access control around `logic`. **`quiver_quest`, amended by ARC-07a (0.2.0; D-143, D-147)**: no `logic`; the layers of docs/CAIRO.md §7, `models/`, `events/`, `types/`, `helpers/`, one `store`, the `component` (§3.2) |
+| Two layers per package | `logic`: types and pure functions, state in and state out, no storage, tested without a deployment. `component`: storage, events, hooks and access control around `logic`. **`quiver_quest`, amended by ARC-07a (0.2.0; D-143, D-147)**: no `logic`; the layers of docs/CAIRO.md §7, `models/`, `events/`, `types/`, `helpers/`, one `store`, the `component` (§3.2). **`quiver_achievement`, amended by ARC-07b (0.2.0)**: the same layers (§3.10) |
 | No Dojo, no `graffiti` | `starknet` (Cairo 2.19) only; `snforge_std` as a dev-dependency |
 | Identifiers | `player_id: felt252` (A-3: the game passes an adventurer id or an account). `quest_id`, `achievement_id`, `task_id`: **`u32`** (docs/CAIRO.md §4 "u32 identifiers"; they make packing possible, §5). Id `0` is invalid (the empty-slot sentinel). Open question Q-1 |
 | Time | `u64` seconds from `starknet::get_block_timestamp()`. Interval ids are **`u64`**. `(time - start) / interval <= time < 2^64`, so an id never overflows, whatever the schedule. A `u32` id would overflow after 2^32 intervals: 136 years at `interval = 1`, which a valid schedule allows. Widening costs nothing measurable: ids are storage keys (hashed) or event data (one felt either way), and the record has room for 64 bits (§3.3) |
@@ -1379,6 +1379,30 @@ mod Persistent {
 > package's `README.md`, `CHANGELOG.md` and `GAS.md` (`packages/achievement/`) are the reference
 > for `quiver_achievement` 0.1.0.
 
+> **Amended by ARC-07b** (`quiver_achievement` 0.2.0; the owner's rule D-143, review D-147, and
+> verdict on ARC-07a D-167). There is no `quiver_achievement::logic`. The types and functions
+> below are 0.1.0's, kept as the record; their behaviour and error strings are unchanged, and the
+> layouts too but for `points` (below). In 0.2.0 they are:
+>
+> | 0.1.0 (`quiver_achievement::logic`) | 0.2.0 |
+> |---|---|
+> | `AchievementWindow`; `window_validate`, `window_is_active` | `types::window::AchievementWindow`; `WindowAssert::assert_valid`, `WindowTrait::is_active` |
+> | `AchievementTask` | `types::task::AchievementTask`, `TaskAssert::assert_valid` |
+> | `TaskProgress`; `batch_merge`, `batch_count_of` | `types::batch::TaskProgress`; `BatchTrait::merge`, `count_of` (methods of `Span<TaskProgress>`) |
+> | `AchievementDefinition` (slot A) | `models::definition::HeadSlot`: slot A, shared by the definition and the status, **with `points`** in [196, 212) |
+> | `AchievementExtraTasks` (slot B); `tasks_span` | `models::definition::TasksSlot`; `HeadSlotTrait::tasks` |
+> | `definition_new` | The model `models::definition::AchievementDefinition { id, window, tasks, points }`: `DefinitionTrait::new` (the same checks, order and strings), `DefinitionStorage::into_slots` (A with `points`, and B) |
+> | — (the status bits of A) | The model `models::status::AchievementStatus { id, defined, retired }`, untracked, read from the A a path read and written back as the whole of A |
+> | — (the reporter registry) | The model `models::reporter::AchievementReporter { reporter, allowed }`, tracked |
+> | The packings `AchievementDefinitionPacking`, `AchievementExtraTasksPacking` | `HeadPacking`, `TasksPacking` (`models::definition`); the powers of two in `helpers::bits` |
+>
+> Every stored entity is read and written only through `quiver_achievement::store` (`get_x`,
+> `set_x`). The tracked models are `AchievementDefinition` (`AchievementDefined`) and
+> `AchievementReporter` (`AchievementReporterSet`); whether their writes emit is the consumer's
+> choice at compile time (`store::AchievementTracking`, §3.11). The mechanism and its cost:
+> docs/research/ARC-06-model-store.md ("Optional tracking, ARC-07b"). The unit tests are in their
+> modules' files (D-167).
+
 The shape of quest's library, without intervals, prerequisites, acceptance or per-player state.
 `TaskProgress` is defined again in this package, so that it does not depend on `quiver_quest`
 (Q-13).
@@ -1414,8 +1438,10 @@ pub fn batch_count_of(batch: Span<TaskProgress>, task_id: u32) -> u32;
 ```
 
 `points` is not in the definition: it is emitted in `AchievementDefined` only (Q-8), since no
-rule reads it. `window_is_active` is not called by the component, which reads no definition on
-progress: it states the rule the indexer applies.
+rule reads it. **Amended by ARC-07b**: `points` is a field of the model `AchievementDefinition`
+and is stored in slot A, [196, 212), since a tracked model holds every field its event carries
+(ARC-06 §6, rule 1); it is still read by no rule. `window_is_active` is not called by the
+component, which reads no definition on progress: it states the rule the indexer applies.
 
 ### 3.11 `quiver_achievement` — component
 
@@ -1426,6 +1452,19 @@ progress: it states the rule the indexer applies.
 > parameter and the errors `'Achievement: task full'`, `'Achievement: not completed'`,
 > `'Achievement: already claimed'` and `'Achievement: not authorized'` are gone. `definition` and
 > `achievement_definition` return the whole slot A (with `retired`) and the tasks, as quest's do.
+
+> **Amended by ARC-07b** (0.2.0). The members and keys are unchanged; the value types are named
+> for their slots, `HeadSlot` (A) and `TasksSlot` (B), and **slot A stores `points` in [196,
+> 212)**, [212, 252) reserved. `definition` and `achievement_definition` return
+> `(HeadSlot, Span<AchievementTask>)`: one more felt in the view's output. The events, their
+> selectors, keys and data are unchanged; their structs are declared in
+> `quiver_achievement::events` and still exported from the component. `InternalImpl`,
+> `AchievementImpl` and `AchievementViewImpl` take a second impl parameter, `impl Tracking:
+> AchievementTracking<TContractState>`, which the consumer provides as it provides the hook
+> (`store::tracking::TrackAll`, as 0.1.0, or `TrackNone`): under `TrackNone`, `define` and
+> `set_reporter` write without emitting `AchievementDefined` and `AchievementReporterSet`;
+> `AchievementRetired` and `AchievementProgressed` are emitted whatever the choice. The component
+> reads and writes storage only through `quiver_achievement::store`.
 
 **Storage:**
 
@@ -1493,7 +1532,8 @@ pub struct AchievementReporterSet {
 `AchievementWindow` and `AchievementTask` derive `Drop, Copy, Serde, PartialEq, Debug`, as
 the quest types do. That is what the events need.
 
-`points: u16` is emitted, not stored: it is shown and never read by a rule. There is no cap
+`points: u16` is emitted, not stored (amended by ARC-07b: stored in slot A since 0.2.0): it is
+shown and never read by a rule. There is no cap
 of 100: that was a limit of Cartridge's controller (`achievement/src/events/creation.cairo:8`,
 `:82-84`), not a rule of the mechanics.
 
@@ -1689,6 +1729,11 @@ the network's, and 0.56 % of the network's 1.1 × 10⁹ at H = 4.
 > The worst call the package allows is 9.1 % of the 20 M cap of the A-G1 amendment. Defining the
 > game's 26 tiers in one transaction is 18 525 730 (92.6 %): definitions in bulk are spread over
 > transactions.
+>
+> **Amended by ARC-07b** (0.2.0, under `TrackAll`): progress is the same to the unit; `define` is
+> 1 198 640 (1 187 428) on 3 tasks and 703 270 (697 664) on 1, `retire` 243 330 (218 224), with
+> `points` stored; the 26 tiers 18 412 110 (92.1 %). Under `TrackNone`, `define` costs 70 180
+> less on 1 task and 94 760 less on 3. Detail in `packages/achievement/GAS.md`.
 
 | Case | Reads | Writes | Events |
 |---|---|---|---|

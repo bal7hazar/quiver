@@ -1,42 +1,55 @@
 //! The Starknet component of `quiver_achievement` (ARC-01 §3.11, amended by the decision of
-//! 2026-09-29): storage of the definitions and of the reporter registry, events, the one hook
-//! `authorize_admin`, the trusted internal layer, and the optional external ABI with its access
-//! control.
+//! 2026-09-29): storage, events, the one hook `authorize_admin`, the trusted internal layer, and
+//! the optional external ABI with its access control. Every stored entity is a model
+//! (`crate::models`), read and written only through the store (`crate::store`).
 //!
 //! **Event mode only.** Progress is emitted as `AchievementProgressed` events and nothing else:
 //! there is no per-player storage, no task page, no completion and no claim, and no `Mode`
 //! parameter. A consumer cannot ask for a storage mode: the code that would do it does not exist.
 //! An indexer derives the tiers from `AchievementDefined`, `AchievementRetired` and
 //! `AchievementProgressed`. A storage design with per-task counters is planned for a later
-//! version; 0.1.0 reserves none of its layout.
+//! version; none of its layout is reserved.
 //!
 //! **The internal layer is trusted**: `InternalImpl` checks no caller. A consumer calls it from
 //! its own entrypoints, after its own checks. Only the external impls `AchievementImpl` and
 //! `AchievementViewImpl` check anything, and only when the consumer embeds them.
 //!
-//! Every loop is bounded: batches by `MAX_ENTRIES` (checked first by `batch_merge`), tasks by
-//! `MAX_TASKS` (unrolled).
+//! **The consumer chooses the tracked models' events** (`crate::store::AchievementTracking`): the
+//! component's impls take its choice as an impl parameter, like the hook. The action events
+//! (`AchievementProgressed`, `AchievementRetired`) are emitted here, whatever the choice.
+//!
+//! Every loop is bounded: batches by `MAX_ENTRIES` (checked first by `BatchTrait::merge`), tasks
+//! by `MAX_TASKS` (unrolled).
 
 #[starknet::component]
 pub mod AchievementComponent {
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::Map;
     use starknet::{ContractAddress, get_caller_address};
     use crate::errors;
-    use crate::interface::{IAchievement, IAchievementView};
-    use crate::logic::{
-        AchievementDefinition, AchievementExtraTasks, AchievementTask, AchievementWindow,
-        TaskProgress, batch_merge, definition_new, tasks_span,
+    pub use crate::events::index::{
+        AchievementDefined, AchievementProgressed, AchievementReporterSet, AchievementRetired,
     };
+    use crate::events::progressed::ProgressedTrait;
+    use crate::events::retired::RetiredTrait;
+    use crate::interface::{IAchievement, IAchievementView};
+    use crate::models::definition::{DefinitionTrait, HeadSlot, HeadSlotTrait, NO_TASKS, TasksSlot};
+    use crate::models::reporter::{AchievementReporter, ReporterAssert};
+    use crate::models::status::{StatusAssert, StatusStorage, StatusTrait};
+    use crate::store::{AchievementTracking, StoreTrait};
+    use crate::types::batch::{BatchTrait, TaskProgress};
+    use crate::types::task::AchievementTask;
+    use crate::types::window::AchievementWindow;
 
     /// Members are prefixed with `Achievement_` so that they do not collide in the consumer's
-    /// storage. Every value is one felt (layouts in `quiver_achievement::logic::types`). No
-    /// member is keyed by a player.
+    /// storage. Every value is one felt (layouts next to each model, in
+    /// `quiver_achievement::models`). Read and written only by the store. No member is keyed by a
+    /// player.
     #[storage]
     pub struct Storage {
-        /// Slot A, key `achievement_id`.
-        pub Achievement_definitions: Map<u32, AchievementDefinition>,
+        /// Slot A, key `achievement_id`: the definition's head and the achievement's status.
+        pub Achievement_definitions: Map<u32, HeadSlot>,
         /// Slot B, key `achievement_id`; written only for an achievement of 2 or 3 tasks.
-        pub Achievement_extra_tasks: Map<u32, AchievementExtraTasks>,
+        pub Achievement_extra_tasks: Map<u32, TasksSlot>,
         pub Achievement_reporters: Map<ContractAddress, bool>,
     }
 
@@ -47,39 +60,6 @@ pub mod AchievementComponent {
         AchievementProgressed: AchievementProgressed,
         AchievementRetired: AchievementRetired,
         AchievementReporterSet: AchievementReporterSet,
-    }
-
-    /// Every `define`. `points` is here only: it is shown, never read by a rule.
-    #[derive(Drop, PartialEq, Debug, starknet::Event)]
-    pub struct AchievementDefined {
-        #[key]
-        pub achievement_id: u32,
-        pub window: AchievementWindow,
-        pub tasks: Span<AchievementTask>,
-        pub points: u16,
-    }
-
-    /// One per merged, non-zero entry of a progress call.
-    #[derive(Drop, PartialEq, Debug, starknet::Event)]
-    pub struct AchievementProgressed {
-        #[key]
-        pub player_id: felt252,
-        #[key]
-        pub task_id: u32,
-        pub count: u32,
-    }
-
-    #[derive(Drop, PartialEq, Debug, starknet::Event)]
-    pub struct AchievementRetired {
-        #[key]
-        pub achievement_id: u32,
-    }
-
-    #[derive(Drop, PartialEq, Debug, starknet::Event)]
-    pub struct AchievementReporterSet {
-        #[key]
-        pub reporter: ContractAddress,
-        pub allowed: bool,
     }
 
     /// Implemented by the consumer; the component's impls are generic over it.
@@ -96,12 +76,13 @@ pub mod AchievementComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl Hooks: AchievementHooksTrait<TContractState>,
+        impl Tracking: AchievementTracking<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Validates (`definition_new`), then refuses `'Achievement: already defined'` (retired
-        /// or not). Writes A, and B for 2 or 3 tasks; emits `AchievementDefined` with `points`.
-        /// Any number of achievements may use a task: tiers are separate achievements on one
-        /// task.
+        /// Validates (`DefinitionTrait::new`), then refuses `'Achievement: already defined'`
+        /// (retired or not). Writes the definition through the store: A with `points`, B for 2 or
+        /// 3 tasks, and `AchievementDefined` when tracked. Any number of achievements may use a
+        /// task: tiers are separate achievements on one task.
         fn define(
             ref self: ComponentState<TContractState>,
             achievement_id: u32,
@@ -109,35 +90,28 @@ pub mod AchievementComponent {
             tasks: Span<AchievementTask>,
             points: u16,
         ) {
-            let (definition, extra) = definition_new(achievement_id, window, tasks);
-            assert(
-                !self.Achievement_definitions.read(achievement_id).defined, errors::ALREADY_DEFINED,
-            );
-            self.Achievement_definitions.write(achievement_id, definition);
-            if definition.task_count > 1 {
-                self.Achievement_extra_tasks.write(achievement_id, extra);
-            }
-            self.emit(AchievementDefined { achievement_id, window, tasks, points });
+            let definition = DefinitionTrait::new(achievement_id, window, tasks, points);
+            self.get_status(achievement_id).assert_does_not_exist();
+            self.set_definition(definition);
         }
 
         /// Refuses `'Achievement: does not exist'`, `'Achievement: retired'`. Sets `retired`;
         /// emits `AchievementRetired`. Progress does not read it: the indexer stops counting the
         /// achievement from this event, and keeps what it reached before.
         fn retire(ref self: ComponentState<TContractState>, achievement_id: u32) {
-            let mut definition = self.Achievement_definitions.read(achievement_id);
-            assert(definition.defined, errors::DOES_NOT_EXIST);
-            assert(!definition.retired, errors::RETIRED);
-            definition.retired = true;
-            self.Achievement_definitions.write(achievement_id, definition);
-            self.emit(AchievementRetired { achievement_id });
+            let head = self.get_definition_head(achievement_id);
+            let mut status = head.status(achievement_id);
+            status.assert_can_retire();
+            status.retire();
+            self.set_status(status, head);
+            self.emit(RetiredTrait::new(achievement_id));
         }
 
-        /// Registers or revokes a reporter; emits `AchievementReporterSet`.
+        /// Registers or revokes a reporter; emits `AchievementReporterSet` when tracked.
         fn set_reporter(
             ref self: ComponentState<TContractState>, reporter: ContractAddress, allowed: bool,
         ) {
-            self.Achievement_reporters.write(reporter, allowed);
-            self.emit(AchievementReporterSet { reporter, allowed });
+            StoreTrait::set_reporter(ref self, AchievementReporter { reporter, allowed });
         }
 
         /// Exactly `progress_many(player_id, [TaskProgress { task_id, count }])`.
@@ -162,33 +136,30 @@ pub mod AchievementComponent {
             player_id: felt252,
             entries: Span<TaskProgress>,
         ) {
-            for entry in batch_merge(entries) {
+            for entry in entries.merge() {
                 let TaskProgress { task_id, count } = *entry;
-                self.emit(AchievementProgressed { player_id, task_id, count });
+                self.emit(ProgressedTrait::new(player_id, task_id, count));
             }
         }
 
         /// Panics `'Achievement: not reporter'` unless `caller` is a registered reporter.
         fn assert_reporter(self: @ComponentState<TContractState>, caller: ContractAddress) {
-            assert(self.Achievement_reporters.read(caller), errors::NOT_REPORTER);
+            self.get_reporter(caller).assert_is_allowed();
         }
 
-        /// A and the tasks (B read only for 2 or 3 tasks). Panics `'Achievement: does not
-        /// exist'`; a retired achievement is returned, with `retired` set.
+        /// A, with `points`, and the tasks (B read only for 2 or 3 tasks). Panics `'Achievement:
+        /// does not exist'`; a retired achievement is returned, with `retired` set.
         fn definition(
             self: @ComponentState<TContractState>, achievement_id: u32,
-        ) -> (AchievementDefinition, Span<AchievementTask>) {
-            let definition = self.Achievement_definitions.read(achievement_id);
-            assert(definition.defined, errors::DOES_NOT_EXIST);
-            let extra = if definition.task_count > 1 {
-                self.Achievement_extra_tasks.read(achievement_id)
+        ) -> (HeadSlot, Span<AchievementTask>) {
+            let head = self.get_definition_head(achievement_id);
+            head.status(achievement_id).assert_does_exist();
+            let slot_b = if head.task_count > 1 {
+                self.get_definition_tasks(achievement_id)
             } else {
-                AchievementExtraTasks {
-                    t1: AchievementTask { task_id: 0, total: 0 },
-                    t2: AchievementTask { task_id: 0, total: 0 },
-                }
+                NO_TASKS
             };
-            (definition, tasks_span(@definition, @extra))
+            (head, head.tasks(@slot_b))
         }
     }
 
@@ -198,6 +169,7 @@ pub mod AchievementComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl Hooks: AchievementHooksTrait<TContractState>,
+        impl Tracking: AchievementTracking<TContractState>,
         +Drop<TContractState>,
     > of IAchievement<ComponentState<TContractState>> {
         /// `authorize_admin(caller)` or `'Achievement: not admin'`.
@@ -251,18 +223,19 @@ pub mod AchievementComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl Hooks: AchievementHooksTrait<TContractState>,
+        impl Tracking: AchievementTracking<TContractState>,
         +Drop<TContractState>,
     > of IAchievementView<ComponentState<TContractState>> {
         fn achievement_definition(
             self: @ComponentState<TContractState>, achievement_id: u32,
-        ) -> (AchievementDefinition, Span<AchievementTask>) {
+        ) -> (HeadSlot, Span<AchievementTask>) {
             self.definition(achievement_id)
         }
 
         fn achievement_is_reporter(
             self: @ComponentState<TContractState>, reporter: ContractAddress,
         ) -> bool {
-            self.Achievement_reporters.read(reporter)
+            self.get_reporter(reporter).allowed
         }
     }
 }

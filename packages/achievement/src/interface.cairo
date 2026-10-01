@@ -7,7 +7,10 @@
 //! anything for a player. A storage mode is not refused at run time: it does not exist.
 
 use starknet::ContractAddress;
-use crate::logic::{AchievementDefinition, AchievementTask, AchievementWindow, TaskProgress};
+use crate::models::definition::HeadSlot;
+use crate::types::batch::TaskProgress;
+use crate::types::task::AchievementTask;
+use crate::types::window::AchievementWindow;
 
 /// The access-checked entrypoints: `define`, `retire` and `set_reporter` need
 /// `authorize_admin(caller)`; `progress` and `progress_many` a registered reporter.
@@ -29,9 +32,10 @@ pub trait IAchievement<TState> {
 /// The views. None writes.
 #[starknet::interface]
 pub trait IAchievementView<TState> {
-    /// Slot A (with `retired`) and the tasks. Panics `'Achievement: does not exist'`.
+    /// Slot A (with `retired` and, since 0.2.0, `points`) and the tasks. Panics `'Achievement:
+    /// does not exist'`.
     fn achievement_definition(
         self: @TState, achievement_id: u32,
-    ) -> (AchievementDefinition, Span<AchievementTask>);
+    ) -> (HeadSlot, Span<AchievementTask>);
     fn achievement_is_reporter(self: @TState, reporter: ContractAddress) -> bool;
 }

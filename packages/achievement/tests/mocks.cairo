@@ -1,26 +1,28 @@
-//! Mock consumers of `AchievementComponent`, deployed by the tests.
+//! Mock consumers of `AchievementComponent`, deployed by the tests. Each names its tracking choice
+//! (`quiver_achievement::store::AchievementTracking`), as a consumer of 0.2.0 does.
 //!
 //! - `MockAchievement` embeds the external impls `AchievementImpl` and `AchievementViewImpl`. Its
-//!   admin is set at deployment.
+//!   admin is set at deployment. `TrackAll`.
 //! - `MockConsumer` is the consumer of ARC-01 §3.8 for titles: it embeds only
 //!   `AchievementViewImpl` and calls the internal layer from its own entrypoints, after its own
-//!   checks.
+//!   checks. `TrackAll`.
 //! - `MockBench` authorizes every caller, so that a benchmark measures the component's own cost.
+//!   `TrackAll`, as 0.1.0. `MockBenchSilent` is the same under `TrackNone`.
+
+use quiver_achievement::types::batch::TaskProgress;
+use quiver_achievement::types::task::AchievementTask;
+use quiver_achievement::types::window::AchievementWindow;
 
 #[starknet::interface]
 pub trait IMockConsumer<TState> {
     fn define_achievement(
         ref self: TState,
         achievement_id: u32,
-        window: quiver_achievement::logic::AchievementWindow,
-        tasks: Span<quiver_achievement::logic::AchievementTask>,
+        window: AchievementWindow,
+        tasks: Span<AchievementTask>,
         points: u16,
     );
-    fn submit_results(
-        ref self: TState,
-        adventurer_id: felt252,
-        progress: Span<quiver_achievement::logic::TaskProgress>,
-    );
+    fn submit_results(ref self: TState, adventurer_id: felt252, progress: Span<TaskProgress>);
 }
 
 #[starknet::contract]
@@ -36,6 +38,8 @@ pub mod MockAchievement {
     #[abi(embed_v0)]
     impl AchievementViewImpl =
         AchievementComponent::AchievementViewImpl<ContractState>;
+
+    impl AchievementTracking = quiver_achievement::store::tracking::TrackAll<ContractState>;
 
     #[storage]
     struct Storage {
@@ -68,7 +72,9 @@ pub mod MockAchievement {
 #[starknet::contract]
 pub mod MockConsumer {
     use quiver_achievement::component::AchievementComponent;
-    use quiver_achievement::logic::{AchievementTask, AchievementWindow, TaskProgress};
+    use quiver_achievement::types::batch::TaskProgress;
+    use quiver_achievement::types::task::AchievementTask;
+    use quiver_achievement::types::window::AchievementWindow;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address};
     use super::IMockConsumer;
@@ -79,6 +85,8 @@ pub mod MockConsumer {
     impl AchievementViewImpl =
         AchievementComponent::AchievementViewImpl<ContractState>;
     impl AchievementInternalImpl = AchievementComponent::InternalImpl<ContractState>;
+
+    impl AchievementTracking = quiver_achievement::store::tracking::TrackAll<ContractState>;
 
     #[storage]
     struct Storage {
@@ -144,6 +152,133 @@ pub mod MockBench {
     #[abi(embed_v0)]
     impl AchievementViewImpl =
         AchievementComponent::AchievementViewImpl<ContractState>;
+
+    /// Every tracked model emits, as 0.1.0: the benchmarks compare with 0.1.0's figures.
+    impl AchievementTracking = quiver_achievement::store::tracking::TrackAll<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievement: AchievementComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievementEvent: AchievementComponent::Event,
+    }
+
+    impl AchievementHooks of AchievementComponent::AchievementHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @AchievementComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+    }
+}
+
+/// `MockBench` under `TrackNone`: the tracked models' events are not emitted, the action events
+/// are.
+#[starknet::contract]
+pub mod MockBenchSilent {
+    use quiver_achievement::component::AchievementComponent;
+    use starknet::ContractAddress;
+
+    component!(path: AchievementComponent, storage: achievement, event: AchievementEvent);
+
+    #[abi(embed_v0)]
+    impl AchievementImpl = AchievementComponent::AchievementImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl AchievementViewImpl =
+        AchievementComponent::AchievementViewImpl<ContractState>;
+
+    impl AchievementTracking = quiver_achievement::store::tracking::TrackNone<ContractState>;
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievement: AchievementComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievementEvent: AchievementComponent::Event,
+    }
+
+    impl AchievementHooks of AchievementComponent::AchievementHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @AchievementComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+    }
+}
+
+/// `MockBench` under an impl of its own, as the README's tracking table documents: the
+/// definition tracked, the reporter not (fix loop 1).
+#[starknet::contract]
+pub mod MockTrackDefinitionOnly {
+    use quiver_achievement::component::AchievementComponent;
+    use quiver_achievement::store::AchievementTracking;
+    use starknet::ContractAddress;
+
+    component!(path: AchievementComponent, storage: achievement, event: AchievementEvent);
+
+    #[abi(embed_v0)]
+    impl AchievementImpl = AchievementComponent::AchievementImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl AchievementViewImpl =
+        AchievementComponent::AchievementViewImpl<ContractState>;
+
+    impl Tracking of AchievementTracking<ContractState> {
+        const DEFINITION: bool = true;
+        const REPORTER: bool = false;
+    }
+
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        achievement: AchievementComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievementEvent: AchievementComponent::Event,
+    }
+
+    impl AchievementHooks of AchievementComponent::AchievementHooksTrait<ContractState> {
+        fn authorize_admin(
+            self: @AchievementComponent::ComponentState<ContractState>, caller: ContractAddress,
+        ) -> bool {
+            true
+        }
+    }
+}
+
+/// The mirror of `MockTrackDefinitionOnly`: the reporter tracked, the definition not.
+#[starknet::contract]
+pub mod MockTrackReporterOnly {
+    use quiver_achievement::component::AchievementComponent;
+    use quiver_achievement::store::AchievementTracking;
+    use starknet::ContractAddress;
+
+    component!(path: AchievementComponent, storage: achievement, event: AchievementEvent);
+
+    #[abi(embed_v0)]
+    impl AchievementImpl = AchievementComponent::AchievementImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl AchievementViewImpl =
+        AchievementComponent::AchievementViewImpl<ContractState>;
+
+    impl Tracking of AchievementTracking<ContractState> {
+        const DEFINITION: bool = false;
+        const REPORTER: bool = true;
+    }
 
     #[storage]
     struct Storage {

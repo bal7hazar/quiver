@@ -52,7 +52,7 @@ fn achievement_progressed_event_fields() {
 
 /// Tiers are separate achievements on one task (A-7): one event, whatever the tiers.
 #[test]
-#[available_gas(l2_gas: 4722151)]
+#[available_gas(l2_gas: 4708385)]
 fn achievement_tiers_share_task_one_event() {
     let a = deploy();
     define_simple(a, 1, 7, 10);
@@ -67,7 +67,7 @@ fn achievement_tiers_share_task_one_event() {
 
 /// Progress reads no definition: a task of a retired achievement, or of none, still emits.
 #[test]
-#[available_gas(l2_gas: 3765513)]
+#[available_gas(l2_gas: 3763623)]
 fn achievement_retired_progress_still_emits() {
     let a = deploy();
     define_simple(a, 1, 7, 10);

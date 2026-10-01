@@ -6,3 +6,15 @@ pub const MAX_TASKS: u8 = 3;
 /// Entries per `progress_many` call, counted before merging (duplicates and zero counts
 /// included).
 pub const MAX_ENTRIES: u32 = 16;
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_ENTRIES, MAX_TASKS};
+
+    #[test]
+    #[available_gas(l2_gas: 14406)]
+    fn achievement_bounds_are_the_accepted_ones() {
+        assert!(MAX_TASKS == 3);
+        assert!(MAX_ENTRIES == 16);
+    }
+}

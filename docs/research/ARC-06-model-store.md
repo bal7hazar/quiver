@@ -465,3 +465,41 @@ tests run under `TrackAll`, as 0.1.0 behaves.
 5. The cost audit's notes are kept: B is read only for a held quest, C only with conditions, R
    only on completion; A once per path; no model's write emits an action event, and the
    untracked models emit nothing.
+
+## 8. Optional tracking, ARC-07b
+
+| | |
+|---|---|
+| Task | ARC-07b ([brief](../briefs/ARC-07b-achievement-0.2.0.md)), `[Opus 5.5]`, 2026-10-01 |
+| Code | [`packages/achievement/src/store.cairo`](../../packages/achievement/src/store.cairo) (`AchievementTracking`, `tracking::TrackAll`, `tracking::TrackNone`, `set_definition`, `set_reporter`) |
+| Figures | [`packages/achievement/GAS.md`](../../packages/achievement/GAS.md#quiver_achievement-020-arc-07b), snforge 0.61, L2 gas |
+
+The mechanism is §7's, with the package's names: `AchievementTracking { const DEFINITION; const
+REPORTER; }`. Measured again on Cairo 2.19, on `quiver_achievement`'s own models, each created,
+in `MockStoreNone` (`TrackNone`) and `MockStoreAll` (`TrackAll`); the hand arm builds the same
+model with `DefinitionTrait::new` and writes its slots itself, then emits through the component
+under `TrackAll` (`tests/test_tracking.cairo`). Each figure is the benchmark minus its contract's
+baseline:
+
+| Model | `TrackNone`: store | by hand | − | `TrackAll`: store | by hand | − | The event |
+|---|---|---|---|---|---|---|---|
+| `AchievementDefinition`, 1 task: A | 467 910 | 467 910 | **0** | 538 090 | 538 090 | **0** | 70 180 |
+| `AchievementDefinition`, 3 tasks: A and B | 926 590 | 926 590 | **0** | 1 021 350 | 1 021 350 | **0** | 94 760 |
+| `AchievementReporter` | 454 630 | 454 630 | **0** | 495 830 | 495 830 | **0** | 41 200 |
+
+The constant is folded again: untracked, the write with no event code; tracked, the write plus the
+event, to the unit. The reporter's untracked write is `quiver_quest`'s (454 630, §7).
+
+**§6, rule 1, applied: `points` stored.** `AchievementDefined` carries `points`, so the model
+holds it, in slot A, [196, 212). Its price in the component (`test_component_bench`, against
+0.1.0 measured on the same branch): about 2 100 per pack of A and 470 per unpack; `define` of 3
+tasks +1 610 (1 198 640), `retire` +2 570 (243 330), the view +3 610 (217 740, one more felt
+returned). §4 measured +200 for a `u16` added to a mock slot of two fields; on slot A, of seven,
+the packing alone costs 670 more in the library (pack and unpack, `bench_pack_unpack_definition`),
+and more in the component, where folding `points` into `t0.total`'s term costs the same.
+`define` of 1 task is 4 370 cheaper than 0.1.0 all the same: `DefinitionTrait::new` validates for
+less.
+
+**A snapshot costs, a value does not.** The reporter check written as
+`assert_is_allowed(self: @AchievementReporter)` cost 500 (5 steps) on every progress call;
+taking the model by value, progress is 0.1.0's to the unit, as are the status's checks.
