@@ -93,8 +93,8 @@ pub impl BitsImpl of BitsTrait {
 #[cfg(test)]
 mod tests {
     use super::{
-        NZ_128, NZ_2, NZ_2_32, NZ_2_64, NZ_4, POW2, TWO_POW_128, TWO_POW_130, TWO_POW_131,
-        TWO_POW_132, TWO_POW_164, TWO_POW_196, TWO_POW_32, TWO_POW_64, TWO_POW_96,
+        BitsTrait, NZ_128, NZ_2, NZ_2_32, NZ_2_64, NZ_4, POW2, TWO_POW_128, TWO_POW_130,
+        TWO_POW_131, TWO_POW_132, TWO_POW_164, TWO_POW_196, TWO_POW_32, TWO_POW_64, TWO_POW_96,
     };
 
     /// 2^n as a felt, by doubling.
@@ -162,5 +162,25 @@ mod tests {
         assert!(nz_2_32 == u128_pow2(32));
         assert!(nz_2_64 == u128_pow2(64));
         assert!(nz_128 == 128);
+    }
+
+    /// Both limbs set: `low + high × 2^128` splits into `(low, high)`, the high limb at its
+    /// widest below 2^123 (a felt is below 2^251 + 17 × 2^192 + 1).
+    #[test]
+    #[available_gas(l2_gas: 18323)]
+    fn split_both_limbs() {
+        let low: u128 = 0xfedcba9876543210fedcba9876543210;
+        let high: u128 = 0x7ffffffffffffffffffffffffffffff;
+        let value: felt252 = low.into() + high.into() * TWO_POW_128;
+        assert!(BitsTrait::split(value) == (low, high));
+    }
+
+    /// The high limb zero: a felt below 2^128 is its own low limb.
+    #[test]
+    #[available_gas(l2_gas: 18354)]
+    fn split_high_limb_zero() {
+        let low: u128 = 0xffffffffffffffffffffffffffffffff;
+        assert!(BitsTrait::split(low.into()) == (low, 0));
+        assert!(BitsTrait::split(0) == (0, 0));
     }
 }

@@ -64,7 +64,7 @@ pub impl StatusAssert of AssertTrait {
 
 /// Storage: bits 130 (`defined`) and 131 (`retired`) of slot A. The status is read from the A a
 /// path read, and written back into it. By snapshot, as `quiver_quest`: by value costs the same
-/// (measured, ARC-07b fix loop 2).
+/// on every entrypoint (measured, ARC-07b fix loop 2).
 #[generate_trait]
 pub impl StatusStorage of StatusStorageTrait {
     /// The status of achievement `id` in its slot A.
