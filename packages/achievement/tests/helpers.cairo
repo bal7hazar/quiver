@@ -42,8 +42,8 @@ pub fn distinct_entries(first: u32, n: u32, count: u32) -> Span<TaskProgress> {
 }
 
 /// Tasks 1..=15, then `last`, each with count 1. `[1..=15, 129]` (129 = 1 mod 128) meets a
-/// collision only at the 16th entry, so the fast pass of `batch_merge` runs 15 entries and then
-/// the plain merge runs in full; `[1..=15, 15]` is a late duplicate.
+/// collision only at the 16th entry, so the fast pass of `BatchTrait::merge` runs 15 entries and
+/// then the plain merge runs in full; `[1..=15, 15]` is a late duplicate.
 pub fn fifteen_then(last: u32) -> Span<TaskProgress> {
     let mut entries = array![];
     let mut task_id: u32 = 1;

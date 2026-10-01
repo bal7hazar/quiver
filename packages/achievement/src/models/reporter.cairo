@@ -37,3 +37,25 @@ pub impl ReporterTracked of Tracked<AchievementReporter> {
         ReporterSetTrait::new(self)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{AchievementReporter, ReporterAssert};
+
+    fn reporter(allowed: bool) -> AchievementReporter {
+        AchievementReporter { reporter: 'reporter'.try_into().unwrap(), allowed }
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 14406)]
+    fn reporter_allowed_passes() {
+        reporter(true).assert_is_allowed();
+    }
+
+    #[test]
+    #[should_panic(expected: 'Achievement: not reporter')]
+    #[available_gas(l2_gas: 16296)]
+    fn reporter_refused_reverts_not_reporter() {
+        reporter(false).assert_is_allowed();
+    }
+}

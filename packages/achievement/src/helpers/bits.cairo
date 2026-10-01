@@ -87,3 +87,80 @@ pub impl BitsImpl of BitsTrait {
         (low, high)
     }
 }
+
+/// Every table entry against a value computed by doubling: `POW2[i] == 2^i` for each `i`, and each
+/// `TWO_POW_*` and `NZ_*` constant at its power.
+#[cfg(test)]
+mod tests {
+    use super::{
+        NZ_128, NZ_2, NZ_2_32, NZ_2_64, NZ_4, POW2, TWO_POW_128, TWO_POW_130, TWO_POW_131,
+        TWO_POW_132, TWO_POW_164, TWO_POW_196, TWO_POW_32, TWO_POW_64, TWO_POW_96,
+    };
+
+    /// 2^n as a felt, by doubling.
+    fn felt_pow2(n: u32) -> felt252 {
+        let mut value: felt252 = 1;
+        let mut i = 0;
+        while i < n {
+            value = value * 2;
+            i += 1;
+        }
+        value
+    }
+
+    /// 2^n as a `u128`, by doubling; n < 128.
+    fn u128_pow2(n: u32) -> u128 {
+        let mut value: u128 = 1;
+        let mut i = 0;
+        while i < n {
+            value = value * 2;
+            i += 1;
+        }
+        value
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 995106)]
+    fn pow2_table_is_two_to_the_index() {
+        let table = POW2.span();
+        assert!(table.len() == 128);
+        let mut expected: u128 = 1;
+        let mut i: u32 = 0;
+        while i < 128 {
+            assert!(*table[i] == expected, "POW2[{}]", i);
+            if i < 127 {
+                expected = expected * 2;
+            }
+            i += 1;
+        }
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 2100410)]
+    fn two_pow_constants_are_their_powers() {
+        assert!(TWO_POW_32 == felt_pow2(32));
+        assert!(TWO_POW_64 == felt_pow2(64));
+        assert!(TWO_POW_96 == felt_pow2(96));
+        assert!(TWO_POW_128 == felt_pow2(128));
+        assert!(TWO_POW_130 == felt_pow2(130));
+        assert!(TWO_POW_131 == felt_pow2(131));
+        assert!(TWO_POW_132 == felt_pow2(132));
+        assert!(TWO_POW_164 == felt_pow2(164));
+        assert!(TWO_POW_196 == felt_pow2(196));
+    }
+
+    #[test]
+    #[available_gas(l2_gas: 549339)]
+    fn nz_constants_are_their_powers() {
+        let nz_2: u128 = NZ_2.into();
+        let nz_4: u128 = NZ_4.into();
+        let nz_2_32: u128 = NZ_2_32.into();
+        let nz_2_64: u128 = NZ_2_64.into();
+        let nz_128: u32 = NZ_128.into();
+        assert!(nz_2 == u128_pow2(1));
+        assert!(nz_4 == u128_pow2(2));
+        assert!(nz_2_32 == u128_pow2(32));
+        assert!(nz_2_64 == u128_pow2(64));
+        assert!(nz_128 == 128);
+    }
+}

@@ -37,6 +37,8 @@ pub impl StatusImpl of StatusTrait {
     }
 }
 
+/// By value: by snapshot costs 1 step more per check, +100 on `define` and the view, +200 on
+/// `retire` (measured, ARC-07b fix loop 2).
 #[generate_trait]
 pub impl StatusAssert of AssertTrait {
     /// `'Achievement: does not exist'` unless defined.
@@ -61,19 +63,20 @@ pub impl StatusAssert of AssertTrait {
 }
 
 /// Storage: bits 130 (`defined`) and 131 (`retired`) of slot A. The status is read from the A a
-/// path read, and written back into it.
+/// path read, and written back into it. By snapshot, as `quiver_quest`: by value costs the same
+/// (measured, ARC-07b fix loop 2).
 #[generate_trait]
 pub impl StatusStorage of StatusStorageTrait {
     /// The status of achievement `id` in its slot A.
     #[inline(always)]
-    fn status(self: HeadSlot, id: u32) -> AchievementStatus {
-        AchievementStatus { id, defined: self.defined, retired: self.retired }
+    fn status(self: @HeadSlot, id: u32) -> AchievementStatus {
+        AchievementStatus { id, defined: *self.defined, retired: *self.retired }
     }
 
     /// Slot A with this status, the definition's bits of `head` unchanged.
     #[inline(always)]
-    fn into_slot(self: AchievementStatus, head: HeadSlot) -> HeadSlot {
-        HeadSlot { defined: self.defined, retired: self.retired, ..head }
+    fn into_slot(self: @AchievementStatus, head: HeadSlot) -> HeadSlot {
+        HeadSlot { defined: *self.defined, retired: *self.retired, ..head }
     }
 }
 
