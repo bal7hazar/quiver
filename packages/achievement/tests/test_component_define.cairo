@@ -1,5 +1,5 @@
 //! `define` and the definition view (ARC-01 §3.11; D-8, D-11): slots A and B, `points` in the
-//! event only, refusals, the empty slot, any number of achievements on one task.
+//! event and, since 0.2.0, in A; refusals, the empty slot, any number of achievements on one task.
 
 use quiver_achievement::component::AchievementComponent::{AchievementDefined, Event};
 use quiver_achievement::errors;
@@ -7,7 +7,7 @@ use quiver_achievement::interface::{
     IAchievementDispatcherTrait, IAchievementSafeDispatcherTrait, IAchievementViewDispatcherTrait,
     IAchievementViewSafeDispatcherTrait,
 };
-use quiver_achievement::logic::{AchievementDefinition, AchievementExtraTasks};
+use quiver_achievement::models::definition::{HeadSlot, TasksSlot};
 use snforge_std::{EventSpyAssertionsTrait, EventSpyTrait, load, map_entry_address, spy_events};
 use starknet::storage_access::StorePacking;
 use super::helpers::{always, one, task, window};
@@ -40,9 +40,15 @@ fn achievement_define_one_task_writes_a_only() {
             ],
         );
     let (definition, tasks) = a.view.achievement_definition(5);
+    // `points` stored in A since 0.2.0, and returned by the view
     assert!(
-        definition == AchievementDefinition {
-            window: window(100, 200), task_count: 1, defined: true, retired: false, t0: task(7, 10),
+        definition == HeadSlot {
+            window: window(100, 200),
+            task_count: 1,
+            defined: true,
+            retired: false,
+            t0: task(7, 10),
+            points: 25,
         },
     );
     assert!(tasks == one(7, 10));
@@ -62,7 +68,7 @@ fn achievement_define_three_tasks_writes_a_and_b() {
     let (definition, read) = a.view.achievement_definition(5);
     assert!(read == tasks);
     assert!(definition.task_count == 3);
-    let extra = AchievementExtraTasks { t1: task(2, 6), t2: task(3, 7) };
+    let extra = TasksSlot { t1: task(2, 6), t2: task(3, 7) };
     assert!(slot(a.address, selector!("Achievement_extra_tasks"), 5) == StorePacking::pack(extra));
 }
 

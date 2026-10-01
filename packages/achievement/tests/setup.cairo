@@ -4,7 +4,9 @@ use quiver_achievement::interface::{
     IAchievementDispatcher, IAchievementDispatcherTrait, IAchievementSafeDispatcher,
     IAchievementViewDispatcher, IAchievementViewSafeDispatcher,
 };
-use quiver_achievement::logic::{AchievementTask, AchievementWindow, TaskProgress};
+use quiver_achievement::types::batch::TaskProgress;
+use quiver_achievement::types::task::AchievementTask;
+use quiver_achievement::types::window::AchievementWindow;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
     stop_cheat_caller_address,

@@ -1,6 +1,20 @@
-//! Powers of two for the packings of ARC-01 §3.11. A shift is a multiplication (packing, on
-//! felts) or a division with remainder (unpacking, on `u128` limbs) by an entry of this table
-//! (docs/CAIRO.md §3).
+//! Bits (D-143: a helper, what belongs to no entity): the powers of two of the packings of ARC-01
+//! §3.11, the split of a felt into its limbs, and the packing errors. A shift is a multiplication
+//! (packing, on felts) or a division with remainder (unpacking, on `u128` limbs) by an entry of
+//! these tables (docs/CAIRO.md §3). The tables are free constants: a constant table is what §7
+//! leaves outside a trait.
+
+// Errors
+
+/// Not errors of the API: the component never packs or reads such a value. A field narrower than
+/// its Cairo type is checked against its bound before packing; unpacking rejects a felt with a
+/// bit set outside the encoding, a corruption.
+pub mod errors {
+    pub const PACKING_FIELD_OUT_OF_RANGE: felt252 = 'Packing: field out of range';
+    pub const PACKING_RESERVED_BITS_SET: felt252 = 'Packing: reserved bits set';
+}
+
+// Constants
 
 // Multipliers, as felts: the bit offset of a field in the packed felt.
 pub const TWO_POW_32: felt252 = 0x100000000;
@@ -11,6 +25,7 @@ pub const TWO_POW_130: felt252 = 0x400000000000000000000000000000000;
 pub const TWO_POW_131: felt252 = 0x800000000000000000000000000000000;
 pub const TWO_POW_132: felt252 = 0x1000000000000000000000000000000000;
 pub const TWO_POW_164: felt252 = 0x100000000000000000000000000000000000000000;
+pub const TWO_POW_196: felt252 = 0x10000000000000000000000000000000000000000000000000;
 
 // Divisors, as non-zero `u128`: the width of a field within a `u128` limb.
 pub const NZ_2: NonZero<u128> = 0x2;
@@ -20,7 +35,7 @@ pub const NZ_2_64: NonZero<u128> = 0x10000000000000000;
 
 pub const NZ_128: NonZero<u32> = 128;
 
-/// `POW2[i] = 2^i`, i = 0..128: the bit of a task in the mask of `batch_merge`.
+/// `POW2[i] = 2^i`, i = 0..128: the bit of a task in the mask of `BatchTrait::merge`.
 pub const POW2: [u128; 128] = [
     0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000,
     0x8000, 0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000, 0x1000000,
@@ -56,14 +71,19 @@ pub const POW2: [u128; 128] = [
     0x80000000000000000000000000000000,
 ];
 
-/// The two `u128` limbs of a felt, `(low, high)`: bits [0, 128) and [128, 252).
-///
-/// Why `u256` appears here: converting a felt to `u256` is the `u128s_from_felt252` libfunc and
-/// nothing else, and it is the only public way in the corelib to split a felt into its limbs.
-/// No `u256` arithmetic is done; the fields are then read from the limbs with `u128`
-/// division and remainder. No field of §3.11 straddles bit 128.
-#[inline(always)]
-pub fn split(value: felt252) -> (u128, u128) {
-    let u256 { low, high } = value.into();
-    (low, high)
+// Implementations
+
+#[generate_trait]
+pub impl BitsImpl of BitsTrait {
+    /// The two `u128` limbs of a felt, `(low, high)`: bits [0, 128) and [128, 252).
+    ///
+    /// Why `u256` appears here: converting a felt to `u256` is the `u128s_from_felt252` libfunc
+    /// and nothing else, and it is the only public way in the corelib to split a felt into its
+    /// limbs. No `u256` arithmetic is done; the fields are then read from the limbs with `u128`
+    /// division and remainder. No field of §3.11 straddles bit 128.
+    #[inline(always)]
+    fn split(value: felt252) -> (u128, u128) {
+        let u256 { low, high } = value.into();
+        (low, high)
+    }
 }

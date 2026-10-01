@@ -33,6 +33,7 @@ fn achievement_retire_sets_retired_and_keeps_the_rest() {
     assert!(after.retired);
     assert!(after.defined);
     assert!(after.window == before.window && after.t0 == before.t0);
+    assert!(after.points == before.points);
     assert!(after.task_count == before.task_count);
     assert!(read == tasks);
 }

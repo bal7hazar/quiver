@@ -17,7 +17,8 @@ use quiver_achievement::interface::{
     IAchievementDispatcher, IAchievementDispatcherTrait, IAchievementViewDispatcher,
     IAchievementViewDispatcherTrait,
 };
-use quiver_achievement::logic::{AchievementTask, TaskProgress};
+use quiver_achievement::types::batch::TaskProgress;
+use quiver_achievement::types::task::AchievementTask;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, test_address};
 use starknet::ContractAddress;
 use super::helpers::{always, distinct_entries, entry, fifteen_then, one, task};

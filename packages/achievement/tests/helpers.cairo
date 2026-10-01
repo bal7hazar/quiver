@@ -1,7 +1,9 @@
 //! Builders shared by the tests: they keep each test to its given, when and then.
 
 use quiver_achievement::constants::MAX_ENTRIES;
-use quiver_achievement::logic::{AchievementTask, AchievementWindow, TaskProgress};
+use quiver_achievement::types::batch::TaskProgress;
+use quiver_achievement::types::task::AchievementTask;
+use quiver_achievement::types::window::AchievementWindow;
 
 pub const U32_MAX: u32 = 0xffffffff;
 pub const U64_MAX: u64 = 0xffffffffffffffff;
