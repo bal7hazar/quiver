@@ -1111,3 +1111,11 @@ The call's writes are the test's `StorageWrite` syscalls minus those of its setu
 | `quest_progress_two_tasks_write_p_and_r_once` | 760 992 | 9 | 2 | P, R |
 | `quest_progress_two_tasks_not_completing_write_p_once` | 654 102 | 8 | 1 | P |
 | `quest_progress_duplicates_several_counts_write_each_p_once` | 772 245 | 9 | 2 | P of quest 1, P of quest 2 |
+
+## Single-threaded builds (ARC-09, D-176)
+
+No figure moves. On 2026-10-01, from a clean `target/` each time, `snforge test` measured the
+512 tests three times with the default thread count and three times with `RAYON_NUM_THREADS=1`:
+the six runs give the same l2_gas for every test, and it equals the table above. The tables are
+therefore the single-threaded measures, unchanged. CI pins the variable (`.github/workflows/cairo.yml`),
+and `scripts/gas.py` pins it unless the caller set it.

@@ -111,7 +111,9 @@ extend `scripts/gas.py` first.
 3. `release.yml` runs: the workspace jobs of `cairo.yml` for every package; the tag's version
    equals the manifest's and the changelog has the section (`.github/ci/release_check.py`);
    `scarb package` of that package succeeds and the archive `target/package/*.tar.zst` is
-   uploaded as a workflow artifact.
+   uploaded as a workflow artifact. By hand, run it as
+   `RAYON_NUM_THREADS=1 scarb --manifest-path packages/<dir>/Scarb.toml package`: D-176, the
+   compiler is single-threaded for every packaged or measured build, so one commit gives one program.
 
 ## 7. Publishing is not in CI
 
@@ -120,7 +122,9 @@ extend `scripts/gas.py` first.
 `docs/decisions/PENDING-publish-<package>-<version>.md` (package, version, commit, what changed,
 what the consumer must do) and sending its path to the project manager, who checks the commit
 on `main` (every CI check completed and green), the audits, the changelog and version, the gas
-tables, `scarb package` from a clean checkout, the registry and the dependencies. After a go
+tables, `scarb package` from a clean checkout (pinned as in §6), the registry and the dependencies. After a go
 that names the package, the version and the commit, the orchestrator's session runs
-`scarb --manifest-path packages/<dir>/Scarb.toml publish` by hand from that commit. A published
+`RAYON_NUM_THREADS=1 scarb --manifest-path packages/<dir>/Scarb.toml publish` by hand from that
+commit (D-176: its verification build is single-threaded, as CI measured; the archive holds
+sources, which each consumer compiles). A published
 version cannot be replaced.

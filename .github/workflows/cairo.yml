@@ -123,17 +123,25 @@ jobs:
       - name: format
         run: scarb fmt --check
 
+      # D-176: single-threaded compiler, so one commit builds into one program (one gas figure).
       - name: build
+        env:
+          RAYON_NUM_THREADS: "1"
         run: scarb build
 
+      # D-176: single-threaded compiler, so one commit builds into one program (one gas figure).
       - name: test
+        env:
+          RAYON_NUM_THREADS: "1"
         run: snforge test
 
       # Budgets within [measured, ceil(1.05 x measured)], and GAS.md equal to the measures.
+      # D-176: single-threaded compiler, so one commit builds into one program (one gas figure).
       - name: gas
         working-directory: .
         env:
           DIR: ${{ matrix.dir }}
+          RAYON_NUM_THREADS: "1"
         run: python3 scripts/gas.py "$DIR" --check
 
   # The stable name for a required check.

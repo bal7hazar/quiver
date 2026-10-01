@@ -416,3 +416,11 @@ A figure includes its setup; the function's own cost is the benchmark minus
 | `definition_new` | 3 tasks | `bench_definition_new_three_tasks` | 20 920 | — |
 | `AchievementDefinition` pack and unpack | every field at its maximum | `bench_pack_unpack_definition` | 34 120 | — |
 | `AchievementExtraTasks` pack and unpack | every field at its maximum | `bench_pack_unpack_extra_tasks` | 24 930 | — |
+
+## Single-threaded builds (ARC-09, D-176)
+
+No figure moves. On 2026-10-01, from a clean `target/` each time, `snforge test` measured the
+145 tests three times with the default thread count and three times with `RAYON_NUM_THREADS=1`:
+the six runs give the same l2_gas for every test, and it equals the table above. The tables are
+therefore the single-threaded measures, unchanged. CI pins the variable (`.github/workflows/cairo.yml`),
+and `scripts/gas.py` pins it unless the caller set it.
