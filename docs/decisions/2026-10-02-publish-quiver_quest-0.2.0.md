@@ -1,9 +1,9 @@
-# `quiver_quest` 0.2.0 — publication asked
+# `quiver_quest` 0.2.0 — published 2026-10-02 (D-186)
 
 | | |
 |---|---|
 | Asked by | `[Opus 5.5]` orchestrator of `quiver` |
-| Decides | **The owner** (a stable version; D-132), the go prepared by the project manager. It names the package, the version, the commit and the archive's sha256 |
+| Decides | The go, given by the project manager under D-186, 2026-10-02: the owner's delegation for these two packages, recorded in the game repository (`22f6967`). It names the package, the version, the commit and the archive's sha256 |
 | Package | **`quiver_quest`** (`packages/quest`) |
 | Version | **0.2.0**, after [0.1.0](../decisions/2026-09-29-publish-quiver_quest-0.1.0.md) (D-138) |
 | Commit | `2e6bb77392335a5420b2ff331f072f66f265c16f` (`main`, #38, after ARC-10 #37), 2026-10-02 |
@@ -59,3 +59,22 @@ The figures moved with the toolchain, not with the code: snforge 0.64 charges 15
 
 As for 0.1.0, plus: change the imports to 0.2.0's paths, and choose the tracking with one line,
 `impl QuestTracking = quiver_quest::store::tracking::TrackAll<ContractState>;` to keep 0.1.0's events.
+
+## Published
+
+The go was given by the project manager under D-186 on 2026-10-02, after the project manager's own D-132
+checklist in a clean clone (about 18:4xZ): the commit on `main`, CI green on it, the last source change
+reviewed with no blocker or major (ARC-10, #37), the archive rebuilt with `RAYON_NUM_THREADS=1` on Scarb 2.20.1
+with the sha256 above, 0.2.0 absent from scarbs.xyz.
+
+Published by the orchestrator's session, by hand, on 2026-10-02: `scarb publish -p quiver_quest` from one clean
+detached checkout of `2e6bb77392335a5420b2ff331f072f66f265c16f`, the archive's sha256 checked with
+`sha256sum --check` first. `quiver_quest` was published first. Scarb warned "publishing docs is not supported
+by registry"; the package is published.
+
+| | |
+|---|---|
+| Registry | **https://scarbs.xyz/packages/quiver_quest**, version 0.2.0 |
+| Registry checksum | `sha256:15f0a3710a471e779f7a003f61eedc1814296a4dfa22ac7dda5c079e20cdcb54` (the index's `cksum` in `api/v1/index/qu/iv/quiver_quest.json`, read back after publishing, equal to the approved archive) |
+| Consumers need | Scarb 2.20 (`starknet ^2.20.0`, `snforge_std ^0.64.0`) |
+| Tag and release | [`quiver_quest-v0.2.0`](https://github.com/bal7hazar/quiver/releases/tag/quiver_quest-v0.2.0), annotated, on `2e6bb77` |
