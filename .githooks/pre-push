@@ -1,20 +1,32 @@
 #!/usr/bin/env bash
 # Pre-push hook (ARC-13): runs scripts/prepush.sh. Enabled by `git config core.hooksPath .githooks`
-# in each clone. Never skip it (no --no-verify): fix what it reports. A push that only deletes
-# refs is not checked; a pushed release tag quiver_*-v* also gets the release check.
+# in each clone. Never skip it (no --no-verify): fix what it reports. The script checks the working
+# tree, so the hook refuses a push whose ref is not what is checked out (HEAD) and a push with
+# uncommitted changes to tracked files. A push that only deletes refs is not checked; a pushed
+# release tag quiver_*-v* also gets the release check.
 set -euo pipefail
 
 tags=()
 checked=0
 zero=0000000000000000000000000000000000000000
+head=$(git rev-parse HEAD)
 # stdin: <local ref> <local sha> <remote ref> <remote sha>, one line per ref pushed
 while read -r local_ref local_sha _ _; do
   [ "$local_sha" = "$zero" ] && continue
   checked=1
+  if [ "$(git rev-parse "$local_sha^{commit}")" != "$head" ]; then
+    echo "pre-push: $local_ref is not the checked-out commit: check out the ref you push" >&2
+    exit 1
+  fi
   case "$local_ref" in
     refs/tags/quiver_*-v*) tags+=("${local_ref#refs/tags/}") ;;
   esac
 done
 [ "$checked" = 1 ] || exit 0
+
+if ! git diff --quiet HEAD; then
+  echo "pre-push: tracked files have uncommitted changes: commit or stash first" >&2
+  exit 1
+fi
 
 exec "$(git rev-parse --show-toplevel)/scripts/prepush.sh" ${tags[@]+"${tags[@]}"}

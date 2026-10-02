@@ -23,6 +23,10 @@
 #      The release check needs a tag to check, and a tag derived from the manifest would only
 #      compare the manifest with itself and fail every ordinary change whose version is ahead of
 #      its changelog, so it runs for a pushed tag only.
+# Steps 3 to 5 run scarb, which the machine's shim serialises (a pre-push waits like any build,
+# with no bypass): they are skipped altogether, scarb metadata included, when no Cairo input
+# changed (a .cairo file, any Scarb.toml, Scarb.lock, .tool-versions).
+# A change to scripts/gas.py gets its gas check from CI, not from this script.
 # Output: each step's name, OK or FAIL and its time; the log of a failed step; the total time.
 set -euo pipefail
 
@@ -70,6 +74,12 @@ step "python unit tests" bash -c '
   python3 -m unittest scripts/test_gas.py &&
   python3 -m unittest discover -s .github/ci -p "test_*.py"'
 step "links" python3 .github/ci/check-links.py
+
+cairo=0
+grep -Eq '(\.cairo$|(^|/)Scarb\.toml$|^Scarb\.lock$|^\.tool-versions$)' <<< "$changed" && cairo=1
+
+plan=""
+if [ "$cairo" = 1 ]; then
 step "fmt (workspace)" ${lock[@]+"${lock[@]}"} scarb fmt --check
 
 # The packages to build, and those whose gas inputs changed, from affected.py's own logic.
@@ -96,12 +106,15 @@ for d in sorted(affected.affected([p for p in changed if gas_input(p)], graph)):
     print("gas", d)
 PY
 ) || fail "which packages the change affects (affected.py, scarb metadata)"
+else
+  echo "fmt/build skipped (no Cairo input changed)"
+fi
 
 while read -r kind dir; do
   [ "$kind" = build ] || continue
   RAYON_NUM_THREADS=1 step "build $dir" ${lock[@]+"${lock[@]}"} scarb --manifest-path "$dir/Scarb.toml" build
 done <<< "$plan"
-if ! grep -q '^build ' <<< "$plan"; then echo "build                                   skipped (no package affected)"; fi
+if [ "$cairo" = 1 ] && ! grep -q '^build ' <<< "$plan"; then echo "build                                   skipped (no package affected)"; fi
 
 if grep -q '^gas ' <<< "$plan"; then
   echo "gas check: runs snforge, can take minutes under the shared heavy lock; the full check is CI's"
@@ -110,7 +123,7 @@ while read -r kind dir; do
   [ "$kind" = gas ] || continue
   RAYON_NUM_THREADS=1 step "gas $dir (snforge, slow)" python3 scripts/gas.py "$dir" --check
 done <<< "$plan"
-if ! grep -q '^gas ' <<< "$plan"; then echo "gas                                     skipped (no gas input changed)"; fi
+if [ "$cairo" = 1 ] && ! grep -q '^gas ' <<< "$plan"; then echo "gas                                     skipped (no gas input changed)"; fi
 
 for tag in "$@"; do
   step "release check $tag" python3 .github/ci/release_check.py "$tag"
