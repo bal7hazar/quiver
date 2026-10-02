@@ -26,7 +26,7 @@ How the boundary is found (`gas.hand_written`): the generated table starts at th
 - AC-2: met; tests for sections kept, only-generated file, missing file / no table, table updated when figures change, and a table inside the sections. 38 tests pass.
 - AC-3: partly. No figure, budget, test name or hand-written line moved. But `git diff --stat packages/` was not empty: the `Commit` column of every table row changed, because `--write` records `git rev-parse --short HEAD`, and HEAD on this branch is the ARC-11 commit, not the `04091f9` the pins carry (a run on the commit that produced the pins would be empty). I reverted, nothing committed. `--check` passes for both.
 - AC-4: met; `--check` code is untouched.
-- AC-5: see the PR.
+- AC-5: met; `gh pr checks 41`: all pass (package quest, package achievement, scripts, affected, cairo, links) at 3701d12.
 
 ## Deviations from the task
 The AC-3 diff is not empty for the reason above (commit column only, an artefact of running on a branch with a new commit).
