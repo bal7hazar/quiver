@@ -6,7 +6,8 @@
 use quiver_quest::errors;
 use quiver_quest::interface::{
     IQuestDispatcher, IQuestDispatcherTrait, IQuestSafeDispatcher, IQuestSafeDispatcherTrait,
-    IQuestViewDispatcher, IQuestViewDispatcherTrait,
+    IQuestViewDispatcher, IQuestViewDispatcherTrait, IQuestViewSafeDispatcher,
+    IQuestViewSafeDispatcherTrait,
 };
 use quiver_quest::types::batch::TaskProgress;
 use quiver_quest::types::mode::Mode;
@@ -81,10 +82,10 @@ fn track_none_component_revoked_reporter_emits_nothing() {
 }
 
 /// The refusals hold under `TrackNone` (ARC-07d), on `MockSilentGuarded`, whose `authorize_admin`
-/// refuses: the package's own strings, nothing emitted, nothing written.
+/// refuses: the package's own strings, nothing written (a reverted call emits nothing).
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 760000)]
+#[available_gas(l2_gas: 940000)]
 fn track_none_refuses_with_the_packages_errors() {
     let class = declare("MockSilentGuarded").unwrap().contract_class();
     let (address, _) = class.deploy(@array![]).unwrap();
@@ -99,4 +100,9 @@ fn track_none_refuses_with_the_packages_errors() {
     assert_error(safe.progress(PLAYER, 7, 1, Mode::Storage), errors::NOT_REPORTER);
     assert!(spy.get_events().events.len() == 0);
     assert!(!view.quest_is_reporter(test_address()));
+    // Nothing was written: the quest still does not exist
+    assert_error(
+        IQuestViewSafeDispatcher { contract_address: address }.quest_definition(1),
+        errors::DOES_NOT_EXIST,
+    );
 }

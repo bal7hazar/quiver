@@ -10,8 +10,9 @@ events and error strings are named.
 
 - The rule of the optional slot C (a quest with no condition has none) is written once, in the
   store (`get_definition_slots`), and the view `quest_definition` and `Store::get_definition` both
-  use it (ARC-07d). **Results, events, error strings and storage layout are unchanged.** View cost:
-  see `GAS.md`.
+  use it (ARC-07d). **Results, events, error strings and storage layout are unchanged.** View cost,
+  per call of `quest_definition` (L2 gas): +1 770 for a defined quest with no condition, +1 200 with
+  seven conditions, lower for a quest not defined; `Store::get_definition` +1 140 (`GAS.md`).
 
 ### Tests
 

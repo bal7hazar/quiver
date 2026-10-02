@@ -7,6 +7,7 @@ use quiver_achievement::errors;
 use quiver_achievement::interface::{
     IAchievementDispatcher, IAchievementDispatcherTrait, IAchievementSafeDispatcher,
     IAchievementSafeDispatcherTrait, IAchievementViewDispatcher, IAchievementViewDispatcherTrait,
+    IAchievementViewSafeDispatcher, IAchievementViewSafeDispatcherTrait,
 };
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, spy_events, test_address,
@@ -57,10 +58,10 @@ fn track_none_component_emits_action_events_only() {
 }
 
 /// The refusals hold under `TrackNone` (ARC-07d), on `MockSilentGuarded`, whose `authorize_admin`
-/// refuses: the package's own strings, nothing emitted, nothing written.
+/// refuses: the package's own strings, nothing written (a reverted call emits nothing).
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 730000)]
+#[available_gas(l2_gas: 900000)]
 fn track_none_refuses_with_the_packages_errors() {
     let class = declare("MockSilentGuarded").unwrap().contract_class();
     let (address, _) = class.deploy(@array![]).unwrap();
@@ -73,4 +74,9 @@ fn track_none_refuses_with_the_packages_errors() {
     assert_error(safe.progress(PLAYER, 7, 1), errors::NOT_REPORTER);
     assert!(spy.get_events().events.len() == 0);
     assert!(!view.achievement_is_reporter(test_address()));
+    // Nothing was written: the achievement still does not exist
+    assert_error(
+        IAchievementViewSafeDispatcher { contract_address: address }.achievement_definition(1),
+        errors::DOES_NOT_EXIST,
+    );
 }

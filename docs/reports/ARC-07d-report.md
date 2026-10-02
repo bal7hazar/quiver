@@ -55,3 +55,10 @@ The `define` and `retire` entrypoints themselves do not call `get_definition_slo
 
 ## Escalations
 None. Note (5) left alone, as the brief says.
+
+## Fix loop 1
+Review at 1126423: PASS WITH FINDINGS.
+
+1. **Quest view cost in the common case (accepted, now stated).** Per call of `quest_definition`, measured on Linux against the base `GAS.md`: a defined quest with no condition **+1 770** (`quest_retired_definition_readable` 4 676 110 → 4 677 880; `quest_define_reaches_max_dependents` +5 310 = 3 calls); seven conditions **+1 200** (`bench_view_definition_worst` 40 709 526 → 40 710 726); quest not defined **cheaper** (`quest_empty_slot_reads_undefined` −57 100); `Store::get_definition` **+1 140** (`store_get_definition_reads_the_model_back` 4 603 400 → 4 604 540). The achievement view is unchanged (2 257 460) and cheaper when undefined (−23 850).
+   I tried the reviewer's first suggestion, an early return in `ConditionsSlot::ids` for a count of 0 before the copy. It changed no figure at all (every measured value identical), so I reverted it: it also lives in `quest/src/models/definition.cairo`, outside the allowlist. The rise comes from the store's 3-tuple carrying `NO_CONDITIONS` to the view. Removing it needs either a second copy of the rule or a change of `from_slots`, which the brief forbids ("the rule exists once"), so it is stated rather than removed: in the bench's `// gas: raised` note, the quest `[Unreleased]` entry and here. Budgets are unchanged. Decision for the orchestrator: accept +1 770 per quest view call (0.04 % of a 4.7 M test), or ask for a separate lot.
+2. **Refusal test comment (fixed, both packages).** After the refusals, the test now also asserts that `achievement_definition(1)` / `quest_definition(1)` still reverts with `DOES_NOT_EXIST`; the comment says "nothing written (a reverted call emits nothing)". The extra call raised the tests' cost, so their budgets are now 900 000 (achievement, measured 872 570) and 940 000 (quest, measured 908 390). `gas.py --write` then `--check` pass: 147 and 513 tests within budget.
