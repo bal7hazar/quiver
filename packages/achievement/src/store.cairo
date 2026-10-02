@@ -83,13 +83,24 @@ pub impl StoreImpl<
     /// with no task, from A alone.
     #[inline]
     fn get_definition(self: @ComponentState<TContractState>, id: u32) -> AchievementDefinition {
+        let (slot_a, slot_b) = self.get_definition_slots(id);
+        DefinitionStorage::from_slots(id, slot_a, slot_b)
+    }
+
+    /// The slots of the definition, A and B: the one place that holds the rule of the optional
+    /// slot. B is read only for 2 or 3 tasks (`NO_TASKS` otherwise): B of an achievement of one
+    /// task is never written. What `get_definition` and the view need.
+    #[inline]
+    fn get_definition_slots(
+        self: @ComponentState<TContractState>, id: u32,
+    ) -> (HeadSlot, TasksSlot) {
         let slot_a = self.Achievement_definitions.read(id);
         let slot_b = if slot_a.task_count > 1 {
             self.Achievement_extra_tasks.read(id)
         } else {
             NO_TASKS
         };
-        DefinitionStorage::from_slots(id, slot_a, slot_b)
+        (slot_a, slot_b)
     }
 
     /// Slot A alone, one read: the definition's window, first task and points, and the
@@ -98,13 +109,6 @@ pub impl StoreImpl<
     #[inline]
     fn get_definition_head(self: @ComponentState<TContractState>, id: u32) -> HeadSlot {
         self.Achievement_definitions.read(id)
-    }
-
-    /// Slot B alone: the second and third tasks, zero when unused; `head.task_count` says how many
-    /// are used. Read only for 2 or 3 tasks: B of an achievement of one task is never written.
-    #[inline]
-    fn get_definition_tasks(self: @ComponentState<TContractState>, id: u32) -> TasksSlot {
-        self.Achievement_extra_tasks.read(id)
     }
 
     /// Writes A, and B for 2 or 3 tasks; then emits `AchievementDefined`, once, when the consumer
