@@ -17,11 +17,12 @@ used by this track. Its handover note is
 - ARC-11 (`scripts/gas.py --write` keeps the hand-written sections of `GAS.md`) is done:
   [#41](https://github.com/bal7hazar/quiver/pull/41), `621baa5`.
 - ARC-12 (three safety fixes to `scripts/gas.py`, notes of ARC-11's review; no package file changes)
-  is in progress.
+  is done: [#42](https://github.com/bal7hazar/quiver/pull/42), `5caf08d`.
 - The two 0.2.0 requests passed the project manager's D-132 checklist and wait for the owner's go.
-- ARC-07d (deferred notes) is briefed ([#40](https://github.com/bal7hazar/quiver/pull/40)) and comes
-  after the 0.2.0 publications, as in [PLAN.md](PLAN.md).
-- No open pull request other than the one carrying the requests.
+- ARC-07d (deferred notes, briefed in [#40](https://github.com/bal7hazar/quiver/pull/40)) is in
+  progress, started before the 0.2.0 publications by the project manager's decision of 2026-10-02:
+  the requests are pinned to commit `2e6bb77` and its archive sha256, so `main` moving cannot
+  change what is published. Its pull request is the only one open.
 
 ## Resumed 2026-09-30, under Nexus (D-162)
 

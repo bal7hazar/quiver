@@ -4,6 +4,19 @@ All notable changes to `quiver_quest` are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Changes to results, storage layout,
 events and error strings are named.
 
+## [Unreleased]
+
+### Changed
+
+- The rule of the optional slot C (a quest with no condition has none) is written once, in the
+  store (`get_definition_slots`), and the view `quest_definition` and `Store::get_definition` both
+  use it (ARC-07d). **Results, events, error strings and storage layout are unchanged.** View cost:
+  see `GAS.md`.
+
+### Tests
+
+- A refusal is tested under `TrackNone`.
+
 ## [0.2.0] - 2026-10-02
 
 Not yet released. The package organised as the owner's rule D-143 says (docs/CAIRO.md §7) and as

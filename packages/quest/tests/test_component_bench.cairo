@@ -716,6 +716,8 @@ fn bench_view_is_unlocked_worst() {
     assert!(bench.view.quest_is_unlocked(PLAYER, D));
 }
 
+// gas: raised, ARC-07d: +1200 (40709526 to 40710726, 0.003 %), the seven conditions of slot C now
+// come back through the store's tuple before they are unpacked; the budget is unchanged
 #[test]
 #[available_gas(l2_gas: 40783214)]
 fn bench_view_definition_worst() {

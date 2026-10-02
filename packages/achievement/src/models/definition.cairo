@@ -585,7 +585,7 @@ mod tests {
     /// A slot A as 0.1.0 packed it, with no `points` (it never wrote a bit at or above 196), reads
     /// with `points == 0` and every other field as written (ARC-07d).
     #[test]
-    #[available_gas(l2_gas: 100000)]
+    #[available_gas(l2_gas: 27000)]
     fn achievement_unpacking_slot_of_0_1_0_reads_zero_points() {
         let d: HeadSlot = StorePacking::unpack(SLOT_A_0_1_0_WIDEST);
         assert!(d.points == 0);

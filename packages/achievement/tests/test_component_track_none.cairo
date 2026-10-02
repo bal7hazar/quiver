@@ -60,7 +60,7 @@ fn track_none_component_emits_action_events_only() {
 /// refuses: the package's own strings, nothing emitted, nothing written.
 #[test]
 #[feature("safe_dispatcher")]
-#[available_gas(l2_gas: 3000000)]
+#[available_gas(l2_gas: 730000)]
 fn track_none_refuses_with_the_packages_errors() {
     let class = declare("MockSilentGuarded").unwrap().contract_class();
     let (address, _) = class.deploy(@array![]).unwrap();
