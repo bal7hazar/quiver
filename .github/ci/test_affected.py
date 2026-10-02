@@ -2,11 +2,13 @@
 """Unit tests of affected.py: `python3 -m unittest .github/ci/test_affected.py`."""
 
 import json
+import os
 import pathlib
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import affected as a  # noqa: E402
@@ -80,7 +82,17 @@ class Affected(unittest.TestCase):
         self.assertEqual(a.affected(["packages/a/x"], graph), set(graph))
 
 
+# Git's own variables (GIT_DIR, GIT_INDEX_FILE...) point at a repository: a hook exports them. The
+# test builds a repository of its own and must never reach the real one, whatever runs it.
+
+
 class Renames(unittest.TestCase):
+    def setUp(self):
+        clean = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        patcher = mock.patch.dict(os.environ, clean, clear=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def git(self, cwd, *args):
         subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
 

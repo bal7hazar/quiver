@@ -27,6 +27,9 @@
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
+# A git hook runs with GIT_DIR, GIT_INDEX_FILE... exported; the tests build repositories of their
+# own and would write to this one's index. This clears them; the script finds the repository by cwd.
+for var in $(git rev-parse --local-env-vars); do unset "$var"; done
 
 start=$SECONDS
 logdir=target/prepush
@@ -100,6 +103,9 @@ while read -r kind dir; do
 done <<< "$plan"
 if ! grep -q '^build ' <<< "$plan"; then echo "build                                   skipped (no package affected)"; fi
 
+if grep -q '^gas ' <<< "$plan"; then
+  echo "gas check: runs snforge, can take minutes under the shared heavy lock; the full check is CI's"
+fi
 while read -r kind dir; do
   [ "$kind" = gas ] || continue
   RAYON_NUM_THREADS=1 step "gas $dir (snforge, slow)" python3 scripts/gas.py "$dir" --check
