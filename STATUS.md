@@ -1,6 +1,6 @@
 # Status
 
-**2026-10-02 10:12 UTC**, written by the orchestrator of track ARC (herdr, project `grimworld-arc`).
+**2026-10-02 12:00 UTC**, written by the orchestrator of track ARC (herdr, project `grimworld-arc`).
 
 ## State, 2026-10-02
 
@@ -9,11 +9,14 @@ The track runs in herdr since 2026-10-02. The Nexus-era orchestrator stopped at 
 used by this track. Its handover note is
 [docs/handover/orchestrator-quiver-2026-10-01.md](docs/handover/orchestrator-quiver-2026-10-01.md).
 
-- ARC-10 (Scarb 2.20.1, starknet-foundry 0.64.0) is in progress.
-- The two 0.2.0 publication requests wait for ARC-10's figures.
-- Then ARC-11 (`scripts/gas.py --write` keeps the hand-written sections of `GAS.md`), then ARC-07d
-  (deferred notes), as in [PLAN.md](PLAN.md).
-- No open pull request other than ARC-10's.
+- ARC-10 (Scarb 2.20.1, starknet-foundry 0.64.0) is done: [#37](https://github.com/bal7hazar/quiver/pull/37), `0fd494e`.
+- The two 0.2.0 publication requests are filled in with ARC-10's figures and sent to the project
+  manager, **waiting for the owner's go**: `docs/decisions/PENDING-publish-quiver_quest-0.2.0.md` and
+  `docs/decisions/PENDING-publish-quiver_achievement-0.2.0.md`, at commit
+  `2e6bb77392335a5420b2ff331f072f66f265c16f`. Nothing is published.
+- ARC-11 (`scripts/gas.py --write` keeps the hand-written sections of `GAS.md`) is in progress; then
+  ARC-07d (deferred notes), as in [PLAN.md](PLAN.md).
+- No open pull request other than the one carrying the requests.
 
 ## Resumed 2026-09-30, under Nexus (D-162)
 
@@ -33,8 +36,8 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 | ARC-07b, `quiver_achievement` 0.2.0 | **Done**: [#25](https://github.com/bal7hazar/quiver/pull/25) merged (`4243132`), [report](docs/reports/ARC-07b-report.md). Reviews by Fable, the last PASS at `970cff1` after three fix loops. Audits on Opus 5.5 (D-177: before a published interface's publication): organisation and cost and access control, both PASS WITH FINDINGS, notes only; one answered in the CHANGELOG, the others in ARC-07d | Its publication, after ARC-10 |
 | ARC-07c, `quiver_quest`'s tests into their modules | **Done**: [#28](https://github.com/bal7hazar/quiver/pull/28) merged (`7afe131`) on its review, no audit (D-177), [report](docs/reports/ARC-07c-report.md) | — |
 | ARC-09, measured and packaged builds single-threaded (D-176) | **Done**: [#32](https://github.com/bal7hazar/quiver/pull/32) merged (`7066040`), review only; no figure moved | — |
-| ARC-10, Scarb 2.20.1 and starknet-foundry 0.64.0 (D-180) | **In progress** (2026-10-02; [brief](docs/briefs/ARC-10-scarb-latest.md); single-thread pin kept, SPK-13) | Review on `review-opus`, merge |
-| Publication of both packages as 0.2.0 | Not asked | Drafted, not requests: one `PENDING-publish-*` file per package in `docs/handover/`, filled in with ARC-10's figures; the go is **the owner's** (stable versions, D-132), prepared by the project manager |
+| ARC-10, Scarb 2.20.1 and starknet-foundry 0.64.0 (D-180) | **Done**: [#37](https://github.com/bal7hazar/quiver/pull/37) merged (`0fd494e`), [brief](docs/briefs/ARC-10-scarb-latest.md), [report](docs/reports/ARC-10-report.md); two reviews by Opus 5.5 (`review-opus`), no audit (D-177); single-thread pin kept, SPK-13 | — |
+| Publication of both packages as 0.2.0 | **Asked** (the requests are sent to the project manager) | One `PENDING-publish-*` file per package in `docs/decisions/`, filled in with ARC-10's figures; the go is **the owner's** (stable versions, D-132), prepared by the project manager |
 | ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
 
 **Reviews and audits while Codex has no quota** (the owner's rules of 2026-10-01): reviews by Claude
