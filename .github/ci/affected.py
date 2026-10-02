@@ -3,6 +3,8 @@
 
   affected.py versions   validates .tool-versions and writes `scarb` and `snforge` to GITHUB_OUTPUT
   affected.py matrix     writes `matrix` (JSON, {"include": [{"dir": "packages/x"}]}) and `any`
+  affected.py changes    writes `cairo`, `tooling` and `links` (true/false): which jobs a pull
+                         request's changed paths concern (all true on any other event)
 
 `matrix` reads `scarb metadata --format-version 1` (the workspace members and their dependencies)
 and the event: on a pull request the files changed since the merge base with the base branch (renames listed as
@@ -31,7 +33,15 @@ ALL_FILES = {
     "scripts/gas.py",
 }
 ALL_PREFIXES = (".github/ci/",)
-PACKAGE_DIR_RE = re.compile(r"^packages/[a-z0-9][a-z0-9_-]*$")
+# The paths that concern each job group on a pull request (`changes`). Cairo: the package sources
+# and everything `matrix` already treats as shared, plus the unit tests of the gas tool that the
+# `affected` job runs. A package's README.md and CHANGELOG.md are read by no Cairo step.
+CAIRO_FILES = ALL_FILES | {"scripts/test_gas.py"}
+PACKAGE_DOCS_RE = re.compile(r"^packages/[^/]+/(README|CHANGELOG)\.md$")
+TOOLING_PREFIXES = ("scripts/", ".githooks/", ".github/ci/")
+TOOLING_FILES = {".github/workflows/tooling.yml"}
+LINKS_FILES = {".github/ci/check-links.py", ".github/workflows/tooling.yml"}
+PACKAGE_DIR_RE =re.compile(r"^packages/[a-z0-9][a-z0-9_-]*$")
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 BRANCH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 
@@ -99,6 +109,34 @@ def affected(changed, graph):
     return with_dependents(directly_affected(changed, graph), graph)
 
 
+def concerns_cairo(path):
+    if path in CAIRO_FILES or path.startswith(ALL_PREFIXES):
+        return True
+    return path.startswith("packages/") and not PACKAGE_DOCS_RE.match(path)
+
+
+def concerns_tooling(path):
+    return path in TOOLING_FILES or path.startswith(TOOLING_PREFIXES)
+
+
+def concerns_links(path, deleted):
+    return path in LINKS_FILES or path.endswith(".md") or path in deleted
+
+
+def job_groups(changed, deleted):
+    """{"cairo", "tooling", "links"} -> bool: does a changed path concern that job group?
+
+    `deleted` are the paths removed or renamed away: a link can break with no Markdown change
+    when its target goes, so any of them concerns `links`."""
+    deleted = set(deleted)
+    paths = set(changed) | deleted
+    return {
+        "cairo": any(concerns_cairo(p) for p in paths),
+        "tooling": any(concerns_tooling(p) for p in paths),
+        "links": bool(deleted) or any(concerns_links(p, deleted) for p in paths),
+    }
+
+
 def matrix(dirs):
     """The JSON of the workflow matrix; a directory that is not packages/<name> is refused."""
     for directory in dirs:
@@ -130,6 +168,17 @@ def changed_files(base, cwd=None, remote="origin"):
     return out.stdout.splitlines()
 
 
+def deleted_files(base, cwd=None, remote="origin"):
+    """Paths deleted, or renamed away (`--no-renames`), since the merge base with `remote/base`."""
+    if not BRANCH_RE.match(base) or base.startswith("-"):
+        raise ValueError(f"not a branch name: {base!r}")
+    out = subprocess.run(
+        ["git", "diff", "--name-only", "--no-renames", "--diff-filter=D", f"{remote}/{base}...HEAD"],
+        capture_output=True, text=True, check=True, cwd=cwd,
+    )
+    return out.stdout.splitlines()
+
+
 def main(argv):
     if argv == ["versions"]:
         versions = parse_tool_versions(pathlib.Path(".tool-versions").read_text())
@@ -152,6 +201,18 @@ def main(argv):
         write_output("matrix", matrix(dirs))
         write_output("any", "true" if dirs else "false")
         print(f"packages to run: {sorted(dirs)}")
+        return 0
+    if argv == ["changes"]:
+        if os.environ.get("GITHUB_EVENT_NAME") == "pull_request":
+            groups = job_groups(
+                changed_files(os.environ["GITHUB_BASE_REF"]),
+                deleted_files(os.environ["GITHUB_BASE_REF"]),
+            )
+        else:
+            groups = {"cairo": True, "tooling": True, "links": True}
+        for name, value in groups.items():
+            write_output(name, "true" if value else "false")
+        print(f"jobs that concern the change: {groups}")
         return 0
     print(__doc__, file=sys.stderr)
     return 2
