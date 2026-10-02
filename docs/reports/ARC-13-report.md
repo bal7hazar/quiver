@@ -102,3 +102,13 @@ Re-measured (real output):
   threads' `prepush.sh` runs were queued on the same lock (`ps` showed them). I did not restart it. The earlier
   measure of the same change, with a free queue, was `prepush: OK (563s)` (`real 9m22s`, `user 2m22s`). Everything
   before the gas step took 11s.
+
+## Fix loop 2 (review-opus at 3335848: PASS WITH FINDINGS)
+1. `.githooks/pre-push` also refuses (exit 1) when `git ls-files --others --exclude-standard` is not empty: the script
+   reads untracked files from disk (a `mod foo;` committed without `foo.cairo` would pass locally and fail in CI). It
+   prints `pre-push: untracked files: add, ignore or remove them` and the first five names. Ignored files stay allowed.
+   Checked with crafted stdin: an untracked `probe-untracked.txt` gives the message, the file name and `exit=1`;
+   only an ignored `REPORT.md` (and `target/`) gives `prepush: OK (0s)`, `exit=0`. The probe files were removed.
+2. The header of `scripts/prepush.sh` no longer lists a package's `GAS.md` as a gas input of step 5, and says a change
+   to `scripts/gas.py` or to a `GAS.md` alone gets its gas check from CI. `GAS.md` is not in the Cairo-input regex.
+Not in this lot: an automated test of the hook's refusals, shellcheck of the hook.
