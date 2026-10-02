@@ -102,9 +102,9 @@ fn hook_calls(r: Reentrant) -> Array<HookCall> {
 
 /// Point 1: two held quests on one task, target 1; the first one's completion hook retires the
 /// second, which the call read from the held list before.
+// gas: raised, D-180 Scarb 2.20.1
 #[test]
 #[feature("safe_dispatcher")]
-// gas: raised, D-180 Scarb 2.20.1
 #[available_gas(l2_gas: 15078605)]
 fn quest_retired_by_hook_not_progressed() {
     let r = deploy();
@@ -172,9 +172,9 @@ fn quest_reentrant_progress_later_quest_completes_once() {
 
 /// Claim from `on_quest_claim` of the same interval: refused `'Quest: already claimed'`, which
 /// reverts the outer claim; nothing is claimed twice.
+// gas: raised, D-180 Scarb 2.20.1
 #[test]
 #[feature("safe_dispatcher")]
-// gas: raised, D-180 Scarb 2.20.1
 #[available_gas(l2_gas: 13372061)]
 fn quest_reentrant_claim_same_quest_refused() {
     let r = deploy();
@@ -204,9 +204,9 @@ fn quest_reentrant_claim_same_quest_refused() {
 
 /// Accept from `on_quest_complete` after the completion: refused `'Quest: already completed'`,
 /// which reverts the outer progress.
+// gas: raised, D-180 Scarb 2.20.1
 #[test]
 #[feature("safe_dispatcher")]
-// gas: raised, D-180 Scarb 2.20.1
 #[available_gas(l2_gas: 8544938)]
 fn quest_reentrant_accept_after_completion_refused() {
     let r = deploy();
