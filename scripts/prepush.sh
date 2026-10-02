@@ -23,9 +23,11 @@
 #      The release check needs a tag to check, and a tag derived from the manifest would only
 #      compare the manifest with itself and fail every ordinary change whose version is ahead of
 #      its changelog, so it runs for a pushed tag only.
-# Steps 3 to 5 run scarb, which the machine's shim serialises (a pre-push waits like any build,
-# with no bypass): they are skipped altogether, scarb metadata included, when no Cairo input
-# changed (a .cairo file, any Scarb.toml, Scarb.lock, .tool-versions).
+# Steps 3 to 5 run scarb: they are skipped altogether, scarb metadata included, when no Cairo input
+# changed (a .cairo file, any Scarb.toml, Scarb.lock, .tool-versions). The compile steps (4 and 5)
+# run through the VPS's locks, waiting at most 90 s for them (compile_lock below); when they stay
+# busy, steps 4 and 5 are skipped with one line and CI compiles. fmt (3) takes no lock. Pins are
+# checked on Linux only: on another system step 5 prints "gas: skipped" (CI checks it).
 # A change to scripts/gas.py, or to a GAS.md alone, gets its gas check from CI, not from this script.
 # Output: each step's name, OK or FAIL and its time; the log of a failed step; the total time.
 set -euo pipefail
@@ -60,9 +62,31 @@ step() {
   fi
 }
 
-# The machine's build lock (scripts/lock.sh needs flock) when there is one; a Mac has none.
-lock=()
-if command -v flock > /dev/null; then lock=(scripts/lock.sh); fi
+# The VPS serialises every Cairo compile behind two locks (scripts/lock.sh): the project lock, then the
+# machine-wide heavy lock the scarb/snforge shims take. A Mac has neither (no flock, no shim), and only
+# Linux is a machine with that lock. compile_lock takes both, in that order, waiting 90 s in all, and
+# keeps them (open file descriptors) until the script exits; the compile steps run under them, so the
+# shim sees the heavy lock held by an ancestor. It fails when the VPS is busy: the compile steps are
+# then skipped (CI compiles) and the script goes on. fmt and scarb metadata take no lock.
+LOCK_WAIT=90
+have_lock=0
+if [ "$(uname -s)" = Linux ] && command -v flock > /dev/null; then have_lock=1; fi
+compile_lock() {
+  [ "$have_lock" = 1 ] || return 0
+  local deadline=$((SECONDS + LOCK_WAIT)) project heavy
+  project=${QUIVER_BUILD_LOCK:-/tmp/quiver-build.lock}
+  heavy=${HEAVY_BUILD_LOCK:-$HOME/orchestrator/heavy-build.lock}
+  mkdir -p "$(dirname "$heavy")"
+  if [ -z "${QUIVER_BUILD_LOCK_HELD:-}" ]; then
+    exec {project_fd}>> "$project"
+    flock -w "$LOCK_WAIT" "$project_fd" || return 1
+  fi
+  if [ -z "${HEAVY_BUILD_LOCK_HELD:-}" ]; then
+    exec {heavy_fd}>> "$heavy"
+    flock -w "$((deadline - SECONDS > 1 ? deadline - SECONDS : 1))" "$heavy_fd" || return 1
+  fi
+  export QUIVER_BUILD_LOCK_HELD=1 HEAVY_BUILD_LOCK_HELD=1
+}
 
 git rev-parse --verify --quiet origin/main > /dev/null \
   || fail "no origin/main to compare with (git fetch origin main)"
@@ -80,7 +104,7 @@ grep -Eq '(\.cairo$|(^|/)Scarb\.toml$|^Scarb\.lock$|^\.tool-versions$)' <<< "$ch
 
 plan=""
 if [ "$cairo" = 1 ]; then
-step "fmt (workspace)" ${lock[@]+"${lock[@]}"} scarb fmt --check
+step "fmt (workspace)" scarb fmt --check
 
 # The packages to build, and those whose gas inputs changed, from affected.py's own logic.
 plan=$(CHANGED="$changed" python3 - <<'PY'
@@ -110,19 +134,32 @@ else
   echo "fmt/build skipped (no Cairo input changed)"
 fi
 
+compile=0
+grep -Eq '^(build|gas) ' <<< "$plan" && compile=1
+if [ "$compile" = 1 ] && ! compile_lock; then
+  compile=0
+  echo "build/gas: skipped, the VPS build lock was busy for ${LOCK_WAIT} s; CI will compile"
+fi
+
+if [ "$compile" = 1 ]; then
 while read -r kind dir; do
   [ "$kind" = build ] || continue
-  RAYON_NUM_THREADS=1 step "build $dir" ${lock[@]+"${lock[@]}"} scarb --manifest-path "$dir/Scarb.toml" build
+  RAYON_NUM_THREADS=1 step "build $dir" nice -n 10 scarb --manifest-path "$dir/Scarb.toml" build
 done <<< "$plan"
+fi
 if [ "$cairo" = 1 ] && ! grep -q '^build ' <<< "$plan"; then echo "build                                   skipped (no package affected)"; fi
 
-if grep -q '^gas ' <<< "$plan"; then
-  echo "gas check: runs snforge, can take minutes under the shared heavy lock; the full check is CI's"
+if [ "$compile" = 1 ] && grep -q '^gas ' <<< "$plan"; then
+  if [ "$(uname -s)" != Linux ]; then
+    echo "gas: skipped, pins are checked on Linux (CI)"
+  else
+    echo "gas check: runs snforge, can take minutes under the shared heavy lock; the full check is CI's"
+    while read -r kind dir; do
+      [ "$kind" = gas ] || continue
+      RAYON_NUM_THREADS=1 step "gas $dir (snforge, slow)" python3 scripts/gas.py "$dir" --check
+    done <<< "$plan"
+  fi
 fi
-while read -r kind dir; do
-  [ "$kind" = gas ] || continue
-  RAYON_NUM_THREADS=1 step "gas $dir (snforge, slow)" python3 scripts/gas.py "$dir" --check
-done <<< "$plan"
 if [ "$cairo" = 1 ] && ! grep -q '^gas ' <<< "$plan"; then echo "gas                                     skipped (no gas input changed)"; fi
 
 for tag in "$@"; do
