@@ -90,8 +90,9 @@ and `scripts/`, and the full run on `main` after the merge.
 Every test has `#[available_gas(l2_gas: N)]`, `N = ceil(1.05 × measured)` ([CAIRO.md](CAIRO.md) §2).
 Workflow: write the test, run `scripts/gas.py <dir> --write` (it prints nothing useful until the
 budgets exist: set a high one, run, then set `N` from the measured value), edit `N` in the
-source, run `--write` again, then `--check`. `--write` rewrites the package's `GAS.md` (test,
-measured, budget, date, commit; tests are named as snforge names them, by module path);
+source, run `--write` again, then `--check`. `--write` rewrites the generated part of the package's `GAS.md` (its header and table: test,
+measured, budget, date, commit; tests are named as snforge names them, by module path) and keeps, byte
+for byte, everything after the table (the hand-written sections);
 `--check` fails, naming the test, when a budget is missing, below the measure, above
 `ceil(1.05 × measured)`, or when `GAS.md` disagrees with the measures. Both fail when a `#[test]`
 of the sources has no measured result (an `#[ignore]`d or filtered test included) or when
