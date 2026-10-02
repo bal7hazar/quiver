@@ -16,7 +16,7 @@ pub const NOT_ADMIN: felt252 = 'Achievement: not admin';
 #[cfg(test)]
 mod tests {
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn achievement_error_strings_are_the_accepted_ones() {
         assert!(super::INVALID_ID == 'Achievement: invalid id');
         assert!(super::INVALID_TASKS == 'Achievement: invalid tasks');

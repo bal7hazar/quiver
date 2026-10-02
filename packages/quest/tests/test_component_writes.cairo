@@ -3,11 +3,11 @@
 //! snforge exposes no syscall count to a test. Each test therefore measures the Sierra gas of
 //! one `progress_many` call with `core::testing::get_available_gas()` around the dispatcher
 //! call: deterministic, and without the state-diff charges of the L2 gas. A storage write costs
-//! 58 820 of it (`write_costs_58_820_sierra_gas` below). Each call is checked against its
+//! 73 820 of it (`write_costs_73_820_sierra_gas` below). Each call is checked against its
 //! reference within `TOLERANCE` = 20 000.
 //!
 //! **What the guards bound is the cost, not the count.** An extra write, with nothing else
-//! changed, moves the call by about 58 820 and fails the guard (shown in fix loop 1 with a write
+//! changed, moves the call by about 73 820 and fails the guard (shown in fix loop 1 with a write
 //! injected). But a change that adds a write and saves as much elsewhere would pass. The exact
 //! writes of each test are counted outside the test, with `snforge test test_component_writes
 //! --detailed-resources` (the `StorageWrite` syscalls, minus those of `baseline_writes_setup*`),
@@ -31,12 +31,12 @@ use super::test_component_probe::{IProbeDispatcher, IProbeDispatcherTrait};
 
 const TOLERANCE: u128 = 20000;
 /// Sierra gas of the calls below, measured.
-const COMPLETING: u128 = 802776;
-const NOT_COMPLETING: u128 = 639896;
-const DUPLICATES: u128 = 680079;
-const TWO_TASKS_COMPLETING: u128 = 760992;
-const TWO_TASKS_NOT_COMPLETING: u128 = 654102;
-const DUPLICATES_SEVERAL: u128 = 772245;
+const COMPLETING: u128 = 890346;
+const NOT_COMPLETING: u128 = 699606;
+const DUPLICATES: u128 = 739789;
+const TWO_TASKS_COMPLETING: u128 = 842562;
+const TWO_TASKS_NOT_COMPLETING: u128 = 713812;
+const DUPLICATES_SEVERAL: u128 = 847765;
 
 #[derive(Drop, Copy)]
 struct Bench {
@@ -110,10 +110,10 @@ fn quest_progress_two_tasks_write_p_and_r_once() {
     assert!(bench.view.quest_progress(PLAYER, 2, 0).completed);
 }
 
-/// The unit of the tolerance: a second write in a call costs 58 820 Sierra gas more.
+/// The unit of the tolerance: a second write in a call costs 73 820 Sierra gas more.
 #[test]
 #[available_gas(l2_gas: 1431150)]
-fn write_costs_58_820_sierra_gas() {
+fn write_costs_73_820_sierra_gas() {
     let class = declare("Probe").unwrap().contract_class();
     let (address, _) = class.deploy(@array![]).unwrap();
     let probe = IProbeDispatcher { contract_address: address };
@@ -122,7 +122,7 @@ fn write_costs_58_820_sierra_gas() {
     let g1 = get_available_gas();
     probe.write_n(2);
     let g2 = get_available_gas();
-    assert!((g1 - g2) - (g0 - g1) == 58820);
+    assert!((g1 - g2) - (g0 - g1) == 73820);
 }
 
 /// Fix loop 3: two tasks of one quest in one call, not completing: P once, no R.

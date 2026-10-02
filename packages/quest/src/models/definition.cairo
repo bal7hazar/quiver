@@ -494,7 +494,7 @@ mod tests {
     // definition_new
 
     #[test]
-    #[available_gas(l2_gas: 27521)]
+    #[available_gas(l2_gas: 20244)]
     fn definition_new_one_task() {
         let (definition, quest_tasks, quest_conditions) = definition_slots(
             Q, one_off(), array![task(7, 10)].span(), array![].span(),
@@ -513,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 168011)]
+    #[available_gas(l2_gas: 160629)]
     fn definition_new_three_tasks_seven_conditions() {
         let s = schedule(100, 1000, 10, 60);
         let (definition, quest_tasks, quest_conditions) = definition_slots(
@@ -536,7 +536,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 39260)]
+    #[available_gas(l2_gas: 31878)]
     fn definition_new_unused_slots_are_zero() {
         let (definition, quest_tasks, quest_conditions) = definition_slots(
             Q, daily(), array![task(1, 5), task(2, 6)].span(), array![3, 4].span(),
@@ -549,112 +549,112 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Quest: invalid id')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_define_rejects_invalid_id() {
         definition_slots(0, one_off(), array![task(1, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid window')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_define_rejects_invalid_window() {
         definition_slots(Q, schedule(100, 100, 0, 0), array![task(1, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid interval')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_define_rejects_duration_above_interval() {
         definition_slots(Q, schedule(0, 0, 2, 1), array![task(1, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid interval')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_define_rejects_half_recurring() {
         definition_slots(Q, schedule(0, 0, 0, DAY), array![task(1, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid tasks')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_define_rejects_no_task() {
         define(array![].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid tasks')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_define_rejects_more_than_three_tasks() {
         define(array![task(1, 1), task(2, 1), task(3, 1), task(4, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid tasks')]
-    #[available_gas(l2_gas: 19971)]
+    #[available_gas(l2_gas: 11876)]
     fn quest_define_rejects_task_zero() {
         define(array![task(1, 1), task(0, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid tasks')]
-    #[available_gas(l2_gas: 21021)]
+    #[available_gas(l2_gas: 12926)]
     fn quest_define_rejects_total_zero() {
         define(array![task(1, 1), task(2, 1), task(3, 0)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid tasks')]
-    #[available_gas(l2_gas: 21410)]
+    #[available_gas(l2_gas: 13314)]
     fn quest_define_rejects_repeated_task() {
         define(array![task(1, 1), task(1, 2)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid tasks')]
-    #[available_gas(l2_gas: 22355)]
+    #[available_gas(l2_gas: 14259)]
     fn quest_define_rejects_repeated_task_first_and_last() {
         define(array![task(1, 1), task(2, 1), task(1, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid tasks')]
-    #[available_gas(l2_gas: 21231)]
+    #[available_gas(l2_gas: 13136)]
     fn quest_define_rejects_repeated_task_second_and_last() {
         define(array![task(1, 1), task(2, 1), task(2, 1)].span(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: too many conditions')]
-    #[available_gas(l2_gas: 19457)]
+    #[available_gas(l2_gas: 11361)]
     fn quest_define_rejects_too_many_conditions() {
         define(array![task(1, 1)].span(), array![1, 2, 3, 4, 5, 6, 7, 8].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid condition')]
-    #[available_gas(l2_gas: 28203)]
+    #[available_gas(l2_gas: 20948)]
     fn quest_define_rejects_condition_zero() {
         define(array![task(1, 1)].span(), array![1, 0].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid condition')]
-    #[available_gas(l2_gas: 22460)]
+    #[available_gas(l2_gas: 14994)]
     fn quest_define_rejects_self_condition() {
         define(array![task(1, 1)].span(), array![Q].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid condition')]
-    #[available_gas(l2_gas: 34472)]
+    #[available_gas(l2_gas: 27216)]
     fn quest_define_rejects_duplicate_condition() {
         define(array![task(1, 1)].span(), array![5, 5].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid condition')]
-    #[available_gas(l2_gas: 131649)]
+    #[available_gas(l2_gas: 124394)]
     fn quest_define_rejects_duplicate_condition_far_apart() {
         define(array![task(1, 1)].span(), array![1, 2, 3, 4, 5, 6, 1].span());
     }
@@ -662,7 +662,7 @@ mod tests {
     // tasks_index_of, tasks_span, conditions_span
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn tasks_index_of_finds_used_slots_only() {
         let t = tasks(task(4, 1), task(5, 1), task(6, 1));
         assert!(TasksSlotTrait::index_of(@t, 3, 4) == Some(0));
@@ -676,7 +676,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 45371)]
+    #[available_gas(l2_gas: 37149)]
     fn tasks_span_has_task_count_entries() {
         let t = tasks(task(4, 1), task(5, 2), task(6, 3));
         assert!(TasksSlotTrait::tasks(@t, 0) == array![].span());
@@ -686,7 +686,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 109757)]
+    #[available_gas(l2_gas: 101535)]
     fn conditions_span_has_count_entries() {
         let c = ids(1, 2, 3, 4, 5, 6, 7);
         assert!(ConditionsSlotTrait::ids(@c, 0) == array![].span());
@@ -700,7 +700,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 74162)]
+    #[available_gas(l2_gas: 66780)]
     fn definition_new_round_trips_through_the_spans() {
         let task_list = array![task(9, 3), task(8, 2)].span();
         let condition_list = array![30, 20, 10].span();
@@ -726,7 +726,7 @@ mod tests {
     // Constructor and checks
 
     #[test]
-    #[available_gas(l2_gas: 179897)]
+    #[available_gas(l2_gas: 171675)]
     fn definition_new_keeps_its_inputs() {
         let tasks = array![task(8, 5), task(9, 6), task(10, 7)].span();
         let conditions = array![2, 3, 4, 5, 6, 7, 8].span();
@@ -737,7 +737,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn definition_errors_are_those_of_0_1_0() {
         assert!(definition_errors::DEFINITION_INVALID_ID == errors::INVALID_ID);
         assert!(schedule_errors::SCHEDULE_INVALID_WINDOW == errors::INVALID_WINDOW);
@@ -751,7 +751,7 @@ mod tests {
 
     /// The id first, before a window that is also invalid.
     #[test]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     #[should_panic(expected: 'Quest: invalid id')]
     fn definition_rejects_id_zero_first() {
         DefinitionTrait::new(0, schedule(5, 5, 0, 0), array![].span(), array![0].span());
@@ -759,21 +759,21 @@ mod tests {
 
     /// The window before the interval, the tasks and the conditions.
     #[test]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     #[should_panic(expected: 'Quest: invalid window')]
     fn definition_rejects_window_second() {
         DefinitionTrait::new(1, schedule(5, 5, 1, 0), array![].span(), array![0].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     #[should_panic(expected: 'Quest: invalid interval')]
     fn definition_rejects_duration_above_interval() {
         DefinitionTrait::new(1, schedule(0, 0, 5, 4), one(1), array![].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     #[should_panic(expected: 'Quest: invalid interval')]
     fn definition_rejects_half_recurring() {
         DefinitionTrait::new(1, schedule(0, 0, 0, 4), one(1), array![].span());
@@ -781,35 +781,35 @@ mod tests {
 
     /// The tasks before the conditions.
     #[test]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     #[should_panic(expected: 'Quest: invalid tasks')]
     fn definition_rejects_no_task() {
         new(array![].span(), array![0, 0, 0, 0, 0, 0, 0, 0].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     #[should_panic(expected: 'Quest: invalid tasks')]
     fn definition_rejects_four_tasks() {
         new(array![task(1, 1), task(2, 1), task(3, 1), task(4, 1)].span(), array![].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 17241)]
+    #[available_gas(l2_gas: 9146)]
     #[should_panic(expected: 'Quest: invalid tasks')]
     fn definition_rejects_task_zero() {
         new(array![task(1, 1), task(0, 1)].span(), array![].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 18396)]
+    #[available_gas(l2_gas: 10301)]
     #[should_panic(expected: 'Quest: invalid tasks')]
     fn definition_rejects_total_zero() {
         new(array![task(1, 1), task(2, 1), task(3, 0)].span(), array![].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 19026)]
+    #[available_gas(l2_gas: 10931)]
     #[should_panic(expected: 'Quest: invalid tasks')]
     fn definition_rejects_repeated_task() {
         new(array![task(1, 1), task(2, 1), task(2, 3)].span(), array![].span());
@@ -817,35 +817,35 @@ mod tests {
 
     /// The count before the ids.
     #[test]
-    #[available_gas(l2_gas: 16832)]
+    #[available_gas(l2_gas: 8736)]
     #[should_panic(expected: 'Quest: too many conditions')]
     fn definition_rejects_eight_conditions() {
         new(one(1), array![0, 0, 0, 0, 0, 0, 0, 0].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 25788)]
+    #[available_gas(l2_gas: 17693)]
     #[should_panic(expected: 'Quest: invalid condition')]
     fn definition_rejects_condition_zero() {
         new(one(1), array![2, 0].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 25883)]
+    #[available_gas(l2_gas: 17787)]
     #[should_panic(expected: 'Quest: invalid condition')]
     fn definition_rejects_self_condition() {
         new(one(1), array![2, 1].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 127659)]
+    #[available_gas(l2_gas: 119564)]
     #[should_panic(expected: 'Quest: invalid condition')]
     fn definition_rejects_repeated_condition() {
         new(one(1), array![2, 3, 4, 5, 6, 7, 2].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 20937)]
+    #[available_gas(l2_gas: 12842)]
     fn definition_exists_with_its_tasks() {
         let definition = new(one(1), array![].span());
         DefinitionAssert::assert_does_exist(@definition);
@@ -854,7 +854,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 16895)]
+    #[available_gas(l2_gas: 8799)]
     #[should_panic(expected: 'Quest: does not exist')]
     fn definition_undefined_does_not_exist() {
         let undefined = DefinitionStorage::from_slots(1, zero_a(), zero_b(), zero_c());
@@ -862,7 +862,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 20549)]
+    #[available_gas(l2_gas: 12453)]
     #[should_panic(expected: 'Quest: already defined')]
     fn definition_defined_already_exists() {
         DefinitionAssert::assert_does_not_exist(@new(one(1), array![].span()));
@@ -871,7 +871,7 @@ mod tests {
     // Behaviour, against `schedule_is_active` and `schedule_interval_id`
 
     #[test]
-    #[available_gas(l2_gas: 1764095)]
+    #[available_gas(l2_gas: 1755873)]
     fn definition_schedule_matches_the_oracle() {
         let schedules = array![
             one_off(), schedule(100, 0, 0, 0), schedule(0, 500, 0, 0), schedule(100, 500, 0, 0),
@@ -916,7 +916,7 @@ mod tests {
     /// For 1 to 3 tasks and 0 to 7 conditions: the slots are those of 0.1.0, and read back as the
     /// model.
     #[test]
-    #[available_gas(l2_gas: 4417035)]
+    #[available_gas(l2_gas: 4408940)]
     fn definition_storage_is_the_layout_of_0_1_0() {
         let all_tasks = array![task(8, 5), task(9, 6), task(10, 7)].span();
         let all_conditions = array![2, 3, 4, 5, 6, 7, 8].span();
@@ -940,7 +940,7 @@ mod tests {
 
     /// A status in A (retired, live dependents) is not part of the model: it reads the same.
     #[test]
-    #[available_gas(l2_gas: 55577)]
+    #[available_gas(l2_gas: 47355)]
     fn definition_reads_the_same_whatever_the_status() {
         let definition = new(one(1), array![2].span());
         let (slot_a, slot_b, slot_c) = DefinitionStorage::into_slots(@definition);
@@ -949,7 +949,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 17126)]
+    #[available_gas(l2_gas: 8904)]
     fn definition_undefined_reads_with_no_task() {
         let undefined = DefinitionStorage::from_slots(5, zero_a(), zero_b(), zero_c());
         assert!(undefined.id == 5 && undefined.tasks.len() == 0 && undefined.conditions.len() == 0);
@@ -958,7 +958,7 @@ mod tests {
     // Tracked
 
     #[test]
-    #[available_gas(l2_gas: 42084)]
+    #[available_gas(l2_gas: 33863)]
     fn definition_event_carries_its_key_and_values() {
         let tasks = array![task(8, 5), task(9, 6)].span();
         let conditions = array![2].span();
@@ -978,7 +978,7 @@ mod tests {
     // definition
 
     #[test]
-    #[available_gas(l2_gas: 156765)]
+    #[available_gas(l2_gas: 148544)]
     fn bench_definition_new_three_tasks_seven_conditions() {
         let (definition, _, _) = definition_slots(
             opaque(100),
@@ -990,19 +990,19 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 21893)]
+    #[available_gas(l2_gas: 13671)]
     fn bench_tasks_index_of_absent() {
         assert!(TasksSlotTrait::index_of(@three_tasks(), opaque(3), opaque(99)) == None);
     }
 
     #[test]
-    #[available_gas(l2_gas: 21053)]
+    #[available_gas(l2_gas: 12831)]
     fn bench_tasks_span_three() {
         assert!(TasksSlotTrait::tasks(@three_tasks(), opaque(3)).len() == 3);
     }
 
     #[test]
-    #[available_gas(l2_gas: 20517)]
+    #[available_gas(l2_gas: 12296)]
     fn bench_conditions_span_seven() {
         assert!(ConditionsSlotTrait::ids(@seven_ids(), opaque(7)).len() == 7);
     }
@@ -1010,7 +1010,7 @@ mod tests {
     // packing: pack then unpack, every field at its maximum
 
     #[test]
-    #[available_gas(l2_gas: 42588)]
+    #[available_gas(l2_gas: 34367)]
     fn bench_pack_unpack_definition() {
         let d = opaque(
             HeadSlot {
@@ -1027,7 +1027,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 32960)]
+    #[available_gas(l2_gas: 24738)]
     fn bench_pack_unpack_tasks() {
         let t = opaque(
             tasks(task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX)),
@@ -1037,7 +1037,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 37401)]
+    #[available_gas(l2_gas: 29180)]
     fn bench_pack_unpack_conditions() {
         let m = U32_MAX;
         let c = opaque(ids(m, m, m, m, m, m, m));
@@ -1069,7 +1069,7 @@ mod tests {
     // HeadSlot (slot A)
 
     #[test]
-    #[available_gas(l2_gas: 2507999)]
+    #[available_gas(l2_gas: 2499777)]
     fn quest_packing_round_trip_definition_zero() {
         let zero = definition(0, 0, 0, 0, 0, 0, false, false, 0);
         check_definition(zero);
@@ -1077,7 +1077,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 24942540)]
+    #[available_gas(l2_gas: 24934319)]
     fn quest_packing_round_trip_definition_max() {
         check_definition(definition(U64_MAX, U64_MAX, U32_MAX, U32_MAX, 3, 7, true, true, 0xffff));
         // each field alone at its maximum
@@ -1093,7 +1093,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 7493210)]
+    #[available_gas(l2_gas: 7484988)]
     fn quest_packing_round_trip_definition_mixed() {
         check_definition(
             definition(
@@ -1105,7 +1105,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 1165805)]
+    #[available_gas(l2_gas: 1157583)]
     fn quest_packing_presence_bits_at_their_positions() {
         let defined = definition(0, 0, 0, 0, 0, 0, true, false, 0);
         assert!(StorePacking::<HeadSlot, felt252>::pack(defined) == to_felt(pow2(197)));
@@ -1119,7 +1119,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 37065)]
+    #[available_gas(l2_gas: 28844)]
     fn quest_empty_slot_reads_undefined() {
         let empty = StorePacking::<HeadSlot, felt252>::unpack(0);
         assert!(!empty.defined);
@@ -1130,7 +1130,7 @@ mod tests {
     // TasksSlot (slot B)
 
     #[test]
-    #[available_gas(l2_gas: 15891383)]
+    #[available_gas(l2_gas: 15883161)]
     fn quest_packing_round_trip_tasks() {
         check_tasks(tasks(task(0, 0), task(0, 0), task(0, 0)));
         check_tasks(tasks(task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX), task(U32_MAX, U32_MAX)));
@@ -1151,7 +1151,7 @@ mod tests {
     // ConditionsSlot (slot C)
 
     #[test]
-    #[available_gas(l2_gas: 20233017)]
+    #[available_gas(l2_gas: 20224796)]
     fn quest_packing_round_trip_conditions() {
         check_conditions(ids(0, 0, 0, 0, 0, 0, 0));
         let m = U32_MAX;
@@ -1175,28 +1175,28 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_packing_rejects_task_count_4() {
         pack_definition(definition(0, 0, 0, 0, 4, 0, true, false, 0));
     }
 
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_packing_rejects_task_count_255() {
         pack_definition(definition(0, 0, 0, 0, 255, 0, true, false, 0));
     }
 
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_packing_rejects_condition_count_8() {
         pack_definition(definition(0, 0, 0, 0, 1, 8, true, false, 0));
     }
 
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_packing_rejects_condition_count_16() {
         // 8 = 2^3 would have set `defined` (bit 197); 16 = 2^4 `retired` (bit 198)
         pack_definition(definition(0, 0, 0, 0, 1, 16, false, false, 0));
@@ -1204,34 +1204,34 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 446376)]
+    #[available_gas(l2_gas: 438281)]
     fn quest_unpacking_rejects_definition_bit_215() {
         StorePacking::<HeadSlot, felt252>::unpack(to_felt(pow2(215)));
     }
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 33159)]
+    #[available_gas(l2_gas: 25064)]
     fn quest_unpacking_rejects_definition_felt_minus_one() {
         StorePacking::<HeadSlot, felt252>::unpack(-1);
     }
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 377202)]
+    #[available_gas(l2_gas: 369107)]
     fn quest_unpacking_rejects_tasks_bit_192() {
         StorePacking::<TasksSlot, felt252>::unpack(to_felt(pow2(192)));
     }
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 396113)]
+    #[available_gas(l2_gas: 388017)]
     fn quest_unpacking_rejects_conditions_bit_224() {
         StorePacking::<ConditionsSlot, felt252>::unpack(to_felt(pow2(224)));
     }
 
     #[test]
-    #[available_gas(l2_gas: 5109279)]
+    #[available_gas(l2_gas: 5101194)]
     fn quest_packing_accepts_the_bounds() {
         check_definition(definition(0, 0, 0, 0, 3, 7, true, false, 0));
         check_held_slot(held_slot(held(1, 2), held(3, 4)));

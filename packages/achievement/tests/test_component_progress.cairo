@@ -165,7 +165,7 @@ const WRITES_NOTHING_REFERENCE: u128 = 603146;
 
 /// Progress writes nothing: its storage writes are counted with `--detailed-resources`
 /// (`GAS.md`), and here its Sierra gas is guarded. A 16-entry call through the internal layer
-/// stays within 20 000 of its reference; one storage write is about 58 820, so a write added to
+/// stays within 20 000 of its reference; one storage write is about 73 820, so a write added to
 /// the path fails the guard.
 #[test]
 #[available_gas(l2_gas: 2605760)]

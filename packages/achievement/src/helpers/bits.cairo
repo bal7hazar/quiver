@@ -120,7 +120,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 995106)]
+    #[available_gas(l2_gas: 986885)]
     fn pow2_table_is_two_to_the_index() {
         let table = POW2.span();
         assert!(table.len() == 128);
@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 2100410)]
+    #[available_gas(l2_gas: 2092188)]
     fn two_pow_constants_are_their_powers() {
         assert!(TWO_POW_32 == felt_pow2(32));
         assert!(TWO_POW_64 == felt_pow2(64));
@@ -150,7 +150,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 549339)]
+    #[available_gas(l2_gas: 541118)]
     fn nz_constants_are_their_powers() {
         let nz_2: u128 = NZ_2.into();
         let nz_4: u128 = NZ_4.into();
@@ -167,7 +167,7 @@ mod tests {
     /// Both limbs set: `low + high × 2^128` splits into `(low, high)`, the high limb at its
     /// widest below 2^123 (a felt is below 2^251 + 17 × 2^192 + 1).
     #[test]
-    #[available_gas(l2_gas: 18323)]
+    #[available_gas(l2_gas: 10101)]
     fn split_both_limbs() {
         let low: u128 = 0xfedcba9876543210fedcba9876543210;
         let high: u128 = 0x7ffffffffffffffffffffffffffffff;
@@ -177,7 +177,7 @@ mod tests {
 
     /// The high limb zero: a felt below 2^128 is its own low limb.
     #[test]
-    #[available_gas(l2_gas: 18354)]
+    #[available_gas(l2_gas: 10133)]
     fn split_high_limb_zero() {
         let low: u128 = 0xffffffffffffffffffffffffffffffff;
         assert!(BitsTrait::split(low.into()) == (low, 0));

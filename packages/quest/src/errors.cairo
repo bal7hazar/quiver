@@ -31,7 +31,7 @@ mod tests {
     use crate::errors;
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn quest_error_strings_are_the_accepted_ones() {
         assert!(errors::INVALID_ID == 'Quest: invalid id');
         assert!(errors::INVALID_TASKS == 'Quest: invalid tasks');

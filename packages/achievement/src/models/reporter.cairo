@@ -47,14 +47,14 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn reporter_allowed_passes() {
         reporter(true).assert_is_allowed();
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: not reporter')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn reporter_refused_reverts_not_reporter() {
         reporter(false).assert_is_allowed();
     }

@@ -8,7 +8,7 @@ is [ARC-01 §6](research/ARC-01-quest-achievement.md); this page is how it is bu
 ```
 Scarb.toml            [workspace]: members = ["packages/*"], shared package fields and dependencies
 Scarb.lock            committed
-.tool-versions        scarb 2.19.4, starknet-foundry 0.61.0: read by the CI
+.tool-versions        scarb 2.20.1, starknet-foundry 0.64.0: read by the CI
 packages/quest/       quiver_quest        (Scarb.toml, README.md, CHANGELOG.md, GAS.md, src/, tests/)
 packages/achievement/ quiver_achievement  (same shape)
 scripts/gas.py        the gas tool (test_gas.py: its unit tests)

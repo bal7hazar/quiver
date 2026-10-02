@@ -126,7 +126,7 @@ mod tests {
     // `RecordTrait::all_completed`
     // walks larger entries
     #[test]
-    #[available_gas(l2_gas: 45864)]
+    #[available_gas(l2_gas: 37643)]
     fn prerequisites_met_when_each_completed_once() {
         assert!(RecordTrait::all_completed(array![].span()));
         assert!(RecordTrait::all_completed(array![record_model(1, 0, false)].span()));
@@ -142,7 +142,7 @@ mod tests {
     // `RecordTrait::all_completed`
     // walks larger entries
     #[test]
-    #[available_gas(l2_gas: 32256)]
+    #[available_gas(l2_gas: 24035)]
     fn quest_prerequisites_all_required_logic() {
         assert!(!RecordTrait::all_completed(array![record_model(0, 0, false)].span()));
         assert!(
@@ -157,7 +157,7 @@ mod tests {
     // completion
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn quest_recurring_completes_each_interval_logic() {
         let r = complete(complete(complete(no_record())));
         assert!(r.completions == 3);
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn record_complete_keeps_unlocked_and_claims() {
         let r = complete(record(4, 3, true));
         assert!(r == record(5, 3, true));
@@ -174,7 +174,7 @@ mod tests {
     // claim
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn claim_marks_claimed_and_counts() {
         let (p, r, index) = claim_both(progress(5, 0, 0, true, false), record(1, 0, true));
         assert!(p == progress(5, 0, 0, true, true));
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn quest_claim_index_counts_claims() {
         // completed on days 0 and 1; claim day 1 then day 0
         let day0 = progress(1, 0, 0, true, false);
@@ -198,14 +198,14 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Quest: not completed')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_claim_uncompleted_reverts() {
         claim_both(no_progress(), no_record());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: not completed')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_claim_uncompleted_reverts_before_claimed() {
         // not completed is checked first
         claim_both(progress(0, 0, 0, false, true), no_record());
@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Quest: already claimed')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_claim_twice_reverts() {
         let (p, r, _) = claim_both(progress(1, 0, 0, true, false), record(1, 0, false));
         claim_both(p, r);
@@ -222,7 +222,7 @@ mod tests {
     // counters
 
     #[test]
-    #[available_gas(l2_gas: 24087)]
+    #[available_gas(l2_gas: 15971)]
     fn quest_record_counters_past_u32() {
         let r = record(0xffffffff, 0xffffffff, false);
         let r = complete(r);
@@ -235,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn quest_record_counters_saturate() {
         let r = record(U64_MAX, U64_MAX, true);
         let r = complete(r);
@@ -250,20 +250,20 @@ mod tests {
     // gas: raised, a record model carries its two keys, so a span of seven costs more to build and
     // walk (ARC-07a); off the component's paths, which read one record at a time
     #[test]
-    #[available_gas(l2_gas: 36540)]
+    #[available_gas(l2_gas: 28319)]
     fn bench_prerequisites_met_seven() {
         let r = record_model(1, 0, false);
         assert!(RecordTrait::all_completed(opaque(array![r, r, r, r, r, r, r].span())));
     }
 
     #[test]
-    #[available_gas(l2_gas: 16947)]
+    #[available_gas(l2_gas: 8726)]
     fn bench_record_complete() {
         assert!(complete(opaque(record(1, 0, true))).completions == 2);
     }
 
     #[test]
-    #[available_gas(l2_gas: 18837)]
+    #[available_gas(l2_gas: 10616)]
     fn bench_claim() {
         let (_, _, index) = claim_both(
             opaque(progress(1, 1, 1, true, false)), opaque(record(3, 2, true)),
@@ -272,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 24938)]
+    #[available_gas(l2_gas: 16716)]
     fn bench_pack_unpack_record() {
         let r: RecordSlot = opaque(record(U64_MAX, U64_MAX, true));
         let packed = StorePacking::<RecordSlot, felt252>::pack(r);
@@ -282,7 +282,7 @@ mod tests {
     // RecordSlot
 
     #[test]
-    #[available_gas(l2_gas: 7500749)]
+    #[available_gas(l2_gas: 7492527)]
     fn quest_packing_round_trip_record() {
         check_record(record(0, 0, false));
         check_record(record(U64_MAX, U64_MAX, true));
@@ -295,7 +295,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 373842)]
+    #[available_gas(l2_gas: 365747)]
     fn quest_unpacking_rejects_record_bit_129() {
         StorePacking::<RecordSlot, felt252>::unpack(to_felt(pow2(129)));
     }

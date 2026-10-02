@@ -144,27 +144,27 @@ mod tests {
     // batch_merge
 
     #[test]
-    #[available_gas(l2_gas: 21746)]
+    #[available_gas(l2_gas: 13524)]
     fn batch_merge_empty() {
         assert!(BatchTrait::merge(array![].span()) == array![].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 56425)]
+    #[available_gas(l2_gas: 48309)]
     fn batch_merge_keeps_distinct_entries_in_order() {
         let entries = array![entry(3, 1), entry(1, 2), entry(2, 3)].span();
         assert!(BatchTrait::merge(entries) == entries);
     }
 
     #[test]
-    #[available_gas(l2_gas: 58621)]
+    #[available_gas(l2_gas: 50504)]
     fn quest_batch_duplicate_entries_merged() {
         let merged = BatchTrait::merge(array![entry(7, 4), entry(7, 4)].span());
         assert!(merged == array![entry(7, 8)].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 89680)]
+    #[available_gas(l2_gas: 81563)]
     fn quest_batch_event_mode_one_event_per_task_merge() {
         // The pure part: the batch the event mode emits, one entry per merged non-zero task
         let merged = BatchTrait::merge(
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 87702)]
+    #[available_gas(l2_gas: 79585)]
     fn batch_merge_drops_zero_counts() {
         assert!(BatchTrait::merge(array![entry(1, 0)].span()) == array![].span());
         assert!(
@@ -184,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 96994)]
+    #[available_gas(l2_gas: 88878)]
     fn batch_merge_keeps_the_position_of_first_occurrence() {
         // task 1 first appears with a zero count: the merged entry is still at its first position
         let merged = BatchTrait::merge(
@@ -194,7 +194,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 284775)]
+    #[available_gas(l2_gas: 276659)]
     fn batch_merge_saturates_duplicates() {
         let merged = BatchTrait::merge(array![entry(1, U32_MAX), entry(2, 1), entry(1, 1)].span());
         assert!(merged == array![entry(1, U32_MAX), entry(2, 1)].span());
@@ -203,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 236341)]
+    #[available_gas(l2_gas: 228224)]
     fn quest_batch_bound_accepted() {
         let entries = distinct_entries(1, MAX_ENTRIES, 1);
         assert!(BatchTrait::merge(entries) == entries);
@@ -211,35 +211,35 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Quest: too many entries')]
-    #[available_gas(l2_gas: 77973)]
+    #[available_gas(l2_gas: 69857)]
     fn quest_batch_above_bound_reverts() {
         BatchTrait::merge(distinct_entries(1, MAX_ENTRIES + 1, 1));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: too many entries')]
-    #[available_gas(l2_gas: 68397)]
+    #[available_gas(l2_gas: 60281)]
     fn quest_batch_duplicates_count_toward_bound() {
         BatchTrait::merge(same_entries(1, MAX_ENTRIES + 1, 1));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: too many entries')]
-    #[available_gas(l2_gas: 77973)]
+    #[available_gas(l2_gas: 69857)]
     fn quest_batch_zero_counts_count_toward_bound() {
         BatchTrait::merge(distinct_entries(1, MAX_ENTRIES + 1, 0));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid task')]
-    #[available_gas(l2_gas: 32588)]
+    #[available_gas(l2_gas: 24472)]
     fn quest_batch_rejects_task_zero() {
         BatchTrait::merge(array![entry(0, 1)].span());
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid task')]
-    #[available_gas(l2_gas: 40375)]
+    #[available_gas(l2_gas: 32259)]
     fn quest_batch_rejects_task_zero_with_zero_count() {
         BatchTrait::merge(array![entry(1, 1), entry(0, 0)].span());
     }
@@ -286,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 192526)]
+    #[available_gas(l2_gas: 184410)]
     fn batch_merge_ids_equal_modulo_128_are_distinct() {
         // The mask of the fast path collides; the plain path keeps them apart
         let entries = array![entry(1, 1), entry(129, 2), entry(257, 3), entry(0xffffff81, 4)]
@@ -299,7 +299,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 8929614)]
+    #[available_gas(l2_gas: 8921498)]
     fn batch_merge_matches_the_plain_merge() {
         assert_matches_plain(array![].span());
         assert_matches_plain(array![entry(5, 0)].span());
@@ -334,7 +334,7 @@ mod tests {
     // batch_count_of
 
     #[test]
-    #[available_gas(l2_gas: 49623)]
+    #[available_gas(l2_gas: 41402)]
     fn batch_count_of_present_and_absent() {
         let batch = array![entry(3, 1), entry(1, 2), entry(2, 3)].span();
         assert!(BatchTrait::count_of(batch, 3) == 1);
@@ -348,7 +348,7 @@ mod tests {
     // batch_first_position
 
     #[test]
-    #[available_gas(l2_gas: 32886)]
+    #[available_gas(l2_gas: 24665)]
     fn quest_batch_first_position_uses_zero_sentinel() {
         let b = one_task(1, 5);
         let batch = array![entry(2, 1), entry(1, 1)].span();
@@ -359,7 +359,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 38777)]
+    #[available_gas(l2_gas: 30555)]
     fn batch_first_position_is_the_smallest_position() {
         let b = tasks(task(5, 1), task(6, 1), task(7, 1));
         let batch = array![entry(1, 1), entry(7, 1), entry(5, 1), entry(6, 1)].span();
@@ -370,7 +370,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 159716)]
+    #[available_gas(l2_gas: 151494)]
     fn batch_first_position_at_the_bound() {
         let batch = distinct_entries(1, MAX_ENTRIES, 1);
         assert!(
@@ -411,25 +411,25 @@ mod tests {
     // Baselines: the setup of the benchmarks below, without the call
 
     #[test]
-    #[available_gas(l2_gas: 55031)]
+    #[available_gas(l2_gas: 46809)]
     fn bench_baseline_fifteen_then_one() {
         assert!(fifteen_then(16).len() == MAX_ENTRIES);
     }
 
     #[test]
-    #[available_gas(l2_gas: 14826)]
+    #[available_gas(l2_gas: 6731)]
     fn bench_baseline_empty() {
         opaque(0_u8);
     }
 
     #[test]
-    #[available_gas(l2_gas: 66045)]
+    #[available_gas(l2_gas: 57824)]
     fn bench_baseline_sixteen_distinct() {
         assert!(sixteen_distinct().len() == MAX_ENTRIES);
     }
 
     #[test]
-    #[available_gas(l2_gas: 79275)]
+    #[available_gas(l2_gas: 71054)]
     fn bench_baseline_sixteen_with_duplicates() {
         assert!(sixteen_with_duplicates().len() == MAX_ENTRIES);
     }
@@ -437,39 +437,39 @@ mod tests {
     // batch
 
     #[test]
-    #[available_gas(l2_gas: 190991)]
+    #[available_gas(l2_gas: 182875)]
     fn bench_batch_merge_sixteen_distinct() {
         assert!(BatchTrait::merge(sixteen_distinct()).len() == MAX_ENTRIES);
     }
 
     #[test]
-    #[available_gas(l2_gas: 573218)]
+    #[available_gas(l2_gas: 565101)]
     fn bench_batch_merge_sixteen_with_duplicates() {
         assert!(BatchTrait::merge(sixteen_with_duplicates()).len() == 8);
     }
 
     #[test]
-    #[available_gas(l2_gas: 786569)]
+    #[available_gas(l2_gas: 778453)]
     fn bench_batch_merge_late_duplicate() {
         // [1..15, 15]: the worst case with a repeated task
         assert!(BatchTrait::merge(fifteen_then(15)).len() == 15);
     }
 
     #[test]
-    #[available_gas(l2_gas: 790675)]
+    #[available_gas(l2_gas: 782558)]
     fn bench_batch_merge_late_modulo_collision() {
         // [1..15, 129]: all distinct, the mask collides at the last entry
         assert!(BatchTrait::merge(fifteen_then(129)).len() == MAX_ENTRIES);
     }
 
     #[test]
-    #[available_gas(l2_gas: 95120)]
+    #[available_gas(l2_gas: 86898)]
     fn bench_batch_count_of_absent() {
         assert!(BatchTrait::count_of(sixteen_distinct(), opaque(99)) == 0);
     }
 
     #[test]
-    #[available_gas(l2_gas: 116015)]
+    #[available_gas(l2_gas: 107793)]
     fn bench_batch_first_position_absent() {
         let absent = opaque(tasks(task(97, 1), task(98, 1), task(99, 1)));
         assert!(BatchTrait::first_position(sixteen_distinct(), @absent) == None);

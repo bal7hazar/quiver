@@ -93,7 +93,7 @@ mod tests {
     // schedule_validate
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn schedule_validate_accepts_valid_schedules() {
         ScheduleAssert::assert_valid(@one_off());
         ScheduleAssert::assert_valid(@daily());
@@ -107,42 +107,42 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Quest: invalid window')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn schedule_validate_rejects_empty_window() {
         ScheduleAssert::assert_valid(@schedule(100, 100, 0, 0));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid window')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn schedule_validate_rejects_end_before_start() {
         ScheduleAssert::assert_valid(@schedule(100, 99, 0, 0));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid interval')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn schedule_validate_rejects_duration_above_interval() {
         ScheduleAssert::assert_valid(@schedule(0, 0, 2, 1));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid interval')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn schedule_validate_rejects_half_recurring_interval_only() {
         ScheduleAssert::assert_valid(@schedule(0, 0, 0, DAY));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid interval')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn schedule_validate_rejects_half_recurring_duration_only() {
         ScheduleAssert::assert_valid(@schedule(0, 0, DAY, 0));
     }
 
     #[test]
     #[should_panic(expected: 'Quest: invalid interval')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn schedule_validate_rejects_duration_above_interval_at_max() {
         // The Dojo check multiplied two u64 and overflowed here (D-12): this is a named error
         ScheduleAssert::assert_valid(@schedule(0, 0, U32_MAX, U32_MAX - 1));
@@ -151,7 +151,7 @@ mod tests {
     // schedule_is_active
 
     #[test]
-    #[available_gas(l2_gas: 16737)]
+    #[available_gas(l2_gas: 8516)]
     fn schedule_is_active_one_off_window() {
         let s = schedule(100, 200, 0, 0);
         assert!(!ScheduleTrait::is_active(@s, 0));
@@ -163,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn schedule_is_active_never_ends_when_end_is_zero() {
         let s = schedule(100, 0, 0, 0);
         assert!(!ScheduleTrait::is_active(@s, 99));
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 17052)]
+    #[available_gas(l2_gas: 8831)]
     fn schedule_is_active_recurring() {
         // active 10 s in every 60 s from 1000, until 1000 + 3 * 60
         let s = schedule(1000, 1180, 10, 60);
@@ -190,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn schedule_is_active_duration_equal_to_interval_is_always_active() {
         let s = daily();
         assert!(ScheduleTrait::is_active(@s, 0));
@@ -202,7 +202,7 @@ mod tests {
     // schedule_interval_id
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn schedule_interval_id_one_off_is_zero() {
         let s = schedule(100, 200, 0, 0);
         assert!(ScheduleTrait::interval_id(@s, 100) == Some(0));
@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn schedule_interval_id_none_when_inactive() {
         let s = schedule(1000, 1180, 10, 60);
         assert!(ScheduleTrait::interval_id(@s, 0) == None);
@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn schedule_interval_id_recurring() {
         let s = schedule(1000, 1180, 10, 60);
         assert!(ScheduleTrait::interval_id(@s, 1000) == Some(0));
@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn quest_daily_interval_aligned_on_utc_midnight() {
         let s = daily();
         assert!(ScheduleTrait::interval_id(@s, 0) == Some(0));
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn quest_interval_id_is_u64() {
         let s = schedule(0, 0, 1, 1);
         assert!(ScheduleTrait::interval_id(@s, 0x10000000000) == Some(0x10000000000));
@@ -255,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn schedule_interval_id_never_panics_at_the_bounds() {
         assert!(ScheduleTrait::interval_id(@schedule(U64_MAX, 0, 1, 1), 0) == None);
         assert!(ScheduleTrait::interval_id(@schedule(U64_MAX, 0, 1, 1), U64_MAX) == Some(0));
@@ -274,19 +274,19 @@ mod tests {
     // schedule
 
     #[test]
-    #[available_gas(l2_gas: 18354)]
+    #[available_gas(l2_gas: 10133)]
     fn bench_schedule_validate() {
         ScheduleAssert::assert_valid(@recurring());
     }
 
     #[test]
-    #[available_gas(l2_gas: 20192)]
+    #[available_gas(l2_gas: 11970)]
     fn bench_schedule_is_active() {
         assert!(ScheduleTrait::is_active(@recurring(), opaque(1000 + 86400 * 30 + 10)));
     }
 
     #[test]
-    #[available_gas(l2_gas: 21137)]
+    #[available_gas(l2_gas: 12915)]
     fn bench_schedule_interval_id() {
         assert!(
             ScheduleTrait::interval_id(@recurring(), opaque(1000 + 86400 * 30 + 10)) == Some(30),

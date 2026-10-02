@@ -307,19 +307,19 @@ are new (the worst); "existing" means they are overwritten.
 
 | Case | Created: snforge / network | Existing: snforge / network |
 |---|---|---|
-| `MAX_HELD` = 4, hooks empty | **6 205 843** / 6 160 995 | 2 989 843 / 2 788 995 |
-| `MAX_HELD` = 4, `on_quest_complete` writing one new slot | **8 020 763** / 7 953 491 | 4 804 763 / 4 581 491 |
-| 8 held (the layout's limit), hooks empty | **11 416 073** / 11 326 377 | 4 984 073 / 4 582 377 |
-| 8 held, `on_quest_complete` writing one new slot | **15 045 913** / 14 911 369 | 8 613 913 / 8 167 369 |
-| Grim World's use: 16 entries, 3 quests and a daily contract completing, 0 to 2 prerequisites | 4 546 186 / 4 462 338 (6 slots created, 2 overwritten) | — |
+| `MAX_HELD` = 4, hooks empty | **6 460 843** / 6 295 995 | 3 244 843 / 2 923 995 |
+| `MAX_HELD` = 4, `on_quest_complete` writing one new slot | **8 335 763** / 8 088 491 | 5 119 763 / 4 716 491 |
+| 8 held (the layout's limit), hooks empty | **11 917 073** / 11 587 377 | 5 485 073 / 4 843 377 |
+| 8 held, `on_quest_complete` writing one new slot | **15 666 913** / 15 172 369 | 9 234 913 / 8 428 369 |
+| Grim World's use: 16 entries, 3 quests and a daily contract completing, 0 to 2 prerequisites | 4 801 186 / 4 597 338 (6 slots created, 2 overwritten) | — |
 
-**Each held quest adds at most 1.31 × 10⁶ L2 gas.** Most of that is its two storage writes, its
+**Each held quest adds at most 1.37 × 10⁶ L2 gas.** Most of that is its two storage writes, its
 progress and its record. A written slot costs, per transaction:
 
 | Written slot | snforge (the figures above) | The network (the game's FND-04, 149 Sepolia transactions) |
 |---|---|---|
-| **Created**: zero before, non-zero after | 459 106 | about 453 500 |
-| Overwritten, zeroed or unchanged | 57 106 | about 32 000 |
+| **Created**: zero before, non-zero after | 474 106 | about 453 500 |
+| Overwritten, zeroed or unchanged | 72 106 | about 32 000 |
 
 The worst call creates both slots of each quest: its first count in the interval and its first
 completion. A quest whose slots exist already costs about 0.8 × 10⁶ less. The quests a player
@@ -327,8 +327,8 @@ does not hold cost nothing, however many share the reported tasks. The worst cal
 of `MAX_HELD`, not of how many quests use a task.
 
 **The held list is never zeroed.** A slot of the held list keeps a marker once it has held an
-entry, so the list growing back into it overwrites the slot instead of creating it: 703 980
-instead of 1 084 240 for that `accept`.
+entry, so the list growing back into it overwrites the slot instead of creating it: 778 980 for that
+`accept` (703 980 instead of 1 084 240 on Scarb 2.19.4).
 
 The one slot the package zeroes is a reporter's, when `set_reporter(reporter, false)` revokes it.
 
@@ -336,11 +336,11 @@ The one slot the package zeroes is a reporter's, when `set_reporter(reporter, fa
 
 | Entrypoint | L2 gas |
 |---|---|
-| `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 1 917 170 / 1 880 852 |
-| `abandon` | 564 150 / 513 938 |
-| `claim` | 364 520 / 314 308 |
-| `define` (3 tasks, 7 conditions; `TrackAll`) | 2 583 280 / 2 390 720 |
-| `retire` (7 conditions) | 1 003 540 / 802 692 |
+| `accept` (7 prerequisites checked; creates a never-used list slot and the record) | 2 061 170 / 1 979 852 |
+| `abandon` | 621 030 / 540 818 |
+| `claim` | 404 920 / 324 708 |
+| `define` (3 tasks, 7 conditions; `TrackAll`) | 2 779 560 / 2 437 000 |
+| `retire` (7 conditions) | 1 175 940 / 855 092 |
 
 **The consumer's transaction must fit.** The whole transaction counts: the consumer's own
 entrypoint and logic, the package's calls, the hooks (`on_quest_complete` runs once per completed

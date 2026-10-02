@@ -174,7 +174,7 @@ mod tests {
     use super::tracking::{TrackAll, TrackNone};
 
     #[test]
-    #[available_gas(l2_gas: 15792)]
+    #[available_gas(l2_gas: 7571)]
     fn tracking_choices_are_all_or_none() {
         assert!(TrackAll::<()>::DEFINITION && TrackAll::<()>::REPORTER);
         assert!(!TrackNone::<()>::DEFINITION && !TrackNone::<()>::REPORTER);
