@@ -5,7 +5,8 @@ Usage: scripts/gas.py <package dir> [--check | --write]
 
 Runs `snforge test` in the package (with RAYON_NUM_THREADS=1 unless set, D-176), reads each test's measured L2 gas from snforge's output and
 its budget from `#[available_gas(l2_gas: N)]` in the sources (src/ and tests/), then
-  --write  rewrites the package's GAS.md: test, measured, budget, date, commit;
+  --write  rewrites the generated part of the package's GAS.md (header and table: test, measured,
+           budget, date, commit) and keeps, byte for byte, everything after the table;
   --check  (the default) fails, naming the test, when a test has no budget, when its budget is
            below the measured value or above ceil(1.05 * measured); it also fails when GAS.md
            disagrees with the measured values.
@@ -36,6 +37,7 @@ TOKEN_RE = re.compile(
 COMMENT_RE = re.compile(r"//[^\n]*")
 BUDGET_RE = re.compile(r"#\[available_gas\(\s*l2_gas:\s*(\d+)\s*\)\]")
 ROW_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|", re.M)
+TABLE_HEAD = "| Test |"  # first line of the generated table, see render()
 
 
 def parse_snforge_output(text):
@@ -168,6 +170,23 @@ def render(package, measured, tests, date, commit):
     return "\n".join(lines) + "\n"
 
 
+def hand_written(existing):
+    """What follows the generated table in an existing GAS.md ("" when there is none).
+
+    The generated part is the header and one table: the table starts at the line `| Test |` and
+    runs over the consecutive lines that start with `|`. The rest, from the line after the last
+    table row on, is hand-written and is returned as it is.
+    """
+    lines = existing.splitlines(keepends=True)
+    start = next((i for i, line in enumerate(lines) if line.startswith(TABLE_HEAD)), None)
+    if start is None:
+        return ""
+    end = start
+    while end < len(lines) and lines[end].startswith("|"):
+        end += 1
+    return "".join(lines[end:])
+
+
 def read_tests(package, package_dir):
     tests = {}
     for path in sorted(package_dir.rglob("*.cairo")):
@@ -224,6 +243,7 @@ def main(argv):
             print(problem, file=sys.stderr)
         if problems:
             return 1
+        kept = hand_written(gas_md.read_text()) if gas_md.is_file() else ""
         gas_md.write_text(
             render(
                 package,
@@ -232,6 +252,7 @@ def main(argv):
                 datetime.datetime.now(datetime.timezone.utc).date().isoformat(),
                 git_commit(),
             )
+            + kept
         )
         print(f"{package}: wrote {gas_md} ({len(measured)} tests)")
         return 0

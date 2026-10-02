@@ -199,6 +199,36 @@ class GasMd(unittest.TestCase):
         self.assertIn("abc1234", md)
 
 
+class KeepsHandWrittenSections(unittest.TestCase):
+    TESTS = {"p::a": (110, False), "p::b": (220, False)}
+
+    def generated(self, measured, date="2026-10-02", commit="abc1234"):
+        return gas.render("p", measured, self.TESTS, date, commit)
+
+    def test_sections_kept_byte_for_byte_after_a_rewrite(self):
+        tail = "\n## Notes (ARC-10)\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n### Sub\n\ntext  \n\n\n"
+        old = self.generated({"p::a": 100, "p::b": 200}) + tail
+        self.assertEqual(gas.hand_written(old), tail)
+        new = self.generated({"p::a": 101, "p::b": 200}, "2026-10-03", "def5678") + gas.hand_written(old)
+        self.assertTrue(new.endswith(tail))
+        self.assertIn("| `p::a` | 101 | 110 | 2026-10-03 | def5678 |", new)
+        self.assertNotIn("| `p::a` | 100 |", new)
+
+    def test_file_with_only_the_generated_part(self):
+        self.assertEqual(gas.hand_written(self.generated({"p::a": 100, "p::b": 200})), "")
+
+    def test_table_without_final_newline(self):
+        self.assertEqual(gas.hand_written(self.generated({"p::a": 100}).rstrip("\n")), "")
+
+    def test_missing_file_or_no_table(self):
+        self.assertEqual(gas.hand_written(""), "")
+        self.assertEqual(gas.hand_written("# Gas\n\nno table here\n"), "")
+
+    def test_a_table_in_the_sections_is_not_the_generated_one(self):
+        tail = "\n## X\n\n| Test | y |\n|---|---|\n| `q::z` | 1 | 2 |\n"
+        self.assertEqual(gas.hand_written(self.generated({"p::a": 100}) + tail), tail)
+
+
 class SingleThreaded(unittest.TestCase):
     def test_pins_one_thread_when_unset(self):
         self.assertEqual(gas.snforge_env({"PATH": "/bin"})["RAYON_NUM_THREADS"], "1")
