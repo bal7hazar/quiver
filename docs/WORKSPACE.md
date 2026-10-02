@@ -46,6 +46,7 @@ scripts/gas.py packages/quest --check
 scarb --manifest-path packages/quest/Scarb.toml fmt --check
 python3 -m unittest scripts/test_gas.py
 python3 -m unittest discover -s .github/ci
+python3 -m unittest scripts/test_hook.py   # the pre-push hook, in a temporary repository (CI runs it; prepush.sh does not)
 python3 .github/ci/check-links.py
 ```
 
