@@ -534,8 +534,8 @@ fn baseline_accept_worst_completed() {
     accept_worst_setup(false);
 }
 
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 44432888)]
 fn bench_accept_worst_completed() {
     let bench = accept_worst_setup(false);
@@ -579,8 +579,8 @@ fn baseline_accept_mixed() {
     accept_mixed_setup();
 }
 
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 38853289)]
 fn bench_accept_mixed() {
     let bench = accept_mixed_setup();
@@ -919,8 +919,8 @@ fn baseline_retire_worst() {
     retire_worst_setup();
 }
 
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 28778539)]
 fn bench_retire_worst() {
     let bench = retire_worst_setup();

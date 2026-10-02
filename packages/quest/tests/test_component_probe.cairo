@@ -179,8 +179,8 @@ fn probe_baseline() {
     deploy().noop(N);
 }
 
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 4269500)]
 fn probe_read_100() {
     deploy().read_n(N);
@@ -257,8 +257,8 @@ fn probe_store_then_change_100() {
     probe.write_other_n(N);
 }
 
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 58103640)]
 fn probe_write_then_overwrite_100() {
     let probe = deploy();
@@ -274,8 +274,8 @@ fn probe_write_twice_in_one_call_baseline() {
     probe.noop(N);
 }
 
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 58103640)]
 fn probe_write_then_change_100() {
     let probe = deploy();
@@ -311,8 +311,8 @@ fn probe_transition_zero_to_value() {
 }
 
 /// 0 → 0: a write that changes nothing.
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 8323980)]
 fn probe_transition_zero_unchanged() {
     let probe = deploy();
@@ -321,8 +321,8 @@ fn probe_transition_zero_unchanged() {
 }
 
 /// 0 → 1 → 0 in one call: the cell is back to its initial value; no allocation.
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 15798615)]
 fn probe_transition_zero_set_then_restored() {
     let probe = deploy();
@@ -331,8 +331,8 @@ fn probe_transition_zero_set_then_restored() {
 }
 
 /// 1 → 2 (after the setup's 0 → 1): an update of a non-zero cell.
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 58105110)]
 fn probe_transition_value_to_other() {
     let probe = deploy();
@@ -341,8 +341,8 @@ fn probe_transition_value_to_other() {
 }
 
 /// 1 → 1: an unchanged non-zero cell.
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 58105110)]
 fn probe_transition_value_unchanged() {
     let probe = deploy();
@@ -351,8 +351,8 @@ fn probe_transition_value_unchanged() {
 }
 
 /// 1 → 2 → 1 in one call: changed, then restored to its value at the start of the call.
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 65579745)]
 fn probe_transition_value_changed_then_restored() {
     let probe = deploy();
@@ -362,8 +362,8 @@ fn probe_transition_value_changed_then_restored() {
 
 /// 1 → 0: a clear. Within one test it also undoes the setup's allocation, since the final diff
 /// no longer has the cell; the difference with the baseline is the clear minus the allocation.
-#[test]
 // gas: raised, D-180 Scarb 2.20.1
+#[test]
 #[available_gas(l2_gas: 15895110)]
 fn probe_transition_value_to_zero() {
     let probe = deploy();
