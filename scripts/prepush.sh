@@ -71,21 +71,41 @@ step() {
 LOCK_WAIT=90
 have_lock=0
 if [ "$(uname -s)" = Linux ] && command -v flock > /dev/null; then have_lock=1; fi
+# compile_lock returns 1 when the locks stay busy, 3 when the heavy lock is held without the project
+# lock (the order scripts/lock.sh refuses: the compile steps are skipped), 2 on a lock-file error
+# (a FAIL); lock_why says which.
+lock_why=""
 compile_lock() {
   [ "$have_lock" = 1 ] || return 0
-  local deadline=$((SECONDS + LOCK_WAIT)) project heavy
+  local deadline=$((SECONDS + LOCK_WAIT)) project heavy rc
   project=${QUIVER_BUILD_LOCK:-/tmp/quiver-build.lock}
   heavy=${HEAVY_BUILD_LOCK:-$HOME/orchestrator/heavy-build.lock}
-  mkdir -p "$(dirname "$heavy")"
+  if [ -n "${HEAVY_BUILD_LOCK_HELD:-}" ] && [ -z "${QUIVER_BUILD_LOCK_HELD:-}" ]; then
+    lock_why="the heavy lock is held without the project lock (wrong order, as scripts/lock.sh refuses)"
+    return 3
+  fi
+  mkdir -p "$(dirname "$heavy")" || { lock_why="cannot create the directory of $heavy"; return 2; }
   if [ -z "${QUIVER_BUILD_LOCK_HELD:-}" ]; then
-    exec {project_fd}>> "$project"
-    flock -w "$LOCK_WAIT" "$project_fd" || return 1
+    exec {project_fd}>> "$project" || { lock_why="cannot open $project"; return 2; }
+    rc=0
+    flock -w "$LOCK_WAIT" "$project_fd" || rc=$?
+    if [ "$rc" != 0 ]; then
+      if [ "$rc" = 1 ]; then lock_why="busy"; else lock_why="flock failed on $project (exit $rc)"; return 2; fi
+      return 1
+    fi
   fi
   if [ -z "${HEAVY_BUILD_LOCK_HELD:-}" ]; then
-    exec {heavy_fd}>> "$heavy"
-    flock -w "$((deadline - SECONDS > 1 ? deadline - SECONDS : 1))" "$heavy_fd" || return 1
+    exec {heavy_fd}>> "$heavy" || { lock_why="cannot open $heavy"; return 2; }
+    rc=0
+    flock -w "$((deadline - SECONDS > 1 ? deadline - SECONDS : 1))" "$heavy_fd" || rc=$?
+    if [ "$rc" != 0 ]; then
+      if [ "$rc" = 1 ]; then lock_why="busy"; else lock_why="flock failed on $heavy (exit $rc)"; return 2; fi
+      return 1
+    fi
   fi
   export QUIVER_BUILD_LOCK_HELD=1 HEAVY_BUILD_LOCK_HELD=1
+  # The builds no longer go through scripts/lock.sh, which capped cargo's parallelism.
+  export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}"
 }
 
 git rev-parse --verify --quiet origin/main > /dev/null \
@@ -136,9 +156,18 @@ fi
 
 compile=0
 grep -Eq '^(build|gas) ' <<< "$plan" && compile=1
-if [ "$compile" = 1 ] && ! compile_lock; then
-  compile=0
-  echo "build/gas: skipped, the VPS build lock was busy for ${LOCK_WAIT} s; CI will compile"
+if [ "$compile" = 1 ]; then
+  rc=0
+  compile_lock || rc=$?
+  if [ "$rc" = 1 ]; then
+    compile=0
+    echo "build/gas: skipped, the VPS build lock was busy for ${LOCK_WAIT} s; CI will compile"
+  elif [ "$rc" = 3 ]; then
+    compile=0
+    echo "build/gas: skipped, $lock_why; CI will compile"
+  elif [ "$rc" != 0 ]; then
+    fail "build lock: $lock_why"
+  fi
 fi
 
 if [ "$compile" = 1 ]; then
