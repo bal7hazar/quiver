@@ -7,7 +7,10 @@
 #     heavy quiver command at a time, whichever agent runs it;
 #   * the machine-wide HEAVY lock ($HEAVY_BUILD_LOCK, default ~/orchestrator/heavy-build.lock),
 #     shared with every other programme. `scarb` and `snforge` on PATH are the machine's shims
-#     (~/.local/bin), which take it by themselves; this script takes it for `--heavy`.
+#     (~/.local/bin) take it by themselves only when the subcommand is their FIRST argument, so
+#     `scarb --manifest-path X build` would run outside it; this script therefore takes it itself
+#     for every compile subcommand (scarb build, test, lint, check, execute; snforge test), with
+#     or without `--heavy`. `scarb fmt` and `scarb metadata` take no lock.
 # Nested calls inherit the locks already held and take only the ones they miss, in the same
 # order. Commands run under `nice -n 10` with capped parallelism.
 #
@@ -36,8 +39,9 @@ if [ "$1" = scarb ] && [ "$2" = --manifest-path ]; then
   sub=$4
 fi
 case "$1:$sub" in
-  scarb:build | scarb:test | scarb:lint | scarb:fmt | scarb:check | scarb:metadata | scarb:execute) ;;
-  snforge:test) ;;
+  scarb:build | scarb:test | scarb:lint | scarb:check | scarb:execute) heavy=1 ;;
+  scarb:fmt | scarb:metadata) ;;
+  snforge:test) heavy=1 ;;
   *) refuse "does not wrap '$1 $sub'" ;;
 esac
 

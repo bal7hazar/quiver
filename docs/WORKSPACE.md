@@ -55,7 +55,8 @@ Run the tests of the package you touched and of the packages that depend on it.
 the unit tests of the scripts, the links, `scarb fmt --check`, `scarb build` of the affected
 packages and, when a package's gas inputs changed, `scripts/gas.py --check` for it (that step runs
 `snforge` and can take minutes). `git config core.hooksPath .githooks` makes `.githooks/pre-push`
-run it on every push; never skip the hook. The full check stays with the CI.
+run it on every push; never skip the hook. The compile steps take the VPS build lock for at most 90 s
+and are skipped with one line when it is busy; the gas check runs on Linux only. The full check stays with the CI.
 
 ## 4. What the CI runs, and when
 
