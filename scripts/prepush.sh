@@ -15,7 +15,7 @@
 #   4. scarb build, single-threaded (D-176: RAYON_NUM_THREADS=1, one commit gives one program),
 #      of each package the change affects and of its dependents (.github/ci/affected.py);
 #   5. scripts/gas.py <package> --check, only for a package whose gas inputs changed: its src/
-#      or tests/, its Scarb.toml or GAS.md, or the root Scarb.toml, Scarb.lock or .tool-versions
+#      or tests/, its Scarb.toml, or the root Scarb.toml, Scarb.lock or .tool-versions
 #      (the inputs of a dependency count too). THIS RUNS snforge AND CAN TAKE MINUTES (it also
 #      waits for the machine's heavy lock); a change to the sources of a package is the case it
 #      exists for. The full check, every package on every event, stays with CI.
@@ -26,7 +26,7 @@
 # Steps 3 to 5 run scarb, which the machine's shim serialises (a pre-push waits like any build,
 # with no bypass): they are skipped altogether, scarb metadata included, when no Cairo input
 # changed (a .cairo file, any Scarb.toml, Scarb.lock, .tool-versions).
-# A change to scripts/gas.py gets its gas check from CI, not from this script.
+# A change to scripts/gas.py, or to a GAS.md alone, gets its gas check from CI, not from this script.
 # Output: each step's name, OK or FAIL and its time; the log of a failed step; the total time.
 set -euo pipefail
 

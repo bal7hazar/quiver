@@ -2,7 +2,7 @@
 # Pre-push hook (ARC-13): runs scripts/prepush.sh. Enabled by `git config core.hooksPath .githooks`
 # in each clone. Never skip it (no --no-verify): fix what it reports. The script checks the working
 # tree, so the hook refuses a push whose ref is not what is checked out (HEAD) and a push with
-# uncommitted changes to tracked files. A push that only deletes refs is not checked; a pushed
+# uncommitted changes to tracked files or untracked files (the script reads them from disk). A push that only deletes refs is not checked; a pushed
 # release tag quiver_*-v* also gets the release check.
 set -euo pipefail
 
@@ -26,6 +26,13 @@ done
 
 if ! git diff --quiet HEAD; then
   echo "pre-push: tracked files have uncommitted changes: commit or stash first" >&2
+  exit 1
+fi
+
+untracked=$(git ls-files --others --exclude-standard)
+if [ -n "$untracked" ]; then
+  echo "pre-push: untracked files: add, ignore or remove them" >&2
+  head -n 5 <<< "$untracked" | sed 's/^/  /' >&2
   exit 1
 fi
 
