@@ -1,6 +1,6 @@
 # Status
 
-**2026-10-02 12:00 UTC**, written by the orchestrator of track ARC (herdr, project `grimworld-arc`).
+**2026-10-02 19:30 UTC**, written by the orchestrator of track ARC (herdr, project `grimworld-arc`).
 
 ## State, 2026-10-02
 
@@ -10,19 +10,32 @@ used by this track. Its handover note is
 [docs/handover/orchestrator-quiver-2026-10-01.md](docs/handover/orchestrator-quiver-2026-10-01.md).
 
 - ARC-10 (Scarb 2.20.1, starknet-foundry 0.64.0) is done: [#37](https://github.com/bal7hazar/quiver/pull/37), `0fd494e`.
-- The two 0.2.0 publication requests are filled in with ARC-10's figures and sent to the project
-  manager, **waiting for the owner's go**: `docs/decisions/PENDING-publish-quiver_quest-0.2.0.md` and
-  `docs/decisions/PENDING-publish-quiver_achievement-0.2.0.md`, at commit
-  `2e6bb77392335a5420b2ff331f072f66f265c16f`. Nothing is published.
+- **`quiver_quest` 0.2.0 and `quiver_achievement` 0.2.0 are published** on scarbs.xyz (2026-10-02),
+  from commit `2e6bb77392335a5420b2ff331f072f66f265c16f`, on the project manager's go under D-186
+  (the owner's delegation). Records:
+  [docs/decisions/2026-10-02-publish-quiver_quest-0.2.0.md](docs/decisions/2026-10-02-publish-quiver_quest-0.2.0.md)
+  and [docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md](docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md);
+  tags and releases `quiver_quest-v0.2.0` and `quiver_achievement-v0.2.0`. Consumers need Scarb 2.20
+  (`starknet` ^2.20.0, `snforge_std` ^0.64.0).
 - ARC-11 (`scripts/gas.py --write` keeps the hand-written sections of `GAS.md`) is done:
   [#41](https://github.com/bal7hazar/quiver/pull/41), `621baa5`.
 - ARC-12 (three safety fixes to `scripts/gas.py`, notes of ARC-11's review; no package file changes)
   is done: [#42](https://github.com/bal7hazar/quiver/pull/42), `5caf08d`.
-- The two 0.2.0 requests passed the project manager's D-132 checklist and wait for the owner's go.
-- ARC-07d (deferred notes, briefed in [#40](https://github.com/bal7hazar/quiver/pull/40)) is in
-  progress, started before the 0.2.0 publications by the project manager's decision of 2026-10-02:
-  the requests are pinned to commit `2e6bb77` and its archive sha256, so `main` moving cannot
-  change what is published. Its pull request is the only one open.
+- ARC-07d (the deferred notes, [brief](docs/briefs/ARC-07d-deferred-notes.md)) is done:
+  [#47](https://github.com/bal7hazar/quiver/pull/47), `5061428`, [report](docs/reports/ARC-07d-report.md).
+  A 0.2.1 candidate: nothing is bumped. The quest definition view costs +1 770 L2 gas per call with no
+  conditions (+1 200 in the worst case; `Store::get_definition` +1 140), accepted by the orchestrator
+  and documented in the bench note, the changelog and the report.
+- The pre-push tooling is done, all review only (D-177): ARC-13 the pre-push check and hook
+  ([#43](https://github.com/bal7hazar/quiver/pull/43), `afb2e6f`, [report](docs/reports/ARC-13-report.md));
+  ARC-14 the pre-push waits at most 90 s for the VPS build lock, `lock.sh` takes the heavy lock for
+  every compile ([#44](https://github.com/bal7hazar/quiver/pull/44), `0c840f4`, [report](docs/reports/ARC-14-report.md));
+  ARC-15 superseded pull request runs are cancelled, other runs never
+  ([#45](https://github.com/bal7hazar/quiver/pull/45), `3750b5d`, [report](docs/reports/ARC-15-report.md));
+  ARC-16 the pre-push lock fixes ([#46](https://github.com/bal7hazar/quiver/pull/46), `8d6c7c3`,
+  [report](docs/reports/ARC-16-report.md)).
+- Next: a 0.2.1 publication request when the project manager asks; a lot for the hook's automated
+  tests and a shellcheck of the hook (review notes, later).
 
 ## Resumed 2026-09-30, under Nexus (D-162)
 
@@ -38,12 +51,13 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 
 | Task | State | Next step |
 |---|---|---|
-| ARC-07a, `quiver_quest` 0.2.0 | Done ([#20](https://github.com/bal7hazar/quiver/pull/20)), **accepted (D-167)**; not published | The owner reads the mapping and may bring a model back |
-| ARC-07b, `quiver_achievement` 0.2.0 | **Done**: [#25](https://github.com/bal7hazar/quiver/pull/25) merged (`4243132`), [report](docs/reports/ARC-07b-report.md). Reviews by Fable, the last PASS at `970cff1` after three fix loops. Audits on Opus 5.5 (D-177: before a published interface's publication): organisation and cost and access control, both PASS WITH FINDINGS, notes only; one answered in the CHANGELOG, the others in ARC-07d | Its publication, after ARC-10 |
+| ARC-07a, `quiver_quest` 0.2.0 | Done ([#20](https://github.com/bal7hazar/quiver/pull/20)), **accepted (D-167)**; **published 2026-10-02** | — |
+| ARC-07b, `quiver_achievement` 0.2.0 | **Done**: [#25](https://github.com/bal7hazar/quiver/pull/25) merged (`4243132`), [report](docs/reports/ARC-07b-report.md). Reviews by Fable, the last PASS at `970cff1` after three fix loops. Audits on Opus 5.5 (D-177: before a published interface's publication): organisation and cost and access control, both PASS WITH FINDINGS, notes only; one answered in the CHANGELOG, the others in ARC-07d | — (published 2026-10-02 with `quiver_quest`) |
 | ARC-07c, `quiver_quest`'s tests into their modules | **Done**: [#28](https://github.com/bal7hazar/quiver/pull/28) merged (`7afe131`) on its review, no audit (D-177), [report](docs/reports/ARC-07c-report.md) | — |
 | ARC-09, measured and packaged builds single-threaded (D-176) | **Done**: [#32](https://github.com/bal7hazar/quiver/pull/32) merged (`7066040`), review only; no figure moved | — |
 | ARC-10, Scarb 2.20.1 and starknet-foundry 0.64.0 (D-180) | **Done**: [#37](https://github.com/bal7hazar/quiver/pull/37) merged (`0fd494e`), [brief](docs/briefs/ARC-10-scarb-latest.md), [report](docs/reports/ARC-10-report.md); two reviews by Opus 5.5 (`review-opus`), no audit (D-177); single-thread pin kept, SPK-13 | — |
-| Publication of both packages as 0.2.0 | **Asked** (the requests are sent to the project manager) | One `PENDING-publish-*` file per package in `docs/decisions/`, filled in with ARC-10's figures; the go is **the owner's** (stable versions, D-132), prepared by the project manager |
+| ARC-07d, deferred notes | **Done**: [#47](https://github.com/bal7hazar/quiver/pull/47) merged (`5061428`), [report](docs/reports/ARC-07d-report.md); review only, no audit (D-177) | A 0.2.1 candidate, nothing bumped |
+| Publication of both packages as 0.2.0 | **Published 2026-10-02** from `2e6bb77` (D-186), [quest record](docs/decisions/2026-10-02-publish-quiver_quest-0.2.0.md), [achievement record](docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md) | — |
 | ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
 
 **Reviews and audits while Codex has no quota** (the owner's rules of 2026-10-01): reviews by Claude
@@ -78,12 +92,14 @@ write with no event code, measured to the unit); behaviour, layouts and every te
 worst call raised. Audits after one fix loop: `[GPT-6-Sol]` PASS, `[GPT-6-Astra]` PASS WITH FINDINGS.
 **Waiting for the owner's review of this lot**; ARC-07b (`quiver_achievement` 0.2.0) after it.
 
-Both packages the game needs are published on scarbs.xyz, each after the project manager's go:
+Both packages the game needs are published on scarbs.xyz, each after the project manager's go (0.2.0 on 2026-10-02, after the owner's review below):
 
 | Package | Version | Registry | Commit | Record |
 |---|---|---|---|---|
 | `quiver_quest` | 0.1.0 | https://scarbs.xyz/packages/quiver_quest | `364462f` | [D-138](docs/decisions/2026-09-29-publish-quiver_quest-0.1.0.md) |
 | `quiver_achievement` | 0.1.0 (event mode only) | https://scarbs.xyz/packages/quiver_achievement | `50017e7` | [D-142](docs/decisions/2026-09-29-publish-quiver_achievement-0.1.0.md) |
+| `quiver_quest` | 0.2.0 | https://scarbs.xyz/packages/quiver_quest | `2e6bb77` | [D-186](docs/decisions/2026-10-02-publish-quiver_quest-0.2.0.md) |
+| `quiver_achievement` | 0.2.0 | https://scarbs.xyz/packages/quiver_achievement | `2e6bb77` | [D-186](docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md) |
 
 **What wakes the track:**
 
@@ -109,7 +125,7 @@ the game's `74c7d50`).
 
 ## Agents
 
-None running; the ARC-10 thread is launched by the orchestrator through herdr.
+None running. The track runs in herdr on the VPS; the Mac is off.
 
 ## Budget
 
@@ -118,4 +134,4 @@ machine capacity read before each launch.
 
 ## Open
 
-Nothing open with the project manager.
+Nothing open with the project manager. Waiting for the project manager to ask for a 0.2.1 publication request.
