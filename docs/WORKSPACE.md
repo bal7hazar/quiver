@@ -151,3 +151,5 @@ that names the package, the version and the commit, the orchestrator's session r
 commit (D-176: its verification build is single-threaded, as CI measured; the archive holds
 sources, which each consumer compiles). A published
 version cannot be replaced.
+
+Acceptance note.
