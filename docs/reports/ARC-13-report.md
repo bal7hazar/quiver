@@ -66,7 +66,7 @@ Real outputs (VPS, Linux; times include waiting for the shared heavy lock):
 +  done
    tar --extract ...
 ```
-- AC-5 see the report of the thread (CI after the PR is open).
+- AC-5 met at 8b1e5d6: `gh pr checks 43` all pass (affected, package quest 2m13s, package achievement 38s, cairo, scripts incl. shellcheck, links).
 
 ## Deviations from the brief
 - `git config core.hooksPath` not run (refused; the orchestrator set it in both clones).
@@ -80,3 +80,25 @@ Real outputs (VPS, Linux; times include waiting for the shared heavy lock):
 None open. The `bare = true` incident above is repaired.
 
 ## Open questions
+
+## Fix loop 1 (review-opus at 8b1e5d6: PASS WITH FINDINGS)
+1. `.githooks/pre-push` now refuses (exit 1) a push whose ref (`local_sha^{commit}`) is not `HEAD`
+   ("check out the ref you push") and a push with uncommitted changes to tracked files ("commit or stash
+   first"); deletions stay allowed. Checked by feeding the hook crafted stdin: dirty tree: refused, exit 1;
+   a ref that is not HEAD: refused, exit 1; a deletion: exit 0. `scripts/prepush.sh` still checks the working tree
+   when run by hand.
+2. `scripts/prepush.sh` runs no scarb (no fmt, no `scarb metadata`, no build, no gas) when no Cairo input changed
+   (`.cairo`, any `Scarb.toml`, `Scarb.lock`, `.tool-versions`); it prints `fmt/build skipped (no Cairo input changed)`.
+   Consequence: a change to `GAS.md` alone is not checked locally. Otherwise fmt, builds and gas as before; the gas
+   step prints its warning line first.
+3. The script header says a change to `scripts/gas.py` gets its gas check from CI.
+
+Re-measured (real output):
+- Scripts-only change (comment in `scripts/lock.sh`): `fmt/build skipped (no Cairo input changed)`,
+  `prepush: OK (1s)`, `real 0m0.754s`.
+- One-line comment in `packages/quest/src/constants.cairo`: python tests 1s, links 0s, fmt 3s,
+  build achievement 0s, build quest 7s, then `gas packages/quest (snforge, slow)` **did not finish**: it waited for the
+  shared heavy lock for 30 minutes and the run was stopped by its time limit (`Terminated`). Other programmes and other
+  threads' `prepush.sh` runs were queued on the same lock (`ps` showed them). I did not restart it. The earlier
+  measure of the same change, with a free queue, was `prepush: OK (563s)` (`real 9m22s`, `user 2m22s`). Everything
+  before the gas step took 11s.
