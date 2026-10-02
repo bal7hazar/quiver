@@ -18,9 +18,12 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request cancels the superseded run; runs on main and tags are never cancelled.
+# A new push to a pull request cancels that pull request's superseded run; every other run (main,
+# schedule, dispatch, tag) has a group of its own, so none is ever cancelled or replaced. Through
+# workflow_call from release.yml, github.workflow and github.event_name are the caller's ("release",
+# push), so the group is "release-run-<run_id>" and cancel-in-progress is false.
 concurrency:
-  group: cairo-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
