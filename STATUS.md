@@ -14,8 +14,13 @@ used by this track. Its handover note is
   manager, **waiting for the owner's go**: `docs/decisions/PENDING-publish-quiver_quest-0.2.0.md` and
   `docs/decisions/PENDING-publish-quiver_achievement-0.2.0.md`, at commit
   `2e6bb77392335a5420b2ff331f072f66f265c16f`. Nothing is published.
-- ARC-11 (`scripts/gas.py --write` keeps the hand-written sections of `GAS.md`) is in progress; then
-  ARC-07d (deferred notes), as in [PLAN.md](PLAN.md).
+- ARC-11 (`scripts/gas.py --write` keeps the hand-written sections of `GAS.md`) is done:
+  [#41](https://github.com/bal7hazar/quiver/pull/41), `621baa5`.
+- ARC-12 (three safety fixes to `scripts/gas.py`, notes of ARC-11's review; no package file changes)
+  is in progress.
+- The two 0.2.0 requests passed the project manager's D-132 checklist and wait for the owner's go.
+- ARC-07d (deferred notes) is briefed ([#40](https://github.com/bal7hazar/quiver/pull/40)) and comes
+  after the 0.2.0 publications, as in [PLAN.md](PLAN.md).
 - No open pull request other than the one carrying the requests.
 
 ## Resumed 2026-09-30, under Nexus (D-162)

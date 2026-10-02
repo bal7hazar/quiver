@@ -229,6 +229,74 @@ class KeepsHandWrittenSections(unittest.TestCase):
         self.assertEqual(gas.hand_written(self.generated({"p::a": 100}) + tail), tail)
 
 
+class GeneratedTableOnly(unittest.TestCase):
+    TESTS = {"p::a": (110, False)}
+
+    def generated(self):
+        return gas.render("p", {"p::a": 100}, self.TESTS, "2026-10-02", "abc1234")
+
+    def test_header_comes_from_render(self):
+        self.assertIn(gas.TABLE_HEAD + "\n" + gas.TABLE_SEPARATOR + "\n", self.generated())
+
+    def test_a_glued_hand_written_pipe_line_is_kept(self):
+        tail = "| note: glued to the table |\n\n## X\n"
+        md = self.generated() + tail
+        self.assertEqual(gas.hand_written(md), tail)
+        self.assertEqual(gas.parse_table(md), [("p::a", 100, 110)])
+
+    def test_a_glued_line_shaped_like_a_row_is_a_row(self):
+        md = self.generated() + "| `p::b` | 1 | 2 | d | c |\n"
+        self.assertEqual(gas.hand_written(md), "")
+        self.assertEqual(gas.parse_table(md), [("p::a", 100, 110), ("p::b", 1, 2)])
+
+    def test_check_reads_only_the_generated_table(self):
+        tail = "\n## X\n\n| Name | a | b |\n|---|---|---|\n| `q::z` | 1 | 2 |\n"
+        self.assertEqual(gas.parse_table(self.generated() + tail), [("p::a", 100, 110)])
+
+    def test_no_generated_table_has_no_rows(self):
+        self.assertEqual(gas.parse_table("# Gas\n\n| `q::z` | 1 | 2 |\n"), [])
+
+
+class WriteWiring(unittest.TestCase):
+    TESTS = {"p::a": (110, False)}
+
+    def rewrite(self, existing):
+        return gas.rewrite(existing, "p", {"p::a": 101}, self.TESTS, "2026-10-03", "def5678")
+
+    def test_render_plus_kept_tail(self):
+        tail = "\n## Notes\n\n| Test | y |\n|---|---|\n| `q::z` | 1 | 2 |\n"
+        old = gas.render("p", {"p::a": 100}, self.TESTS, "2026-10-02", "abc1234") + tail
+        new = self.rewrite(old)
+        self.assertEqual(
+            new, gas.render("p", {"p::a": 101}, self.TESTS, "2026-10-03", "def5678") + tail
+        )
+
+    def test_missing_or_empty_file_gets_a_fresh_table(self):
+        fresh = gas.render("p", {"p::a": 101}, self.TESTS, "2026-10-03", "def5678")
+        self.assertEqual(self.rewrite(""), fresh)
+        self.assertEqual(self.rewrite("\n \n"), fresh)
+
+    def test_refuses_a_file_without_a_generated_table(self):
+        with self.assertRaises(ValueError):
+            self.rewrite("# Gas\n\nhand-written only\n")
+
+    def test_main_refuses_and_writes_nothing(self):
+        import contextlib
+        import io
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            package = pathlib.Path(tmp)
+            (package / "Scarb.toml").write_text('name = "p"\n')
+            (package / "GAS.md").write_text("# Gas\n\nhand-written only\n")
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                code = gas.main([str(package), "--write"])
+            self.assertEqual(code, 1)
+            self.assertIn("GAS.md", err.getvalue())
+            self.assertEqual((package / "GAS.md").read_text(), "# Gas\n\nhand-written only\n")
+
+
 class SingleThreaded(unittest.TestCase):
     def test_pins_one_thread_when_unset(self):
         self.assertEqual(gas.snforge_env({"PATH": "/bin"})["RAYON_NUM_THREADS"], "1")
