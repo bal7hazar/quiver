@@ -101,7 +101,7 @@ mod tests {
     use super::HeldTrait;
 
     #[test]
-    #[available_gas(l2_gas: 40782)]
+    #[available_gas(l2_gas: 32561)]
     fn held_position_finds_the_quest() {
         let list = array![held(5, 0), held(9, 3), held(2, 3)].span();
         assert!(HeldTrait::position(list, 5) == Some(0));
@@ -111,7 +111,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 49739)]
+    #[available_gas(l2_gas: 41517)]
     fn held_contains_needs_the_same_interval() {
         let list = array![held(5, 0), held(9, 3)].span();
         assert!(HeldTrait::contains(list, held(9, 3)));
@@ -124,7 +124,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 135629)]
+    #[available_gas(l2_gas: 127407)]
     fn held_remove_keeps_the_order() {
         let list = array![held(1, 0), held(2, 0), held(3, 0), held(4, 0)].span();
         assert!(HeldTrait::remove(list, 0) == array![held(2, 0), held(3, 0), held(4, 0)].span());
@@ -138,19 +138,19 @@ mod tests {
     // held list, at its capacity
 
     #[test]
-    #[available_gas(l2_gas: 40499)]
+    #[available_gas(l2_gas: 32277)]
     fn bench_held_position_absent() {
         assert!(HeldTrait::position(eight_held(), opaque(99)) == None);
     }
 
     #[test]
-    #[available_gas(l2_gas: 43334)]
+    #[available_gas(l2_gas: 35112)]
     fn bench_held_contains_absent() {
         assert!(!HeldTrait::contains(eight_held(), opaque(held(8, 31))));
     }
 
     #[test]
-    #[available_gas(l2_gas: 48720)]
+    #[available_gas(l2_gas: 40499)]
     fn bench_held_remove_first() {
         assert!(HeldTrait::remove(eight_held(), opaque(0)).len() == 7);
     }

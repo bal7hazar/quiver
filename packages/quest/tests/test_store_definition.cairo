@@ -112,7 +112,7 @@ fn store_get_definition_reads_the_model_back() {
 // Benchmarks: a write of a new definition, the worst (3 tasks, 7 conditions: A, B, C created)
 
 #[test]
-#[available_gas(l2_gas: 357851)]
+#[available_gas(l2_gas: 349419)]
 fn baseline_definition() {
     deploy().noop(1, worst_schedule(), worst_tasks(), worst_conditions());
 }

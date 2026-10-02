@@ -324,7 +324,7 @@ fn bench_hand_set_model_definition_silent_worst() {
 }
 
 #[test]
-#[available_gas(l2_gas: 357851)]
+#[available_gas(l2_gas: 349419)]
 fn baseline_model_definition() {
     all().noop(1, worst_schedule(), worst_tasks(), worst_conditions());
 }
@@ -345,7 +345,7 @@ fn bench_store_set_model_definition_worst() {
 // definition: 3 tasks, 7 conditions, A, B, C created
 
 #[test]
-#[available_gas(l2_gas: 357851)]
+#[available_gas(l2_gas: 349419)]
 fn baseline_silent_definition() {
     none().noop(1, worst_schedule(), worst_tasks(), worst_conditions());
 }
@@ -366,7 +366,7 @@ fn bench_store_set_definition_silent_worst() {
 // without and with its `emit`
 
 #[test]
-#[available_gas(l2_gas: 293003)]
+#[available_gas(l2_gas: 284571)]
 fn baseline_silent_reporter() {
     none().noop_reporter(reporter(), true);
 }
@@ -384,7 +384,7 @@ fn bench_store_set_reporter_silent() {
 }
 
 #[test]
-#[available_gas(l2_gas: 293003)]
+#[available_gas(l2_gas: 284571)]
 fn baseline_reporter() {
     all().noop_reporter(reporter(), true);
 }

@@ -192,7 +192,7 @@ mod tests {
     use super::ProgressSlot;
 
     #[test]
-    #[available_gas(l2_gas: 48038)]
+    #[available_gas(l2_gas: 40047)]
     fn quest_count_saturates_at_total() {
         let b = one_task(1, 10);
         let batch = array![entry(1, 7)].span();
@@ -209,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 36341)]
+    #[available_gas(l2_gas: 28245)]
     fn quest_count_max_value() {
         let b = one_task(1, U32_MAX);
         let batch = array![entry(1, U32_MAX)].span();
@@ -222,7 +222,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 23268)]
+    #[available_gas(l2_gas: 15173)]
     fn quest_count_max_value_below_total() {
         // c + count overflows u32 but stays below no total: saturates at the total, never panics
         let b = one_task(1, U32_MAX);
@@ -234,7 +234,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 31490)]
+    #[available_gas(l2_gas: 23268)]
     fn quest_one_off_completes_once() {
         let b = one_task(1, 1);
         let batch = array![entry(1, 1)].span();
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 52513)]
+    #[available_gas(l2_gas: 44628)]
     fn quest_batch_two_tasks_one_quest_one_write_logic() {
         // Both tasks of the quest are applied by one call: one new state, one completion
         let b = tasks(task(1, 5), task(2, 5), task(0, 0));
@@ -257,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 61771)]
+    #[available_gas(l2_gas: 53885)]
     fn quest_batch_duplicate_entries_merged_progress() {
         let b = one_task(1, 10);
         let batch = BatchTrait::merge(array![entry(1, 4), entry(1, 4)].span());
@@ -267,7 +267,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 66612)]
+    #[available_gas(l2_gas: 58632)]
     fn progress_add_three_tasks_partial_then_complete() {
         let b = tasks(task(1, 2), task(2, 3), task(3, 4));
         let (p, changed, completed) = add_counts(
@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 49182)]
+    #[available_gas(l2_gas: 41591)]
     fn progress_add_ignores_other_tasks() {
         let b = tasks(task(1, 2), task(2, 3), task(0, 0));
         let start = progress(1, 1, 0, false, false);
@@ -293,7 +293,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 25526)]
+    #[available_gas(l2_gas: 17535)]
     fn progress_add_touches_only_task_count_slots() {
         // A slot beyond task_count is left as it is, even if its task id is batched
         let b = tasks(task(1, 2), task(2, 3), task(3, 4));
@@ -305,7 +305,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 17630)]
+    #[available_gas(l2_gas: 9534)]
     fn progress_add_keeps_claimed() {
         let b = one_task(1, 2);
         let (p, _, _) = add_counts(
@@ -372,7 +372,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 9738267)]
+    #[available_gas(l2_gas: 9730046)]
     fn progress_add_matches_the_plain_formula() {
         let b = tasks(task(1, 10), task(2, 20), task(3, U32_MAX));
         let batches = array![
@@ -398,7 +398,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 16737)]
+    #[available_gas(l2_gas: 8516)]
     fn progress_is_complete_per_task_count() {
         let b = tasks(task(1, 2), task(2, 3), task(3, 4));
         assert!(!is_complete(@no_progress(), @b, 1));
@@ -413,7 +413,7 @@ mod tests {
     // progress
 
     #[test]
-    #[available_gas(l2_gas: 163790)]
+    #[available_gas(l2_gas: 155568)]
     fn bench_progress_add_three_tasks_sixteen_entries() {
         // tasks 14, 15, 16 are the last entries of the batch; the call completes the quest
         let batch = opaque(distinct_entries(1, MAX_ENTRIES, 100));
@@ -424,14 +424,14 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 22554)]
+    #[available_gas(l2_gas: 14333)]
     fn bench_progress_is_complete_three_tasks() {
         let p = opaque(progress(100, 100, 100, true, false));
         assert!(is_complete(@p, @three_tasks(), opaque(3)));
     }
 
     #[test]
-    #[available_gas(l2_gas: 30587)]
+    #[available_gas(l2_gas: 22365)]
     fn bench_pack_unpack_progress() {
         let p: ProgressSlot = opaque(progress(U32_MAX, U32_MAX, U32_MAX, true, true));
         let packed = StorePacking::<ProgressSlot, felt252>::pack(p);
@@ -441,7 +441,7 @@ mod tests {
     // ProgressSlot
 
     #[test]
-    #[available_gas(l2_gas: 12504681)]
+    #[available_gas(l2_gas: 12496460)]
     fn quest_packing_round_trip_progress() {
         check_progress(progress(0, 0, 0, false, false));
         check_progress(progress(U32_MAX, U32_MAX, U32_MAX, true, true));
@@ -456,20 +456,20 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 373884)]
+    #[available_gas(l2_gas: 365789)]
     fn quest_unpacking_rejects_progress_bit_98() {
         StorePacking::<ProgressSlot, felt252>::unpack(to_felt(pow2(98)));
     }
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 360234)]
+    #[available_gas(l2_gas: 352139)]
     fn quest_unpacking_rejects_progress_bit_128() {
         StorePacking::<ProgressSlot, felt252>::unpack(to_felt(pow2(128)));
     }
 
     #[test]
-    #[available_gas(l2_gas: 724049)]
+    #[available_gas(l2_gas: 715827)]
     fn quest_unpacking_progress_reads_bit_97_alone() {
         let p = StorePacking::<ProgressSlot, felt252>::unpack(to_felt(pow2(97)));
         assert!(p == progress(0, 0, 0, false, true));

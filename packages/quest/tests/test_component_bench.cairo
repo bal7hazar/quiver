@@ -535,7 +535,8 @@ fn baseline_accept_worst_completed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 42306964)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 44432888)]
 fn bench_accept_worst_completed() {
     let bench = accept_worst_setup(false);
     bench.quest.accept(PLAYER, D);
@@ -579,7 +580,8 @@ fn baseline_accept_mixed() {
 }
 
 #[test]
-#[available_gas(l2_gas: 37002885)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 38853289)]
 fn bench_accept_mixed() {
     let bench = accept_mixed_setup();
     bench.quest.accept(PLAYER, D);
@@ -918,7 +920,8 @@ fn baseline_retire_worst() {
 }
 
 #[test]
-#[available_gas(l2_gas: 27373335)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 28778539)]
 fn bench_retire_worst() {
     let bench = retire_worst_setup();
     bench.quest.retire(D);

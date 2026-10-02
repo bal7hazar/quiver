@@ -78,7 +78,7 @@ fn track_none_emits_nothing() {
 // Benchmarks: created slots, `TrackNone` against the write with no event code
 
 #[test]
-#[available_gas(l2_gas: 294273)]
+#[available_gas(l2_gas: 285842)]
 fn baseline_track_none() {
     none().noop(ID, A, B);
 }
@@ -104,7 +104,7 @@ fn bench_track_none_by_emitter() {
 // Benchmarks: created slots, `TrackAll` against the write then `emit`
 
 #[test]
-#[available_gas(l2_gas: 294273)]
+#[available_gas(l2_gas: 285842)]
 fn baseline_track_all() {
     all().noop(ID, A, B);
 }

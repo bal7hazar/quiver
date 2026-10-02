@@ -174,13 +174,14 @@ fn deploy() -> IProbeDispatcher {
 }
 
 #[test]
-#[available_gas(l2_gas: 476406)]
+#[available_gas(l2_gas: 467975)]
 fn probe_baseline() {
     deploy().noop(N);
 }
 
 #[test]
-#[available_gas(l2_gas: 3647931)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 4269500)]
 fn probe_read_100() {
     deploy().read_n(N);
 }
@@ -192,31 +193,31 @@ fn probe_write_100() {
 }
 
 #[test]
-#[available_gas(l2_gas: 5573316)]
+#[available_gas(l2_gas: 5564885)]
 fn probe_emit_100() {
     deploy().emit_n(N);
 }
 
 #[test]
-#[available_gas(l2_gas: 2432840)]
+#[available_gas(l2_gas: 2424408)]
 fn probe_unpack_definition_100() {
     deploy().unpack_definition_n(N);
 }
 
 #[test]
-#[available_gas(l2_gas: 1802000)]
+#[available_gas(l2_gas: 1793568)]
 fn probe_unpack_tasks_100() {
     deploy().unpack_tasks_n(N);
 }
 
 #[test]
-#[available_gas(l2_gas: 1219250)]
+#[available_gas(l2_gas: 1210818)]
 fn probe_unpack_record_100() {
     deploy().unpack_record_n(N);
 }
 
 #[test]
-#[available_gas(l2_gas: 2817980)]
+#[available_gas(l2_gas: 2809548)]
 fn probe_unpack_held_100() {
     deploy().unpack_held_n(N);
 }
@@ -239,7 +240,7 @@ fn deploy_at() -> (ContractAddress, IProbeDispatcher) {
 }
 
 #[test]
-#[available_gas(l2_gas: 44749100)]
+#[available_gas(l2_gas: 44740668)]
 fn probe_store_baseline() {
     let (address, probe) = deploy_at();
     store_n(address, N);
@@ -257,7 +258,8 @@ fn probe_store_then_change_100() {
 }
 
 #[test]
-#[available_gas(l2_gas: 54962282)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 58103640)]
 fn probe_write_then_overwrite_100() {
     let probe = deploy();
     probe.write_n(N);
@@ -273,7 +275,8 @@ fn probe_write_twice_in_one_call_baseline() {
 }
 
 #[test]
-#[available_gas(l2_gas: 54962282)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 58103640)]
 fn probe_write_then_change_100() {
     let probe = deploy();
     probe.write_n(N);
@@ -309,7 +312,8 @@ fn probe_transition_zero_to_value() {
 
 /// 0 → 0: a write that changes nothing.
 #[test]
-#[available_gas(l2_gas: 6757622)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 8323980)]
 fn probe_transition_zero_unchanged() {
     let probe = deploy();
     probe.noop(N);
@@ -318,7 +322,8 @@ fn probe_transition_zero_unchanged() {
 
 /// 0 → 1 → 0 in one call: the cell is back to its initial value; no allocation.
 #[test]
-#[available_gas(l2_gas: 12657257)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 15798615)]
 fn probe_transition_zero_set_then_restored() {
     let probe = deploy();
     probe.noop(N);
@@ -327,7 +332,8 @@ fn probe_transition_zero_set_then_restored() {
 
 /// 1 → 2 (after the setup's 0 → 1): an update of a non-zero cell.
 #[test]
-#[available_gas(l2_gas: 54963752)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 58105110)]
 fn probe_transition_value_to_other() {
     let probe = deploy();
     probe.set_n(N, 1);
@@ -336,7 +342,8 @@ fn probe_transition_value_to_other() {
 
 /// 1 → 1: an unchanged non-zero cell.
 #[test]
-#[available_gas(l2_gas: 54963752)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 58105110)]
 fn probe_transition_value_unchanged() {
     let probe = deploy();
     probe.set_n(N, 1);
@@ -345,7 +352,8 @@ fn probe_transition_value_unchanged() {
 
 /// 1 → 2 → 1 in one call: changed, then restored to its value at the start of the call.
 #[test]
-#[available_gas(l2_gas: 60863387)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 65579745)]
 fn probe_transition_value_changed_then_restored() {
     let probe = deploy();
     probe.set_n(N, 1);
@@ -355,7 +363,8 @@ fn probe_transition_value_changed_then_restored() {
 /// 1 → 0: a clear. Within one test it also undoes the setup's allocation, since the final diff
 /// no longer has the cell; the difference with the baseline is the clear minus the allocation.
 #[test]
-#[available_gas(l2_gas: 12753752)]
+// gas: raised, D-180 Scarb 2.20.1
+#[available_gas(l2_gas: 15895110)]
 fn probe_transition_value_to_zero() {
     let probe = deploy();
     probe.set_n(N, 1);
@@ -365,7 +374,7 @@ fn probe_transition_value_to_zero() {
 /// The baseline of the one-call-then-write tests above: deploy, then two calls that write
 /// nothing.
 #[test]
-#[available_gas(l2_gas: 761492)]
+#[available_gas(l2_gas: 752850)]
 fn probe_transition_baseline_empty() {
     let probe = deploy();
     probe.noop(N);

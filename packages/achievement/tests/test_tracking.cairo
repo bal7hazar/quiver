@@ -41,7 +41,7 @@ fn three_tasks() -> Span<AchievementTask> {
 // `TrackNone`: the store against the write with no event code
 
 #[test]
-#[available_gas(l2_gas: 307398)]
+#[available_gas(l2_gas: 298967)]
 fn baseline_track_none_one_task() {
     none().noop(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
@@ -59,7 +59,7 @@ fn bench_track_none_definition_one_task_hand() {
 }
 
 #[test]
-#[available_gas(l2_gas: 319620)]
+#[available_gas(l2_gas: 311189)]
 fn baseline_track_none_three_tasks() {
     none().noop(ID, window(1, 2), three_tasks(), POINTS);
 }
@@ -77,7 +77,7 @@ fn bench_track_none_definition_three_tasks_hand() {
 }
 
 #[test]
-#[available_gas(l2_gas: 293003)]
+#[available_gas(l2_gas: 284571)]
 fn baseline_track_none_reporter() {
     none().noop_reporter(reporter(), true);
 }
@@ -97,7 +97,7 @@ fn bench_track_none_reporter_hand() {
 // `TrackAll`: the store against the write then `emit`
 
 #[test]
-#[available_gas(l2_gas: 307398)]
+#[available_gas(l2_gas: 298967)]
 fn baseline_track_all_one_task() {
     all().noop(ID, window(1, 2), one(9, 0xffffffff), POINTS);
 }
@@ -115,7 +115,7 @@ fn bench_track_all_definition_one_task_hand() {
 }
 
 #[test]
-#[available_gas(l2_gas: 319620)]
+#[available_gas(l2_gas: 311189)]
 fn baseline_track_all_three_tasks() {
     all().noop(ID, window(1, 2), three_tasks(), POINTS);
 }
@@ -133,7 +133,7 @@ fn bench_track_all_definition_three_tasks_hand() {
 }
 
 #[test]
-#[available_gas(l2_gas: 293003)]
+#[available_gas(l2_gas: 284571)]
 fn baseline_track_all_reporter() {
     all().noop_reporter(reporter(), true);
 }

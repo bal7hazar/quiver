@@ -314,7 +314,7 @@ mod tests {
     // The constructor and the slots
 
     #[test]
-    #[available_gas(l2_gas: 24003)]
+    #[available_gas(l2_gas: 16727)]
     fn definition_new_one_task_inline() {
         let (definition, extra) = definition_new(5, window(100, 200), one(7, 10));
         assert!(
@@ -331,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 40562)]
+    #[available_gas(l2_gas: 32340)]
     fn definition_new_three_tasks() {
         let tasks = array![task(1, 5), task(2, 6), task(3, 7)].span();
         let (definition, extra) = definition_new(5, always(), tasks);
@@ -342,7 +342,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 45623)]
+    #[available_gas(l2_gas: 38241)]
     fn tasks_span_has_task_count_entries() {
         let (d1, e1) = definition_new(1, always(), one(4, 1));
         assert!(d1.tasks(@e1) == one(4, 1));
@@ -353,7 +353,7 @@ mod tests {
 
     /// The model's window decides: `start <= time` and (`end == 0` or `time < end`) (fix loop 1).
     #[test]
-    #[available_gas(l2_gas: 26922)]
+    #[available_gas(l2_gas: 18701)]
     fn definition_is_active_inside_and_outside_its_window() {
         let definition = DefinitionTrait::new(5, window(100, 200), one(7, 10), 25);
         assert!(!definition.is_active(99));
@@ -367,7 +367,7 @@ mod tests {
 
     /// `points` is the model's and A's (ARC-07b); the model comes back from its slots.
     #[test]
-    #[available_gas(l2_gas: 55115)]
+    #[available_gas(l2_gas: 46893)]
     fn definition_points_stored_and_read_back() {
         let tasks = array![task(1, 5), task(2, 6)].span();
         let definition = DefinitionTrait::new(9, window(3, 4), tasks, U16_MAX);
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid id')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn achievement_define_rejects_id_zero() {
         definition_new(0, always(), one(7, 1));
     }
@@ -390,14 +390,14 @@ mod tests {
     /// D-11: `end == start` is empty, refused.
     #[test]
     #[should_panic(expected: 'Achievement: invalid window')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn definition_new_rejects_empty_window() {
         definition_new(5, window(100, 100), one(7, 1));
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid window')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn definition_new_rejects_end_before_start() {
         definition_new(5, window(100, 99), one(7, 1));
     }
@@ -405,56 +405,56 @@ mod tests {
     /// The id is checked before the window, the window before the tasks.
     #[test]
     #[should_panic(expected: 'Achievement: invalid id')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn definition_new_checks_id_first() {
         definition_new(0, window(100, 100), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid window')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn definition_new_checks_window_before_tasks() {
         definition_new(5, window(100, 100), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid tasks')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn definition_new_rejects_no_task() {
         definition_new(5, always(), array![].span());
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid tasks')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn definition_new_rejects_four_tasks() {
         definition_new(5, always(), array![task(1, 1), task(2, 1), task(3, 1), task(4, 1)].span());
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid tasks')]
-    #[available_gas(l2_gas: 17241)]
+    #[available_gas(l2_gas: 9146)]
     fn definition_new_rejects_task_id_zero() {
         definition_new(5, always(), array![task(1, 1), task(0, 1)].span());
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid tasks')]
-    #[available_gas(l2_gas: 18396)]
+    #[available_gas(l2_gas: 10301)]
     fn definition_new_rejects_total_zero() {
         definition_new(5, always(), array![task(1, 1), task(2, 1), task(3, 0)].span());
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid tasks')]
-    #[available_gas(l2_gas: 21126)]
+    #[available_gas(l2_gas: 13031)]
     fn definition_new_rejects_repeated_task() {
         definition_new(5, always(), array![task(1, 1), task(2, 1), task(1, 2)].span());
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid tasks')]
-    #[available_gas(l2_gas: 19971)]
+    #[available_gas(l2_gas: 11981)]
     fn definition_new_rejects_repeated_second_task() {
         definition_new(5, always(), array![task(2, 1), task(2, 3)].span());
     }
@@ -540,7 +540,7 @@ mod tests {
     // gas: raised, the `u256` oracle packs `points` too (ARC-07b); the packing itself is
     // `bench_pack_unpack_definition`
     #[test]
-    #[available_gas(l2_gas: 9068105)]
+    #[available_gas(l2_gas: 9059883)]
     fn achievement_packing_round_trip_definition() {
         round_trip_head(head(0, 0, 0, false, false, 0, 0, 0));
         round_trip_head(head(U64_MAX, U64_MAX, 3, true, true, U32_MAX, U32_MAX, U16_MAX));
@@ -550,7 +550,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 3796905)]
+    #[available_gas(l2_gas: 3788684)]
     fn achievement_packing_round_trip_extra_tasks() {
         round_trip_tasks(TasksSlot { t1: task(0, 0), t2: task(0, 0) });
         round_trip_tasks(TasksSlot { t1: task(U32_MAX, U32_MAX), t2: task(U32_MAX, U32_MAX) });
@@ -560,7 +560,7 @@ mod tests {
 
     /// `defined` is bit 130 and `retired` bit 131, alone.
     #[test]
-    #[available_gas(l2_gas: 735956)]
+    #[available_gas(l2_gas: 727734)]
     fn achievement_packing_presence_bits_at_their_positions() {
         let defined: felt252 = StorePacking::pack(head(0, 0, 0, true, false, 0, 0, 0));
         assert!(defined == to_felt(pow2(130)));
@@ -570,7 +570,7 @@ mod tests {
 
     /// `points` is bits [196, 212), alone (ARC-07b).
     #[test]
-    #[available_gas(l2_gas: 916808)]
+    #[available_gas(l2_gas: 908586)]
     fn achievement_packing_points_at_their_position() {
         let one_point: felt252 = StorePacking::pack(head(0, 0, 0, false, false, 0, 0, 1));
         assert!(one_point == to_felt(pow2(196)));
@@ -593,7 +593,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 32634)]
+    #[available_gas(l2_gas: 24696)]
     fn achievement_empty_slot_unpacks_undefined() {
         let d: HeadSlot = StorePacking::unpack(0);
         assert!(!d.defined);
@@ -604,7 +604,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn achievement_packing_rejects_task_count_above_max() {
         let _: felt252 = StorePacking::pack(head(0, 0, 4, true, false, 1, 1, 0));
     }
@@ -624,14 +624,14 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 30933)]
+    #[available_gas(l2_gas: 23016)]
     fn achievement_unpacking_rejects_bit_251() {
         let _: HeadSlot = StorePacking::unpack(TWO_POW_251);
     }
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 358470)]
+    #[available_gas(l2_gas: 350375)]
     fn achievement_unpacking_extra_rejects_bit_128() {
         let _: TasksSlot = StorePacking::unpack(to_felt(pow2(128)));
     }
@@ -639,13 +639,13 @@ mod tests {
     // Benchmarks, on the worst case of each (docs/CAIRO.md §2)
 
     #[test]
-    #[available_gas(l2_gas: 21126)]
+    #[available_gas(l2_gas: 13031)]
     fn bench_definition_new_three_tasks() {
         definition_new(1, always(), array![task(1, 1), task(2, 1), task(3, 1)].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 35826)]
+    #[available_gas(l2_gas: 28308)]
     fn bench_pack_unpack_definition() {
         let d = head(U64_MAX, U64_MAX, 3, true, true, U32_MAX, U32_MAX, U16_MAX);
         let back: HeadSlot = StorePacking::unpack(StorePacking::pack(d));
@@ -653,7 +653,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 26177)]
+    #[available_gas(l2_gas: 17955)]
     fn bench_pack_unpack_extra_tasks() {
         let e = TasksSlot { t1: task(U32_MAX, U32_MAX), t2: task(U32_MAX, U32_MAX) };
         let back: TasksSlot = StorePacking::unpack(StorePacking::pack(e));

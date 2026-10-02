@@ -100,7 +100,7 @@ fn store_writes_what_the_hand_writes() {
 // Benchmarks: created slots
 
 #[test]
-#[available_gas(l2_gas: 294273)]
+#[available_gas(l2_gas: 285842)]
 fn baseline_models() {
     deploy().noop(ID, A, B);
 }
@@ -132,7 +132,7 @@ fn bench_store_set_tracked_created() {
 // Benchmarks: overwritten slots
 
 #[test]
-#[available_gas(l2_gas: 1170855)]
+#[available_gas(l2_gas: 1162550)]
 fn baseline_models_existing() {
     deploy_existing().noop(ID, A, B);
 }
@@ -164,21 +164,21 @@ fn bench_store_set_tracked_overwritten() {
 // Benchmarks: reads, against a baseline of the same shape (an id in, a value out, asserted)
 
 #[test]
-#[available_gas(l2_gas: 1174184)]
+#[available_gas(l2_gas: 1165752)]
 fn baseline_models_get() {
     let (a, _) = deploy_existing().noop_get(ID);
     assert!(a == 1);
 }
 
 #[test]
-#[available_gas(l2_gas: 1205075)]
+#[available_gas(l2_gas: 1202943)]
 fn bench_hand_get() {
     let (a, _) = deploy_existing().hand_get_plain(ID);
     assert!(a == 1);
 }
 
 #[test]
-#[available_gas(l2_gas: 1205075)]
+#[available_gas(l2_gas: 1202943)]
 fn bench_store_get() {
     let (a, _) = deploy_existing().store_get_plain(ID);
     assert!(a == 1);
@@ -188,7 +188,7 @@ fn bench_store_get() {
 // Against `bench_store_set_untracked_created` - `baseline_models`.
 
 #[test]
-#[available_gas(l2_gas: 295575)]
+#[available_gas(l2_gas: 287144)]
 fn baseline_models_wide() {
     deploy().noop_wide(ID, A, B, 0x1234);
 }

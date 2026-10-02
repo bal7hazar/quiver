@@ -150,7 +150,7 @@ mod tests {
     use super::HeldSlot;
 
     #[test]
-    #[available_gas(l2_gas: 21252)]
+    #[available_gas(l2_gas: 13031)]
     fn held_slot_pairs_entries_and_pads_with_empty() {
         let list = array![held(1, 10), held(2, 20), held(3, 30)].span();
         assert!(held_slot_of(list, 0, 7, true) == slot0(held(1, 10), held(2, 20), 7));
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 31458)]
+    #[available_gas(l2_gas: 24014)]
     fn bench_held_slot_last() {
         assert!(
             held_slot_of(
@@ -171,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 48017)]
+    #[available_gas(l2_gas: 39795)]
     fn bench_pack_unpack_held_slot() {
         // every field at its maximum: interval ids 2^48 - 1, numbers and the counter 2^30 - 1
         let iv = HELD_INTERVAL_LIMIT - 1;
@@ -191,7 +191,7 @@ mod tests {
     // HeldSlot
 
     #[test]
-    #[available_gas(l2_gas: 42076577)]
+    #[available_gas(l2_gas: 42068355)]
     fn quest_packing_round_trip_held_slot() {
         let none = held(0, 0);
         // the widths of fix loop 4: interval ids 48 bits, acceptance numbers and the counter 30
@@ -227,7 +227,7 @@ mod tests {
     /// Fix loop 4: an interval id or a number wider than its field is refused, not truncated.
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_packing_rejects_held_interval_2_48() {
         StorePacking::<
             HeldSlot, felt252,
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_packing_rejects_held_acceptance_2_30() {
         StorePacking::<
             HeldSlot, felt252,
@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: field out of range')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn quest_packing_rejects_held_counter_2_30() {
         StorePacking::<
             HeldSlot, felt252,
@@ -254,7 +254,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Packing: reserved bits set')]
-    #[available_gas(l2_gas: 36803)]
+    #[available_gas(l2_gas: 28707)]
     fn quest_unpacking_rejects_held_bit_251() {
         // bit 250 is `kept`; bit 251, the only one above the layout, is reserved
         StorePacking::<
@@ -263,7 +263,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 450114)]
+    #[available_gas(l2_gas: 441893)]
     fn quest_unpacking_reads_held_bit_250_as_kept() {
         let h = StorePacking::<HeldSlot, felt252>::unpack(to_felt(pow2(250)));
         assert!(h == held_slot_k(held(0, 0), held(0, 0), 0, true));

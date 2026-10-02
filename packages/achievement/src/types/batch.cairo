@@ -187,14 +187,14 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 54147)]
+    #[available_gas(l2_gas: 46030)]
     fn batch_merge_distinct_keeps_order_and_drops_zeros() {
         let entries = array![entry(3, 1), entry(1, 0), entry(2, 5)].span();
         assert!(entries.merge() == array![entry(3, 1), entry(2, 5)].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 178804)]
+    #[available_gas(l2_gas: 170687)]
     fn achievement_batch_merges_duplicates() {
         let entries = array![entry(1, 1), entry(1, 2), entry(2, 0), entry(3, 1)].span();
         let merged = entries.merge();
@@ -203,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 84121)]
+    #[available_gas(l2_gas: 76005)]
     fn batch_merge_saturates() {
         let entries = array![entry(1, U32_MAX), entry(2, 1), entry(1, 5)].span();
         assert!(entries.merge() == array![entry(1, U32_MAX), entry(2, 1)].span());
@@ -211,7 +211,7 @@ mod tests {
 
     /// Ids equal modulo 128 but distinct are not merged.
     #[test]
-    #[available_gas(l2_gas: 1912600)]
+    #[available_gas(l2_gas: 1904483)]
     fn batch_merge_modulo_collision_not_merged() {
         let entries = fifteen_then(129);
         let merged = entries.merge();
@@ -220,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 1844497)]
+    #[available_gas(l2_gas: 1836380)]
     fn batch_merge_late_duplicate() {
         let entries = fifteen_then(15);
         let merged = entries.merge();
@@ -231,14 +231,14 @@ mod tests {
 
     /// A duplicate whose counts sum to zero is dropped, in the plain merge too.
     #[test]
-    #[available_gas(l2_gas: 83533)]
+    #[available_gas(l2_gas: 75417)]
     fn batch_merge_zero_sum_duplicate_dropped() {
         let entries = array![entry(1, 0), entry(2, 1), entry(1, 0)].span();
         assert!(entries.merge() == array![entry(2, 1)].span());
     }
 
     #[test]
-    #[available_gas(l2_gas: 239837)]
+    #[available_gas(l2_gas: 231721)]
     fn batch_merge_bound_accepted() {
         let entries = distinct_entries(1, MAX_ENTRIES, 1);
         assert!(entries.merge() == entries);
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Achievement: too many entries')]
-    #[available_gas(l2_gas: 77973)]
+    #[available_gas(l2_gas: 69857)]
     fn batch_merge_above_bound_reverts() {
         distinct_entries(1, MAX_ENTRIES + 1, 1).merge();
     }
@@ -256,7 +256,7 @@ mod tests {
     /// The bound is checked before merging: 17 entries of one task revert.
     #[test]
     #[should_panic(expected: 'Achievement: too many entries')]
-    #[available_gas(l2_gas: 65247)]
+    #[available_gas(l2_gas: 57131)]
     fn batch_merge_duplicates_count_toward_bound() {
         let mut entries = array![];
         let mut i = 0;
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Achievement: invalid task')]
-    #[available_gas(l2_gas: 40375)]
+    #[available_gas(l2_gas: 32259)]
     fn batch_merge_rejects_task_zero() {
         array![entry(1, 1), entry(0, 0)].span().merge();
     }
@@ -277,13 +277,13 @@ mod tests {
     /// Task 0 is refused in the plain merge too (after a collision).
     #[test]
     #[should_panic(expected: 'Achievement: invalid task')]
-    #[available_gas(l2_gas: 65320)]
+    #[available_gas(l2_gas: 57203)]
     fn batch_merge_rejects_task_zero_after_collision() {
         array![entry(1, 1), entry(1, 1), entry(0, 1)].span().merge();
     }
 
     #[test]
-    #[available_gas(l2_gas: 27605)]
+    #[available_gas(l2_gas: 19383)]
     fn batch_count_of_first_entry_or_zero() {
         let batch = array![entry(4, 2), entry(9, 3)].span();
         assert!(batch.count_of(9) == 3);
@@ -293,25 +293,25 @@ mod tests {
     // Benchmarks
 
     #[test]
-    #[available_gas(l2_gas: 52490)]
+    #[available_gas(l2_gas: 44394)]
     fn bench_baseline_sixteen_entries() {
         fifteen_then(129);
     }
 
     #[test]
-    #[available_gas(l2_gas: 789100)]
+    #[available_gas(l2_gas: 780983)]
     fn bench_batch_merge_late_modulo_collision() {
         fifteen_then(129).merge();
     }
 
     #[test]
-    #[available_gas(l2_gas: 784994)]
+    #[available_gas(l2_gas: 776878)]
     fn bench_batch_merge_late_duplicate() {
         fifteen_then(15).merge();
     }
 
     #[test]
-    #[available_gas(l2_gas: 189416)]
+    #[available_gas(l2_gas: 181300)]
     fn bench_batch_merge_sixteen_distinct() {
         distinct_entries(1, 16, 1).merge();
     }

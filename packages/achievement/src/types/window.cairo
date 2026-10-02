@@ -56,7 +56,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 14406)]
+    #[available_gas(l2_gas: 6311)]
     fn window_validate_accepts_open_and_ordered_windows() {
         window(0, 0).assert_valid();
         window(100, 0).assert_valid();
@@ -67,13 +67,13 @@ mod tests {
     /// D-11: `end == start` is empty, refused.
     #[test]
     #[should_panic(expected: 'Achievement: invalid window')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn window_validate_rejects_empty_window() {
         window(100, 100).assert_valid();
     }
 
     #[test]
-    #[available_gas(l2_gas: 16422)]
+    #[available_gas(l2_gas: 8201)]
     fn window_is_active_bounds() {
         let w = window(100, 200);
         assert!(!w.is_active(99));

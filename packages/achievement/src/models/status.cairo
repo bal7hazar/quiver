@@ -96,7 +96,7 @@ mod tests {
 
     /// Retiring changes `retired` only: the definition's bits of A are written back unchanged.
     #[test]
-    #[available_gas(l2_gas: 28434)]
+    #[available_gas(l2_gas: 20633)]
     fn status_retire_keeps_the_definition_bits() {
         let head = head();
         let mut status = head.status(5);
@@ -109,14 +109,14 @@ mod tests {
 
     #[test]
     #[should_panic(expected: 'Achievement: does not exist')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn status_cannot_retire_undefined() {
         AchievementStatus { id: 5, defined: false, retired: false }.assert_can_retire();
     }
 
     #[test]
     #[should_panic(expected: 'Achievement: retired')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn status_cannot_retire_twice() {
         AchievementStatus { id: 5, defined: true, retired: true }.assert_can_retire();
     }
@@ -124,7 +124,7 @@ mod tests {
     /// Retired or not, a defined achievement cannot be defined again.
     #[test]
     #[should_panic(expected: 'Achievement: already defined')]
-    #[available_gas(l2_gas: 16296)]
+    #[available_gas(l2_gas: 8201)]
     fn status_defined_refuses_define() {
         AchievementStatus { id: 5, defined: true, retired: true }.assert_does_not_exist();
     }
