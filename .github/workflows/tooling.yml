@@ -18,7 +18,43 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # ARC-18: on a pull request, which jobs a changed path concerns (affected.py changes). Fail
+  # closed: when the base branch's copy of the script is missing, lacks the subcommand or fails,
+  # every output is true. Any other event: all true, with no git diff.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tooling: ${{ steps.paths.outputs.tooling }}
+      links: ${{ steps.paths.outputs.links }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          script=.github/ci/affected.py
+          all_true() { printf 'cairo=true\ntooling=true\nlinks=true\n' >> "$GITHUB_OUTPUT"; }
+          if [ "$EVENT" = pull_request ]; then
+            if git show "origin/$BASE:$script" > "$RUNNER_TEMP/affected.py" \
+              && python3 "$RUNNER_TEMP/affected.py" changes; then
+              echo "used the base branch's $script"
+            else
+              echo "the base branch has no $script with a changes command (or it failed): every job runs"
+              all_true
+            fi
+          else
+            all_true
+          fi
+
   scripts:
+    needs: changes
+    if: needs.changes.outputs.tooling == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -179,6 +215,8 @@ jobs:
           fi
 
   links:
+    needs: changes
+    if: needs.changes.outputs.links == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -186,3 +224,31 @@ jobs:
 
       - name: relative links of the Markdown files
         run: python3 .github/ci/check-links.py
+
+  # The stable name for a required check: it always runs.
+  tooling:
+    needs: [changes, scripts, links]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: every job that was needed succeeded, and no other ran
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          TOOLING: ${{ needs.changes.outputs.tooling }}
+          LINKS: ${{ needs.changes.outputs.links }}
+          SCRIPTS: ${{ needs.scripts.result }}
+          LINKS_RESULT: ${{ needs.links.result }}
+        run: |
+          set -euo pipefail
+          echo "changes=$CHANGES tooling=$TOOLING links=$LINKS scripts=$SCRIPTS links-job=$LINKS_RESULT"
+          [ "$CHANGES" = success ] || { echo "changes did not succeed" >&2; exit 1; }
+          expect() { # <needed output> <job result> <job>
+            case "$1" in
+              true) [ "$2" = success ] || { echo "$3 did not succeed" >&2; exit 1; } ;;
+              false) [ "$2" = skipped ] || { echo "unexpected $3 result" >&2; exit 1; } ;;
+              *) echo "unexpected changes output for $3" >&2; exit 1 ;;
+            esac
+          }
+          expect "$TOOLING" "$SCRIPTS" scripts
+          expect "$LINKS" "$LINKS_RESULT" links

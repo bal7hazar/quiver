@@ -61,13 +61,26 @@ and are skipped with one line when it is busy; the gas check runs on Linux only.
 
 ## 4. What the CI runs, and when
 
-`tooling.yml` checks the scripts and the links. `cairo.yml`:
+`tooling.yml` checks the scripts and the links (check to require: `tooling`). `cairo.yml`:
 
 | Event | Packages |
 |---|---|
 | Pull request | Those the change affects, and their dependents |
 | Push to `main`, daily schedule, manual run | All |
 | Tag `quiver_*-v*` | All, once: `release.yml` calls `cairo.yml`; the tag push does not trigger `cairo.yml` itself |
+
+On a pull request each test job runs only when a changed path concerns it (`affected.py changes`
+writes `cairo`, `tooling` and `links` to a `changes` job of each workflow; deleted and renamed files
+count). **Cairo** (`affected`, `package`): `packages/**` except a package's `README.md` and
+`CHANGELOG.md`, the root `Scarb.toml` and `Scarb.lock`, `.tool-versions`, `.github/ci/**`,
+`scripts/gas.py`, `scripts/test_gas.py`, `cairo.yml`, `release.yml`. **Tooling `scripts`**:
+`scripts/**`, `.githooks/**`, `.github/ci/**`, `.gitignore`, `tooling.yml`. **Tooling `links`**: any `*.md`,
+`check-links.py`, `tooling.yml`, and any deleted or renamed file. A docs-only pull request (Markdown,
+`docs/**`, `LICENSE`, package READMEs and changelogs) therefore runs no test: only
+`changes`, `links` when a Markdown file changed, and the two summary jobs, `cairo` and `tooling`,
+which always run and fail when a job that was needed did not succeed (or a job not needed ran). The
+`changes` job runs the base branch's copy of `affected.py` and fails closed: with no such script or
+subcommand on the base, every job runs. Every other event runs every job.
 
 On a pull request, `.github/ci/affected.py` lists the files changed since the merge base, with
 renames listed as a deletion and an addition (moving a file out of a package affects it). A file
