@@ -73,7 +73,16 @@ and the component's impls take a tracking choice: a consumer's code must be upda
 - Every entrypoint reads and writes the same slots, in the same order, with the same checks and
   events (under `TrackAll`) as 0.1.0. Slot A is read once per path, and the status is written as
   the whole of A, from the A that was read.
-- **Costs.** No worst call is raised: `progress_many` is 7 220 L2 gas cheaper at `MAX_HELD` = 4
+- **Built with Scarb 2.20.1** (Cairo 2.20.0, `snforge_std` 0.64.0; D-180, ARC-10). Behaviour, events
+  and layouts are unchanged. **Costs rise on this toolchain: a storage write costs 15 000 L2 gas
+  more and a read 6 000 more** (snforge 0.64: a created slot 474 106, was 459 106; an overwritten
+  one 72 106, was 57 106). Re-measured, every worst call is **under the 20 M cap**: `progress_many`
+  at `MAX_HELD` = 4, created, hooks empty: 6 460 843 (32 %); with a hook writing one slot 8 335 763
+  (42 %); at 8 held 11 917 073 and 15 666 913 (60 % and 78 %); `accept` 2 061 170, `abandon`
+  621 030, `claim` 404 920, `define` (3 tasks, 7 conditions) 2 779 560, `retire` 1 175 940; Grim
+  World's use 4 801 186 (24 %). The figures of the bullet below are the ones measured on Scarb
+  2.19.4. 30 test budgets were raised for the toolchain (`// gas: raised, D-180 Scarb 2.20.1`).
+- **Costs on Scarb 2.19.4.** No worst call is raised: `progress_many` is 7 220 L2 gas cheaper at `MAX_HELD` = 4
   (6 205 843) and 14 140 at 8 held; `accept` 4 370 (1 917 170), `abandon` 9 910 (564 150);
   `define` is 2 583 280 (2 590 440 in 0.1.0); `set_reporter` is unchanged, `retire` 300 more. The
   largest rise is the view `quest_is_unlocked`, +4 300 (0.9 %). Detail in `GAS.md`.

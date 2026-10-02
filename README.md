@@ -28,7 +28,7 @@ the registry's availability.
 
 ## Toolchain
 
-Scarb 2.19.4 (Cairo 2.19), Starknet Foundry 0.61; `snforge_std` is a dev-dependency.
+Scarb 2.20.1 (Cairo 2.20), Starknet Foundry 0.64; `snforge_std` is a dev-dependency.
 Engineering rules: [docs/CAIRO.md](docs/CAIRO.md): execution cost first, test-driven, a gas
 budget on every test.
 

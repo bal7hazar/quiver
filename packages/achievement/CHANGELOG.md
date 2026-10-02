@@ -57,7 +57,15 @@ code must be updated.
 - **The view's ABI: `achievement_definition` returns `(HeadSlot, Span<AchievementTask>)`**, slot A
   with `points` as its last field: one more felt in the output, after `t0`. An ABI client of 0.1.0
   that decodes the struct must read it.
-- **Costs** (`GAS.md`, under `TrackAll`). Progress, the worst call, is 0.1.0's to the unit
+- **Built with Scarb 2.20.1** (Cairo 2.20.0, `snforge_std` 0.64.0; D-180, ARC-10). Behaviour, events
+  and layouts are unchanged. **Costs rise on this toolchain: a storage write costs 15 000 L2 gas
+  more and a read 6 000 more** (snforge 0.64: a created slot 474 106, was 459 106; an overwritten
+  one 72 106, was 57 106). Re-measured, every call is **under the 20 M cap**: `progress_many`, the
+  slowest merge, 1 821 093 (9.1 %); `define` of 3 tasks 1 232 920, of 1 task 722 550; `retire`
+  262 730; `set_reporter` 620 810; `achievement_definition` 229 420; the 26 tiers of Grim World
+  defined in one transaction 18 916 390 (94.6 % of the cap, 92.1 % on 2.19.4). The figures of the
+  bullet below are the ones measured on Scarb 2.19.4. No test budget was raised.
+- **Costs on Scarb 2.19.4** (`GAS.md`, under `TrackAll`). Progress, the worst call, is 0.1.0's to the unit
   (`progress_many` 1 816 813 on the slowest merge), as are `set_reporter` and
   `achievement_is_reporter`. `define` of 1 task is 4 370 cheaper (703 270), of 3 tasks 1 610 more
   (1 198 640, `points` packed); `retire` 2 570 more (243 330: A unpacked and packed with

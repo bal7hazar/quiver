@@ -7,518 +7,556 @@ measure and that ceiling, also passes (docs/CAIRO.md §2).
 
 | Test | Measured (l2_gas) | Budget (l2_gas) | Date | Commit |
 |---|---|---|---|---|
-| `quiver_quest::constants::tests::quest_bounds_are_the_accepted_ones` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::errors::tests::quest_error_strings_are_the_accepted_ones` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::bench_conditions_span_seven` | 19540 | 20517 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::bench_definition_new_three_tasks_seven_conditions` | 149300 | 156765 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::bench_pack_unpack_conditions` | 35620 | 37401 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::bench_pack_unpack_definition` | 40560 | 42588 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::bench_pack_unpack_tasks` | 31390 | 32960 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::bench_tasks_index_of_absent` | 20850 | 21893 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::bench_tasks_span_three` | 20050 | 21053 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::conditions_span_has_count_entries` | 104530 | 109757 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_defined_already_exists` | 19570 | 20549 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_errors_are_those_of_0_1_0` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_event_carries_its_key_and_values` | 40080 | 42084 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_exists_with_its_tasks` | 19940 | 20937 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_new_keeps_its_inputs` | 171330 | 179897 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_new_one_task` | 27110 | 27521 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_new_round_trips_through_the_spans` | 71430 | 74162 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_new_three_tasks_seven_conditions` | 160810 | 168011 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_new_unused_slots_are_zero` | 38190 | 39260 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_reads_the_same_whatever_the_status` | 52930 | 55577 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_condition_zero` | 24560 | 25788 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_duration_above_interval` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_eight_conditions` | 16030 | 16832 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_four_tasks` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_half_recurring` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_id_zero_first` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_no_task` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_repeated_condition` | 121580 | 127659 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_repeated_task` | 18120 | 19026 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_self_condition` | 24650 | 25883 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_task_zero` | 16420 | 17241 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_total_zero` | 17520 | 18396 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_rejects_window_second` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_schedule_matches_the_oracle` | 1680090 | 1764095 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_storage_is_the_layout_of_0_1_0` | 4206700 | 4417035 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_undefined_does_not_exist` | 16090 | 16895 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::definition_undefined_reads_with_no_task` | 16310 | 17126 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_condition_zero` | 27660 | 28203 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_duplicate_condition` | 33630 | 34472 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_duplicate_condition_far_apart` | 126180 | 131649 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_duration_above_interval` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_half_recurring` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_invalid_id` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_invalid_window` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_more_than_three_tasks` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_no_task` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_repeated_task` | 20390 | 21410 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_repeated_task_first_and_last` | 21290 | 22355 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_repeated_task_second_and_last` | 20220 | 21231 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_self_condition` | 21990 | 22460 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_task_zero` | 19020 | 19971 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_too_many_conditions` | 18530 | 19457 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_define_rejects_total_zero` | 20020 | 21021 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_empty_slot_reads_undefined` | 35300 | 37065 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_accepts_the_bounds` | 4865980 | 5109279 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_presence_bits_at_their_positions` | 1110290 | 1165805 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_rejects_condition_count_16` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_rejects_condition_count_8` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_rejects_task_count_255` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_rejects_task_count_4` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_round_trip_conditions` | 19269540 | 20233017 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_round_trip_definition_max` | 23754800 | 24942540 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_round_trip_definition_mixed` | 7136390 | 7493210 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_round_trip_definition_zero` | 2388570 | 2507999 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_packing_round_trip_tasks` | 15134650 | 15891383 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_unpacking_rejects_conditions_bit_224` | 377250 | 396113 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_unpacking_rejects_definition_bit_215` | 425120 | 446376 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_unpacking_rejects_definition_felt_minus_one` | 31580 | 33159 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::quest_unpacking_rejects_tasks_bit_192` | 359240 | 377202 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::tasks_index_of_finds_used_slots_only` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::definition::tests::tasks_span_has_task_count_entries` | 43210 | 45371 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::bench_held_slot_last` | 30700 | 31458 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::bench_pack_unpack_held_slot` | 45730 | 48017 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::held_slot_pairs_entries_and_pads_with_empty` | 20240 | 21252 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::quest_packing_rejects_held_acceptance_2_30` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::quest_packing_rejects_held_counter_2_30` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::quest_packing_rejects_held_interval_2_48` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::quest_packing_round_trip_held_slot` | 40072930 | 42076577 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::quest_unpacking_reads_held_bit_250_as_kept` | 428680 | 450114 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::held::tests::quest_unpacking_rejects_held_bit_251` | 35050 | 36803 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::bench_pack_unpack_progress` | 29130 | 30587 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::bench_progress_add_three_tasks_sixteen_entries` | 155990 | 163790 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::bench_progress_is_complete_three_tasks` | 21480 | 22554 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::progress_add_ignores_other_tasks` | 47440 | 49182 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::progress_add_keeps_claimed` | 16790 | 17630 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::progress_add_matches_the_plain_formula` | 9274540 | 9738267 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::progress_add_three_tasks_partial_then_complete` | 63670 | 66612 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::progress_add_touches_only_task_count_slots` | 24530 | 25526 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::progress_is_complete_per_task_count` | 15940 | 16737 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_batch_duplicate_entries_merged_progress` | 59049 | 61771 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_batch_two_tasks_one_quest_one_write_logic` | 50232 | 52513 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_count_max_value` | 34730 | 36341 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_count_max_value_below_total` | 22280 | 23268 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_count_saturates_at_total` | 45970 | 48038 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_one_off_completes_once` | 29990 | 31490 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_packing_round_trip_progress` | 11909220 | 12504681 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_unpacking_progress_reads_bit_97_alone` | 689570 | 724049 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_unpacking_rejects_progress_bit_128` | 343080 | 360234 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::progress::tests::quest_unpacking_rejects_progress_bit_98` | 356080 | 373884 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::bench_claim` | 17940 | 18837 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::bench_pack_unpack_record` | 23750 | 24938 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::bench_prerequisites_met_seven` | 34800 | 36540 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::bench_record_complete` | 16140 | 16947 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::claim_marks_claimed_and_counts` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::prerequisites_met_when_each_completed_once` | 43680 | 45864 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_claim_index_counts_claims` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_claim_twice_reverts` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_claim_uncompleted_reverts` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_claim_uncompleted_reverts_before_claimed` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_packing_round_trip_record` | 7143570 | 7500749 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_prerequisites_all_required_logic` | 30720 | 32256 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_record_counters_past_u32` | 23040 | 24087 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_record_counters_saturate` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_recurring_completes_each_interval_logic` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::quest_unpacking_rejects_record_bit_129` | 356040 | 373842 | 2026-10-01 | 5fb465a |
-| `quiver_quest::models::record::tests::record_complete_keeps_unlocked_and_claims` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_count_of_present_and_absent` | 47260 | 49623 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_first_position_at_the_bound` | 152110 | 159716 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_first_position_is_the_smallest_position` | 36930 | 38777 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_merge_drops_zero_counts` | 83525 | 87702 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_merge_empty` | 20710 | 21746 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_merge_ids_equal_modulo_128_are_distinct` | 183358 | 192526 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_merge_keeps_distinct_entries_in_order` | 53738 | 56425 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_merge_keeps_the_position_of_first_occurrence` | 92375 | 96994 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_merge_matches_the_plain_merge` | 8504394 | 8929614 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::batch_merge_saturates_duplicates` | 271214 | 284775 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_baseline_empty` | 14120 | 14826 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_baseline_fifteen_then_one` | 52410 | 55031 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_baseline_sixteen_distinct` | 62900 | 66045 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_baseline_sixteen_with_duplicates` | 75500 | 79275 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_batch_count_of_absent` | 90590 | 95120 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_batch_first_position_absent` | 110490 | 116015 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_batch_merge_late_duplicate` | 749113 | 786569 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_batch_merge_late_modulo_collision` | 753023 | 790675 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_batch_merge_sixteen_distinct` | 181896 | 190991 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::bench_batch_merge_sixteen_with_duplicates` | 545921 | 573218 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_above_bound_reverts` | 74260 | 77973 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_bound_accepted` | 225086 | 236341 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_duplicate_entries_merged` | 55829 | 58621 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_duplicates_count_toward_bound` | 65140 | 68397 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_event_mode_one_event_per_task_merge` | 85409 | 89680 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_first_position_uses_zero_sentinel` | 31320 | 32886 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_rejects_task_zero` | 31036 | 32588 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_rejects_task_zero_with_zero_count` | 38452 | 40375 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::batch::tests::quest_batch_zero_counts_count_toward_bound` | 74260 | 77973 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::held::tests::bench_held_contains_absent` | 41270 | 43334 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::held::tests::bench_held_position_absent` | 38570 | 40499 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::held::tests::bench_held_remove_first` | 46400 | 48720 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::held::tests::held_contains_needs_the_same_interval` | 47370 | 49739 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::held::tests::held_position_finds_the_quest` | 38840 | 40782 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::held::tests::held_remove_keeps_the_order` | 129170 | 135629 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::bench_schedule_interval_id` | 20130 | 21137 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::bench_schedule_is_active` | 19230 | 20192 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::bench_schedule_validate` | 17480 | 18354 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::quest_daily_interval_aligned_on_utc_midnight` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::quest_interval_id_is_u64` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_interval_id_never_panics_at_the_bounds` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_interval_id_none_when_inactive` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_interval_id_one_off_is_zero` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_interval_id_recurring` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_is_active_duration_equal_to_interval_is_always_active` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_is_active_never_ends_when_end_is_zero` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_is_active_one_off_window` | 15940 | 16737 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_is_active_recurring` | 16240 | 17052 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_validate_accepts_valid_schedules` | 13720 | 14406 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_validate_rejects_duration_above_interval` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_validate_rejects_duration_above_interval_at_max` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_validate_rejects_empty_window` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_validate_rejects_end_before_start` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_validate_rejects_half_recurring_duration_only` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest::types::schedule::tests::schedule_validate_rejects_half_recurring_interval_only` | 15520 | 16296 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_abandon_completed_reverts` | 15718486 | 16504411 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_abandon_expired_reverts` | 5409640 | 5680122 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_abandon_keeps_counts` | 8615458 | 9046231 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_abandon_refusals` | 6252830 | 6565472 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_abandon_removes_from_list` | 18324160 | 19240368 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_accept_after_completion_reverts` | 10256586 | 10769416 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_accept_after_daily_completion` | 11153766 | 11711455 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_accept_caches_unlock` | 14381732 | 15100819 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_accept_list_full_reverts` | 16230200 | 17041710 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_accept_refusals` | 11546340 | 12123405 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_accept_required` | 6841092 | 7183147 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_accept_twice_same_interval_reverts` | 5416120 | 5686926 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_acceptance_expires_at_rollover` | 8936778 | 9383617 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_acceptance_numbers_are_new_on_renewal` | 13658530 | 14341457 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_completed_leaves_list` | 21562096 | 22640201 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_completion_releases_acceptance` | 10333676 | 10850360 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_expired_acceptance_pruned` | 16227170 | 17038529 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_held_interval_id_boundary_2_48` | 9187962 | 9647361 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_held_list_layout` | 12784010 | 13423211 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_held_slot_kept_after_pruning` | 35112004 | 36867605 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_held_slot_kept_after_shrink` | 16742740 | 17579877 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_is_accepted_false_outside_schedule` | 5589470 | 5868944 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_accept::quest_retired_pruned_at_accept` | 15297780 | 16062669 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_abandon_requires_player_authorization` | 5541920 | 5819016 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_accept_requires_player_authorization` | 4648380 | 4880684 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_claim_requires_player_authorization` | 14426016 | 15147317 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_consumer_calls_the_internal_layer` | 5846726 | 6139063 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_define_admin_only` | 2970270 | 3118784 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_internal_layer_not_reachable_from_abi` | 2020890 | 2121935 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_player_authorization_is_per_player` | 4431830 | 4653422 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_progress_accepts_registered_reporter` | 7370752 | 7739290 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_progress_many_rejects_unregistered_caller` | 2851110 | 2993666 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_progress_rejects_unregistered_caller` | 5734670 | 6021404 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_reporter_revoked` | 5262280 | 5525394 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_retire_admin_only` | 4951840 | 5199212 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_set_reporter_admin_only` | 2969550 | 3118028 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_access::quest_set_reporter_event_keys` | 2940440 | 3087462 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_accept_growth` | 28399422 | 29819394 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_accept_mixed` | 33560562 | 35238591 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_accept_regrow` | 8460040 | 8883042 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_accept_worst_completed` | 38536656 | 40463489 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_accept_worst_expired` | 33487872 | 35162266 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_accepted` | 2832990 | 2974640 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_batch_bound_accepted` | 547498420 | 574873341 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_completed` | 4214406 | 4425127 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_define_worst` | 22482642 | 23606775 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_deployed` | 864930 | 908177 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_full_list` | 8812660 | 9253293 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_plain` | 2063500 | 2166675 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_prerequisites` | 38536656 | 40463489 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4` | 9942600 | 10439730 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4_existing` | 13309900 | 13975395 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4_existing_hook` | 13309900 | 13975395 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4_hook` | 9942600 | 10439730 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8` | 16469870 | 17293364 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8_existing` | 23202640 | 24362772 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8_existing_hook` | 23202640 | 24362772 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8_hook` | 16469870 | 17293364 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_reporter_registered` | 1473140 | 1546797 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_retire_worst` | 25066302 | 26319618 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_three_held` | 6809650 | 7150133 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::baseline_two_held` | 4495340 | 4720107 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_abandon` | 4917710 | 5163596 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_abandon_shrink` | 7260510 | 7623536 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_abandon_worst` | 9376810 | 9845651 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_accept_growth` | 30316592 | 31832422 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_accept_mixed` | 35240842 | 37002885 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_accept_plain` | 2832990 | 2974640 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_accept_regrow` | 9164020 | 9622221 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_accept_worst_completed` | 40292346 | 42306964 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_accept_worst_expired` | 35081802 | 36835893 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_claim` | 4578926 | 4807873 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_define_worst` | 25065922 | 26319219 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_event_mode` | 1077796 | 1131161 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_all_complete` | 13996074 | 14695878 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_none_counts` | 9743286 | 10230451 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_one_completes` | 10917726 | 11463613 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_one_counts` | 10204806 | 10715047 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_event_mode_late_collision` | 2696453 | 2831276 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_event_mode_late_duplicate` | 2638833 | 2770775 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_event_mode_worst` | 2125126 | 2231383 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4` | 16148443 | 16955866 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4_existing` | 16299743 | 17114731 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4_existing_hook` | 18114663 | 19020397 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4_hook` | 17963363 | 18861532 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8` | 27885943 | 29280241 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8_existing` | 28186713 | 29596049 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8_existing_hook` | 31816553 | 33407381 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8_hook` | 31515783 | 33091573 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_nothing_held` | 2290756 | 2405294 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_plain` | 3668446 | 3851869 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_progress_plain_completing` | 4214406 | 4425127 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_retire_worst` | 26069842 | 27373335 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_set_reporter` | 1473140 | 1546797 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_set_reporter_revoke` | 1278670 | 1342604 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_set_reporter_unchanged` | 1680470 | 1764494 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_view_current_interval` | 38697286 | 40632151 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_view_definition_worst` | 38841156 | 40783214 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_view_held_full` | 38835346 | 40777114 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_view_is_accepted` | 38870006 | 40813507 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_view_is_reporter` | 38661346 | 40594414 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_view_is_unlocked_worst` | 39033446 | 40985119 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::bench_view_progress_and_record` | 38825746 | 40767034 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_bench::quest_batch_bound_accepted` | 553122046 | 580778149 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_claim_emits_and_writes` | 13105956 | 13761254 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_claim_hook_after_state_written` | 13100366 | 13755385 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_claim_hook_panic_reverts_claim` | 11394656 | 11964389 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_claim_index_counts_claims` | 22491402 | 23615973 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_claim_twice_reverts` | 13362896 | 14031041 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_claim_uncompleted_reverts` | 6933596 | 7280276 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_complete_hook_after_state_written` | 10049896 | 10552391 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_claim::quest_complete_hook_panic_reverts_progress` | 8959446 | 9407419 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_counts_dependents` | 7999790 | 8399780 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_association_overflow` | 47421040 | 49792092 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_duplicate_condition` | 4362960 | 4581108 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_invalid_input` | 3732470 | 3919094 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_retired_condition` | 4822190 | 5063300 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_self_condition` | 2974860 | 3123603 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_too_many_conditions` | 13990820 | 14690361 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_undefined_condition` | 3029020 | 3180471 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_stores_and_emits` | 6329000 | 6645450 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_define_twice_reverts` | 4348660 | 4566093 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_define::quest_empty_slot_reads_undefined` | 2742520 | 2879541 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_dependents::quest_define_reaches_max_dependents` | 7898120 | 8293026 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_dependents::quest_define_rejects_too_many_dependents` | 8987120 | 9436476 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_dependents::quest_retire_dependent_frees_max_dependents` | 11244870 | 11807114 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_event_mode::quest_batch_event_mode_one_event_per_task` | 5640169 | 5922178 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_calls_no_hook` | 5349146 | 5616604 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_cannot_be_claimed` | 5831176 | 6122735 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_emits_only_progressed` | 5576636 | 5855468 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_zero_count_emits_nothing` | 3165618 | 3323689 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_event_mode::quest_modes_do_not_mix` | 6340132 | 6657139 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_events::quest_accept_and_abandon_emit_nothing` | 5390590 | 5660120 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_events::quest_current_interval_view` | 4971730 | 5220317 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_events::quest_events_keys_and_data` | 15854902 | 16647648 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_game::baseline_game_case_three_per_task` | 76734492 | 80571217 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_game::baseline_game_case_two_per_task` | 54086332 | 56790649 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_game::game_case_three_per_task` | 81280678 | 85344712 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_game::game_case_two_per_task` | 58632518 | 61564144 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h0` | 905870 | 951164 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_complete` | 2169980 | 2278479 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_count` | 2169980 | 2278479 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_done` | 2592050 | 2721653 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_expired` | 2169980 | 2278479 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_miss` | 2169980 | 2278479 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_complete` | 3012160 | 3162768 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_count` | 3012160 | 3162768 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_done` | 3856200 | 4049010 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_expired` | 3012160 | 3162768 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_miss` | 3012160 | 3162768 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_complete` | 5124040 | 5380242 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_count` | 5124040 | 5380242 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_done` | 6812020 | 7152621 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_expired` | 5124040 | 5380242 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_miss` | 5124040 | 5380242 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_complete` | 9347800 | 9815190 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_count` | 9347800 | 9815190 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_done` | 12723660 | 13359843 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_expired` | 9347800 | 9815190 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_miss` | 9347800 | 9815190 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h0` | 1909263 | 2004727 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h1_complete` | 4404323 | 4624540 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h1_count` | 3859103 | 4052059 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h1_done` | 3692903 | 3877150 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h1_expired` | 3226683 | 3388018 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h1_miss` | 3405033 | 3575285 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h2_complete` | 6588593 | 6918023 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h2_count` | 5442533 | 5714660 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h2_done` | 5110033 | 5364422 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h2_expired` | 4177693 | 4386431 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h2_miss` | 4534393 | 4761113 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h4_complete` | 11331103 | 11897659 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h4_count` | 8983263 | 9432427 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h4_done` | 8318163 | 8731531 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h4_expired` | 6453583 | 6775654 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h4_miss` | 7166983 | 7525333 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h8_complete` | 20766213 | 21804524 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h8_count` | 16014813 | 16815554 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h8_done` | 14684513 | 15413342 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h8_expired` | 10955453 | 11501693 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_grid::grid_h8_miss` | 12382253 | 13001366 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_dependent_unlocks_when_window_opens` | 15105078 | 15860332 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_inactive_dependent_does_not_revert` | 12214126 | 12824833 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_is_unlocked_evaluates_uncached` | 12027556 | 12628934 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_prerequisite_completed_before_definition` | 13983572 | 14682751 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_prerequisites_all_required` | 15044362 | 15796581 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_prerequisites_unlock_after_last` | 21599658 | 22679641 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_dependent_stays_unlocked` | 22987578 | 24136957 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_prerequisite_after_dependent_completed` | 22544398 | 23671618 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_prerequisite_completed_before_definition` | 14061882 | 14764977 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_prerequisite_completes_every_interval` | 22402998 | 23523148 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_unlock_cached_by_accept` | 14857372 | 15600241 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_prerequisites::quest_without_conditions_is_unlocked` | 4036150 | 4237958 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_baseline` | 453720 | 476406 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_emit_100` | 5307920 | 5573316 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_read_100` | 3474220 | 3647931 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_store_baseline` | 42618190 | 44749100 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_store_then_change_100` | 48328090 | 50744495 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_baseline_empty` | 725230 | 761492 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_baseline_set` | 46635830 | 48967622 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_changed_then_restored` | 57965130 | 60863387 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_to_other` | 52346430 | 54963752 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_to_zero` | 12146430 | 12753752 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_unchanged` | 52346430 | 54963752 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_zero_set_then_restored` | 12054530 | 12657257 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_zero_to_value` | 46635830 | 48967622 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_transition_zero_unchanged` | 6435830 | 6757622 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_unpack_definition_100` | 2316990 | 2432840 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_unpack_held_100` | 2683790 | 2817980 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_unpack_record_100` | 1161190 | 1219250 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_unpack_tasks_100` | 1716190 | 1802000 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_write_100` | 46363620 | 48681801 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_write_then_change_100` | 52345030 | 54962282 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_write_then_overwrite_100` | 52345030 | 54962282 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_probe::probe_write_twice_in_one_call_baseline` | 46635130 | 48966887 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::baseline_batch_two_tasks_one_quest` | 5136880 | 5393724 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::baseline_batch_two_tasks_one_quest_not_completing` | 5011640 | 5262222 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_batch_above_bound_reverts` | 3243680 | 3405864 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_batch_duplicate_entries_merged` | 6010909 | 6311455 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_batch_duplicates_count_toward_bound` | 2978280 | 3127194 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_batch_quest_on_two_entries_handled_once` | 8854212 | 9296923 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_batch_rejects_task_zero` | 3038542 | 3190260 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_batch_two_tasks_one_quest_one_write` | 10083262 | 10587426 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_batch_two_tasks_one_quest_one_write_not_completing` | 6026222 | 6327534 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_count_max_value` | 10445852 | 10968145 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_count_saturates_at_total` | 10569282 | 11097747 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_daily_interval_aligned_on_utc_midnight` | 8142592 | 8549722 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_daily_rollover_starts_from_zero` | 7970202 | 8368713 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_held_by_one_player_not_progressed_by_another` | 10029942 | 10531440 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_inactive_quest_skipped_not_reverted` | 8398476 | 8818400 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_interval_id_is_u64` | 6213976 | 6524675 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_not_held_not_progressed` | 6514232 | 6839944 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_one_off_completes_once` | 10421352 | 10942420 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_progress_is_per_player` | 6125586 | 6431866 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_recurring_completes_each_interval` | 21560374 | 22638393 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_progress::quest_task_shared_by_max_quests` | 66666836 | 70000178 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_acceptance_counter_wraps_at_2_30` | 25404568 | 26674797 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_counter_wrap_without_renewal_progresses_both` | 14096766 | 14801605 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_hook_accepting_another_quest_keeps_counts_after_16_bit_wrap` | 16031352 | 16832920 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_abandon_later_quest_not_progressed` | 20645616 | 21677897 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_abandon_other_quest_leaves_outer_unchanged` | 58859664 | 61802648 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_abandon_then_accept_not_progressed` | 17733692 | 18620377 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_abandon_accept_not_progressed` | 12527256 | 13153619 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_after_completion_refused` | 7564866 | 7943110 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_not_progressed_by_the_call` | 16909932 | 17755429 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_other_quest_leaves_outer_unchanged` | 59664804 | 62648045 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_claim_other_quest_leaves_outer_unchanged` | 61382984 | 64452134 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_claim_same_quest_refused` | 11962726 | 12560863 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_progress_later_quest_completes_once` | 17913692 | 18809377 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_progress_other_quest_leaves_outer_unchanged` | 63286900 | 66451245 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_progress_same_quest_completes_once` | 10979832 | 11528824 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_renewal_after_counter_wrap_not_progressed` | 17855642 | 18748425 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_renewed_not_progressed_others_are` | 20012276 | 21012890 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_retire_other_quest_leaves_outer_unchanged` | 58244704 | 61156940 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_reentry::quest_retired_by_hook_not_progressed` | 13629406 | 14310877 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_redefine_retired_reverts` | 4766710 | 5005046 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retire_abandon_before_is_kept` | 6105690 | 6410975 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retire_dependent_then_prerequisite` | 7268510 | 7631936 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retire_frees_slot` | 15136400 | 15893220 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retire_prerequisite_with_live_dependent_reverts` | 6468540 | 6791967 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retire_twice_reverts` | 4986280 | 5235374 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retired_accept_reverts` | 4861470 | 5104533 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retired_completed_still_claimable` | 13305946 | 13971244 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retired_definition_readable` | 4542340 | 4769457 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retired_is_not_accepted` | 6029420 | 6330891 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_retire::quest_retired_not_progressed` | 8667396 | 9100766 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_track_none::track_none_component_emits_action_events_only` | 6752172 | 7089781 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_track_none::track_none_component_revoked_reporter_emits_nothing` | 804770 | 845009 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_track_own::own_impl_tracks_the_definition_only` | 2019450 | 2120423 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_track_own::own_impl_tracks_the_reporter_only` | 1951120 | 2048676 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::baseline_writes_setup` | 4438790 | 4660730 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::baseline_writes_setup_totals_two` | 4438790 | 4660730 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::quest_progress_completing_writes_p_and_r` | 6309406 | 6624877 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::quest_progress_duplicate_entries_write_p_once` | 5748909 | 6036355 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::quest_progress_duplicates_several_counts_write_each_p_once` | 6394325 | 6714042 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::quest_progress_not_completing_writes_p_only` | 5708126 | 5993533 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::quest_progress_two_tasks_not_completing_write_p_once` | 5723332 | 6009499 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::quest_progress_two_tasks_write_p_and_r_once` | 6268022 | 6581424 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_component_writes::write_costs_58_820_sierra_gas` | 1363000 | 1431150 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::baseline_models` | 280260 | 294273 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::baseline_models_existing` | 1115100 | 1170855 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::baseline_models_get` | 1118270 | 1174184 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::baseline_models_wide` | 281500 | 295575 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_hand_get` | 1147690 | 1205075 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_hand_set_tracked_created` | 779810 | 818801 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_hand_set_tracked_overwritten` | 1212650 | 1273283 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_hand_set_untracked_created` | 734790 | 771530 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_hand_set_untracked_overwritten` | 1167630 | 1226012 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_store_get` | 1147690 | 1205075 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_store_set_tracked_created` | 779810 | 818801 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_store_set_tracked_overwritten` | 1212650 | 1273283 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_store_set_untracked_created` | 734790 | 771530 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_store_set_untracked_overwritten` | 1167630 | 1226012 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::bench_store_set_wide_created` | 736230 | 773042 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::store_tracked_set_emits_its_event_on_every_write` | 2499620 | 2624601 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::store_untracked_set_emits_nothing` | 2012190 | 2112800 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store::store_writes_what_the_hand_writes` | 2937460 | 3084333 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::baseline_definition` | 340810 | 357851 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::baseline_definition_read` | 2096670 | 2201504 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::bench_hand_get_definition_worst` | 2227100 | 2338455 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::bench_hand_set_definition_worst` | 1998260 | 2098173 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::bench_store_get_definition_worst` | 2227070 | 2338424 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::bench_store_set_definition_worst` | 1993300 | 2092965 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::store_focused_reads_return_the_slots` | 3120230 | 3276242 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::store_get_definition_reads_the_model_back` | 4477830 | 4701722 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::store_set_definition_emits_quest_defined_once` | 3100410 | 3255431 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::store_set_definition_writes_the_slots_of_0_1_0` | 6297380 | 6612249 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_definition::store_status_write_emits_nothing_and_keeps_the_definition` | 3277660 | 3441543 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::baseline_model_definition` | 340810 | 357851 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::baseline_reporter` | 279050 | 293003 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::baseline_silent_definition` | 340810 | 357851 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::baseline_silent_reporter` | 279050 | 293003 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_hand_set_definition_silent_worst` | 1843160 | 1935318 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_hand_set_model_definition_silent_worst` | 1838200 | 1930110 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_hand_set_model_definition_worst` | 1993300 | 2092965 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_hand_set_reporter` | 777280 | 816144 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_hand_set_reporter_silent` | 733680 | 770364 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_store_set_definition_silent_worst` | 1838200 | 1930110 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_store_set_model_definition_worst` | 1993300 | 2092965 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_store_set_reporter` | 777280 | 816144 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::bench_store_set_reporter_silent` | 733680 | 770364 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::store_held_list_writes_only_the_slots_that_change` | 2831240 | 2972802 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::store_prerequisites_met_reads_each_record` | 3939060 | 4136013 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::track_all_definition_rewritten_emits_once_per_write` | 3062500 | 3215625 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::track_all_reporter_emits_once_per_write` | 1001520 | 1051596 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::track_none_definition_emits_nothing` | 6307620 | 6623001 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::track_none_reporter_emits_nothing` | 1183380 | 1242549 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::untracked_held_slot_emits_nothing` | 1133060 | 1189713 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::untracked_progress_emits_nothing` | 1432360 | 1503978 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::untracked_record_emits_nothing` | 1071610 | 1125191 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_store_models::untracked_status_emits_nothing` | 2905200 | 3050460 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::baseline_track_all` | 280260 | 294273 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::baseline_track_none` | 280260 | 294273 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::bench_track_all_by_constant` | 779810 | 818801 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::bench_track_all_by_emitter` | 779810 | 818801 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::bench_track_all_hand_emitted` | 779810 | 818801 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::bench_track_none_by_constant` | 734790 | 771530 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::bench_track_none_by_emitter` | 734790 | 771530 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::bench_track_none_hand_silent` | 734790 | 771530 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::track_all_emits_once_per_write` | 1998330 | 2098247 | 2026-10-01 | 5fb465a |
-| `quiver_quest_integrationtest::test_tracking::track_none_emits_nothing` | 1632440 | 1714062 | 2026-10-01 | 5fb465a |
+| `quiver_quest::constants::tests::quest_bounds_are_the_accepted_ones` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::errors::tests::quest_error_strings_are_the_accepted_ones` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::bench_conditions_span_seven` | 11710 | 12296 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::bench_definition_new_three_tasks_seven_conditions` | 141470 | 148544 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::bench_pack_unpack_conditions` | 27790 | 29180 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::bench_pack_unpack_definition` | 32730 | 34367 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::bench_pack_unpack_tasks` | 23560 | 24738 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::bench_tasks_index_of_absent` | 13020 | 13671 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::bench_tasks_span_three` | 12220 | 12831 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::conditions_span_has_count_entries` | 96700 | 101535 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_defined_already_exists` | 11860 | 12453 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_errors_are_those_of_0_1_0` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_event_carries_its_key_and_values` | 32250 | 33863 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_exists_with_its_tasks` | 12230 | 12842 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_new_keeps_its_inputs` | 163500 | 171675 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_new_one_task` | 19280 | 20244 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_new_round_trips_through_the_spans` | 63600 | 66780 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_new_three_tasks_seven_conditions` | 152980 | 160629 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_new_unused_slots_are_zero` | 30360 | 31878 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_reads_the_same_whatever_the_status` | 45100 | 47355 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_condition_zero` | 16850 | 17693 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_duration_above_interval` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_eight_conditions` | 8320 | 8736 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_four_tasks` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_half_recurring` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_id_zero_first` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_no_task` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_repeated_condition` | 113870 | 119564 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_repeated_task` | 10410 | 10931 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_self_condition` | 16940 | 17787 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_task_zero` | 8710 | 9146 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_total_zero` | 9810 | 10301 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_rejects_window_second` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_schedule_matches_the_oracle` | 1672260 | 1755873 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_storage_is_the_layout_of_0_1_0` | 4198990 | 4408940 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_undefined_does_not_exist` | 8380 | 8799 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::definition_undefined_reads_with_no_task` | 8480 | 8904 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_condition_zero` | 19950 | 20948 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_duplicate_condition` | 25920 | 27216 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_duplicate_condition_far_apart` | 118470 | 124394 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_duration_above_interval` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_half_recurring` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_invalid_id` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_invalid_window` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_more_than_three_tasks` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_no_task` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_repeated_task` | 12680 | 13314 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_repeated_task_first_and_last` | 13580 | 14259 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_repeated_task_second_and_last` | 12510 | 13136 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_self_condition` | 14280 | 14994 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_task_zero` | 11310 | 11876 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_too_many_conditions` | 10820 | 11361 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_define_rejects_total_zero` | 12310 | 12926 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_empty_slot_reads_undefined` | 27470 | 28844 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_accepts_the_bounds` | 4858280 | 5101194 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_presence_bits_at_their_positions` | 1102460 | 1157583 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_rejects_condition_count_16` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_rejects_condition_count_8` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_rejects_task_count_255` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_rejects_task_count_4` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_round_trip_conditions` | 19261710 | 20224796 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_round_trip_definition_max` | 23746970 | 24934319 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_round_trip_definition_mixed` | 7128560 | 7484988 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_round_trip_definition_zero` | 2380740 | 2499777 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_packing_round_trip_tasks` | 15126820 | 15883161 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_unpacking_rejects_conditions_bit_224` | 369540 | 388017 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_unpacking_rejects_definition_bit_215` | 417410 | 438281 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_unpacking_rejects_definition_felt_minus_one` | 23870 | 25064 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::quest_unpacking_rejects_tasks_bit_192` | 351530 | 369107 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::tasks_index_of_finds_used_slots_only` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::definition::tests::tasks_span_has_task_count_entries` | 35380 | 37149 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::bench_held_slot_last` | 22870 | 24014 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::bench_pack_unpack_held_slot` | 37900 | 39795 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::held_slot_pairs_entries_and_pads_with_empty` | 12410 | 13031 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::quest_packing_rejects_held_acceptance_2_30` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::quest_packing_rejects_held_counter_2_30` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::quest_packing_rejects_held_interval_2_48` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::quest_packing_round_trip_held_slot` | 40065100 | 42068355 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::quest_unpacking_reads_held_bit_250_as_kept` | 420850 | 441893 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::held::tests::quest_unpacking_rejects_held_bit_251` | 27340 | 28707 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::bench_pack_unpack_progress` | 21300 | 22365 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::bench_progress_add_three_tasks_sixteen_entries` | 148160 | 155568 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::bench_progress_is_complete_three_tasks` | 13650 | 14333 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::progress_add_ignores_other_tasks` | 39610 | 41591 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::progress_add_keeps_claimed` | 9080 | 9534 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::progress_add_matches_the_plain_formula` | 9266710 | 9730046 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::progress_add_three_tasks_partial_then_complete` | 55840 | 58632 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::progress_add_touches_only_task_count_slots` | 16700 | 17535 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::progress_is_complete_per_task_count` | 8110 | 8516 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_batch_duplicate_entries_merged_progress` | 51319 | 53885 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_batch_two_tasks_one_quest_one_write_logic` | 42502 | 44628 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_count_max_value` | 26900 | 28245 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_count_max_value_below_total` | 14450 | 15173 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_count_saturates_at_total` | 38140 | 40047 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_one_off_completes_once` | 22160 | 23268 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_packing_round_trip_progress` | 11901390 | 12496460 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_unpacking_progress_reads_bit_97_alone` | 681740 | 715827 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_unpacking_rejects_progress_bit_128` | 335370 | 352139 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::progress::tests::quest_unpacking_rejects_progress_bit_98` | 348370 | 365789 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::bench_claim` | 10110 | 10616 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::bench_pack_unpack_record` | 15920 | 16716 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::bench_prerequisites_met_seven` | 26970 | 28319 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::bench_record_complete` | 8310 | 8726 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::claim_marks_claimed_and_counts` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::prerequisites_met_when_each_completed_once` | 35850 | 37643 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_claim_index_counts_claims` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_claim_twice_reverts` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_claim_uncompleted_reverts` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_claim_uncompleted_reverts_before_claimed` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_packing_round_trip_record` | 7135740 | 7492527 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_prerequisites_all_required_logic` | 22890 | 24035 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_record_counters_past_u32` | 15210 | 15971 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_record_counters_saturate` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_recurring_completes_each_interval_logic` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::quest_unpacking_rejects_record_bit_129` | 348330 | 365747 | 2026-10-02 | 04091f9 |
+| `quiver_quest::models::record::tests::record_complete_keeps_unlocked_and_claims` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_count_of_present_and_absent` | 39430 | 41402 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_first_position_at_the_bound` | 144280 | 151494 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_first_position_is_the_smallest_position` | 29100 | 30555 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_merge_drops_zero_counts` | 75795 | 79585 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_merge_empty` | 12880 | 13524 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_merge_ids_equal_modulo_128_are_distinct` | 175628 | 184410 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_merge_keeps_distinct_entries_in_order` | 46008 | 48309 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_merge_keeps_the_position_of_first_occurrence` | 84645 | 88878 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_merge_matches_the_plain_merge` | 8496664 | 8921498 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::batch_merge_saturates_duplicates` | 263484 | 276659 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_baseline_empty` | 6410 | 6731 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_baseline_fifteen_then_one` | 44580 | 46809 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_baseline_sixteen_distinct` | 55070 | 57824 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_baseline_sixteen_with_duplicates` | 67670 | 71054 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_batch_count_of_absent` | 82760 | 86898 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_batch_first_position_absent` | 102660 | 107793 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_batch_merge_late_duplicate` | 741383 | 778453 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_batch_merge_late_modulo_collision` | 745293 | 782558 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_batch_merge_sixteen_distinct` | 174166 | 182875 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::bench_batch_merge_sixteen_with_duplicates` | 538191 | 565101 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_above_bound_reverts` | 66530 | 69857 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_bound_accepted` | 217356 | 228224 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_duplicate_entries_merged` | 48099 | 50504 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_duplicates_count_toward_bound` | 57410 | 60281 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_event_mode_one_event_per_task_merge` | 77679 | 81563 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_first_position_uses_zero_sentinel` | 23490 | 24665 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_rejects_task_zero` | 23306 | 24472 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_rejects_task_zero_with_zero_count` | 30722 | 32259 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::batch::tests::quest_batch_zero_counts_count_toward_bound` | 66530 | 69857 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::held::tests::bench_held_contains_absent` | 33440 | 35112 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::held::tests::bench_held_position_absent` | 30740 | 32277 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::held::tests::bench_held_remove_first` | 38570 | 40499 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::held::tests::held_contains_needs_the_same_interval` | 39540 | 41517 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::held::tests::held_position_finds_the_quest` | 31010 | 32561 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::held::tests::held_remove_keeps_the_order` | 121340 | 127407 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::bench_schedule_interval_id` | 12300 | 12915 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::bench_schedule_is_active` | 11400 | 11970 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::bench_schedule_validate` | 9650 | 10133 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::quest_daily_interval_aligned_on_utc_midnight` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::quest_interval_id_is_u64` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_interval_id_never_panics_at_the_bounds` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_interval_id_none_when_inactive` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_interval_id_one_off_is_zero` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_interval_id_recurring` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_is_active_duration_equal_to_interval_is_always_active` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_is_active_never_ends_when_end_is_zero` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_is_active_one_off_window` | 8110 | 8516 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_is_active_recurring` | 8410 | 8831 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_validate_accepts_valid_schedules` | 6010 | 6311 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_validate_rejects_duration_above_interval` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_validate_rejects_duration_above_interval_at_max` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_validate_rejects_empty_window` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_validate_rejects_end_before_start` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_validate_rejects_half_recurring_duration_only` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest::types::schedule::tests::schedule_validate_rejects_half_recurring_interval_only` | 7810 | 8201 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_abandon_completed_reverts` | 16240656 | 16504411 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_abandon_expired_reverts` | 5557210 | 5680122 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_abandon_keeps_counts` | 8940828 | 9046231 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_abandon_refusals` | 6424200 | 6565472 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_abandon_removes_from_list` | 19196930 | 19240368 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_accept_after_completion_reverts` | 10617156 | 10769416 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_accept_after_daily_completion` | 11566736 | 11711455 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_accept_caches_unlock` | 14948702 | 15100819 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_accept_list_full_reverts` | 16902170 | 17041710 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_accept_refusals` | 11951110 | 12123405 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_accept_required` | 7052662 | 7183147 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_accept_twice_same_interval_reverts` | 5569690 | 5686926 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_acceptance_expires_at_rollover` | 9243748 | 9383617 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_acceptance_numbers_are_new_on_renewal` | 14144300 | 14341457 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_completed_leaves_list` | 22571266 | 22640201 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_completion_releases_acceptance` | 10701246 | 10850360 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_expired_acceptance_pruned` | 16936140 | 17038529 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_held_interval_id_boundary_2_48` | 9468132 | 9647361 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_held_list_layout` | 13218980 | 13423211 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_held_slot_kept_after_pruning` | 36836974 | 36867605 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_held_slot_kept_after_shrink` | 17453310 | 17579877 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_is_accepted_false_outside_schedule` | 5748640 | 5868944 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_accept::quest_retired_pruned_at_accept` | 15967950 | 16062669 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_abandon_requires_player_authorization` | 5695290 | 5819016 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_accept_requires_player_authorization` | 4759750 | 4880684 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_claim_requires_player_authorization` | 14969186 | 15147317 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_consumer_calls_the_internal_layer` | 6067296 | 6139063 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_define_admin_only` | 3030840 | 3118784 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_internal_layer_not_reachable_from_abi` | 2041460 | 2121935 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_player_authorization_is_per_player` | 4532800 | 4653422 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_progress_accepts_registered_reporter` | 7619582 | 7739290 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_progress_many_rejects_unregistered_caller` | 2911680 | 2993666 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_progress_rejects_unregistered_caller` | 5886240 | 6021404 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_reporter_revoked` | 5424450 | 5525394 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_retire_admin_only` | 5061610 | 5199212 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_set_reporter_admin_only` | 3035920 | 3118028 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_access::quest_set_reporter_event_keys` | 3016010 | 3087462 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_accept_growth` | 29718112 | 29819394 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_accept_mixed` | 35160852 | 35238591 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_accept_regrow` | 8786330 | 8883042 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_accept_worst_completed` | 40387346 | 40463489 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_accept_worst_expired` | 35077562 | 35162266 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_accepted` | 2903080 | 2974640 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_batch_bound_accepted` | 563315790 | 574873341 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_completed` | 4347376 | 4425127 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_define_worst` | 23452132 | 23606775 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_deployed` | 870620 | 908177 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_full_list` | 9189950 | 9253293 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_plain` | 2103590 | 2166675 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_prerequisites` | 40387346 | 40463489 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4` | 10360770 | 10439730 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4_existing` | 13728070 | 13975395 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4_existing_hook` | 13728070 | 13975395 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held4_hook` | 10360770 | 10439730 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8` | 17054840 | 17293364 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8_existing` | 23787610 | 24362772 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8_existing_hook` | 23787610 | 24362772 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_progress_many_worst_held8_hook` | 17054840 | 17293364 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_reporter_registered` | 1492230 | 1546797 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_retire_worst` | 26232192 | 26319618 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_three_held` | 7065540 | 7150133 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::baseline_two_held` | 4641830 | 4720107 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_abandon` | 5100200 | 5163596 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_abandon_shrink` | 7552280 | 7623536 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_abandon_worst` | 9810980 | 9845651 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_accept_growth` | 31779282 | 31832422 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_accept_mixed` | 37003132 | 38853289 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_accept_plain` | 2903080 | 2974640 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_accept_regrow` | 9565310 | 9622221 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_accept_worst_completed` | 42317036 | 44432888 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_accept_worst_expired` | 36821492 | 36835893 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_claim` | 4752296 | 4807873 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_define_worst` | 26231692 | 26319219 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_event_mode` | 1087766 | 1131161 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_all_complete` | 14628244 | 14695878 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_none_counts` | 10213456 | 10230451 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_one_completes` | 11441896 | 11463613 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_full_list_one_counts` | 10689976 | 10715047 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_event_mode_late_collision` | 2706423 | 2831276 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_event_mode_late_duplicate` | 2648803 | 2770775 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_event_mode_worst` | 2135096 | 2231383 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4` | 16821613 | 16955866 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4_existing` | 16972913 | 17114731 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4_existing_hook` | 18847833 | 19020397 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held4_hook` | 18696533 | 18861532 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8` | 28971913 | 29280241 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8_existing` | 29272683 | 29596049 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8_existing_hook` | 33022523 | 33407381 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_many_worst_held8_hook` | 32721753 | 33091573 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_nothing_held` | 2339846 | 2405294 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_plain` | 3780416 | 3851869 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_progress_plain_completing` | 4347376 | 4425127 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_retire_worst` | 27408132 | 28778539 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_set_reporter` | 1492230 | 1546797 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_set_reporter_revoke` | 1311040 | 1342604 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_set_reporter_unchanged` | 1712840 | 1764494 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_view_current_interval` | 40552256 | 40632151 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_view_definition_worst` | 40709526 | 40783214 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_view_held_full` | 40703716 | 40777114 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_view_is_accepted` | 40742976 | 40813507 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_view_is_reporter` | 40517716 | 40594414 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_view_is_unlocked_worst` | 40943816 | 40985119 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::bench_view_progress_and_record` | 40687916 | 40767034 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_bench::quest_batch_bound_accepted` | 569194416 | 580778149 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_claim_emits_and_writes` | 13648786 | 13761254 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_claim_hook_after_state_written` | 13677936 | 13755385 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_claim_hook_panic_reverts_claim` | 11845826 | 11964389 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_claim_index_counts_claims` | 23549972 | 23615973 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_claim_twice_reverts` | 13909266 | 14031041 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_claim_uncompleted_reverts` | 7140966 | 7280276 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_complete_hook_after_state_written` | 10437066 | 10552391 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_claim::quest_complete_hook_panic_reverts_progress` | 9320416 | 9407419 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_counts_dependents` | 8260960 | 8399780 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_association_overflow` | 48999610 | 49792092 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_duplicate_condition` | 4463930 | 4581108 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_invalid_input` | 3801840 | 3919094 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_retired_condition` | 4960560 | 5063300 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_self_condition` | 3035430 | 3123603 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_too_many_conditions` | 14374590 | 14690361 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_rejects_undefined_condition` | 3101590 | 3180471 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_stores_and_emits` | 6521030 | 6645450 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_define_twice_reverts` | 4455630 | 4566093 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_define::quest_empty_slot_reads_undefined` | 2804620 | 2879541 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_dependents::quest_define_reaches_max_dependents` | 8146890 | 8293026 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_dependents::quest_define_rejects_too_many_dependents` | 9290890 | 9436476 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_dependents::quest_retire_dependent_frees_max_dependents` | 11684840 | 11807114 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_event_mode::quest_batch_event_mode_one_event_per_task` | 5785279 | 5922178 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_calls_no_hook` | 5491916 | 5616604 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_cannot_be_claimed` | 5984546 | 6122735 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_emits_only_progressed` | 5726466 | 5855468 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_event_mode::quest_event_mode_zero_count_emits_nothing` | 3230588 | 3323689 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_event_mode::quest_modes_do_not_mix` | 6524902 | 6657139 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_events::quest_accept_and_abandon_emit_nothing` | 5559160 | 5660120 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_events::quest_current_interval_view` | 5091700 | 5220317 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_events::quest_events_keys_and_data` | 16518072 | 16647648 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_game::baseline_game_case_three_per_task` | 79554262 | 80571217 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_game::baseline_game_case_two_per_task` | 56139702 | 56790649 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_game::game_case_three_per_task` | 84355448 | 85344712 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_game::game_case_two_per_task` | 60940888 | 61564144 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h0` | 911440 | 951164 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_complete` | 2175550 | 2278479 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_count` | 2175550 | 2278479 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_done` | 2597620 | 2721653 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_expired` | 2175550 | 2278479 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h1_miss` | 2175550 | 2278479 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_complete` | 3017730 | 3162768 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_count` | 3017730 | 3162768 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_done` | 3861770 | 4049010 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_expired` | 3017730 | 3162768 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h2_miss` | 3017730 | 3162768 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_complete` | 5129610 | 5380242 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_count` | 5129610 | 5380242 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_done` | 6817590 | 7152621 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_expired` | 5129610 | 5380242 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h4_miss` | 5129610 | 5380242 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_complete` | 9353370 | 9815190 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_count` | 9353370 | 9815190 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_done` | 12729230 | 13359843 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_expired` | 9353370 | 9815190 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::baseline_grid_h8_miss` | 9353370 | 9815190 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h0` | 1923833 | 2004727 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h1_complete` | 4472893 | 4624540 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h1_count` | 3906673 | 4052059 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h1_done` | 3719473 | 3877150 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h1_expired` | 3247253 | 3388018 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h1_miss` | 3437603 | 3575285 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h2_complete` | 6723163 | 6918023 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h2_count` | 5529103 | 5714660 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h2_done` | 5154603 | 5364422 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h2_expired` | 4210263 | 4386431 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h2_miss` | 4590963 | 4761113 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h4_complete` | 11591673 | 11897659 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h4_count` | 9141833 | 9432427 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h4_done` | 8392733 | 8731531 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h4_expired` | 6504153 | 6775654 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h4_miss` | 7265553 | 7525333 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h8_complete` | 21272783 | 21804524 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h8_count` | 16311383 | 16815554 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h8_done` | 14813083 | 15413342 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h8_expired` | 11036023 | 11501693 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_grid::grid_h8_miss` | 12558823 | 13001366 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_dependent_unlocks_when_window_opens` | 15685648 | 15860332 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_inactive_dependent_does_not_revert` | 12683496 | 12824833 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_is_unlocked_evaluates_uncached` | 12473126 | 12628934 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_prerequisite_completed_before_definition` | 14528342 | 14682751 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_prerequisites_all_required` | 15658932 | 15796581 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_prerequisites_unlock_after_last` | 22568428 | 22679641 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_dependent_stays_unlocked` | 23957948 | 24136957 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_prerequisite_after_dependent_completed` | 23520768 | 23671618 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_prerequisite_completed_before_definition` | 14606652 | 14764977 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_recurring_prerequisite_completes_every_interval` | 23340368 | 23523148 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_unlock_cached_by_accept` | 15440742 | 15600241 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_prerequisites::quest_without_conditions_is_unlocked` | 4138520 | 4237958 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_baseline` | 445690 | 467975 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_emit_100` | 5299890 | 5564885 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_read_100` | 4066190 | 4269500 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_store_baseline` | 42610160 | 44740668 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_store_then_change_100` | 49820060 | 50744495 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_baseline_empty` | 717000 | 752850 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_baseline_set` | 48127600 | 48967622 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_changed_then_restored` | 62456900 | 65579745 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_to_other` | 55338200 | 58105110 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_to_zero` | 15138200 | 15895110 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_value_unchanged` | 55338200 | 58105110 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_zero_set_then_restored` | 15046300 | 15798615 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_zero_to_value` | 48127600 | 48967622 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_transition_zero_unchanged` | 7927600 | 8323980 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_unpack_definition_100` | 2308960 | 2424408 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_unpack_held_100` | 2675760 | 2809548 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_unpack_record_100` | 1153160 | 1210818 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_unpack_tasks_100` | 1708160 | 1793568 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_write_100` | 47855590 | 48681801 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_write_then_change_100` | 55336800 | 58103640 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_write_then_overwrite_100` | 55336800 | 58103640 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_probe::probe_write_twice_in_one_call_baseline` | 48126900 | 48966887 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::baseline_batch_two_tasks_one_quest` | 5281050 | 5393724 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::baseline_batch_two_tasks_one_quest_not_completing` | 5150010 | 5262222 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_batch_above_bound_reverts` | 3308650 | 3405864 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_batch_duplicate_entries_merged` | 6191279 | 6311455 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_batch_duplicates_count_toward_bound` | 3038850 | 3127194 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_batch_quest_on_two_entries_handled_once` | 9167782 | 9296923 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_batch_rejects_task_zero` | 3103512 | 3190260 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_batch_two_tasks_one_quest_one_write` | 10435692 | 10587426 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_batch_two_tasks_one_quest_one_write_not_completing` | 6206592 | 6327534 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_count_max_value` | 10818022 | 10968145 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_count_saturates_at_total` | 10962452 | 11097747 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_daily_interval_aligned_on_utc_midnight` | 8415562 | 8549722 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_daily_rollover_starts_from_zero` | 8240172 | 8368713 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_held_by_one_player_not_progressed_by_another` | 10357712 | 10531440 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_inactive_quest_skipped_not_reverted` | 8685046 | 8818400 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_interval_id_is_u64` | 6398746 | 6524675 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_not_held_not_progressed` | 6709402 | 6839944 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_one_off_completes_once` | 10793522 | 10942420 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_progress_is_per_player` | 6311756 | 6431866 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_recurring_completes_each_interval` | 22543744 | 22638393 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_progress::quest_task_shared_by_max_quests` | 69111406 | 70000178 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_acceptance_counter_wraps_at_2_30` | 26781338 | 28120405 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_counter_wrap_without_renewal_progresses_both` | 14755536 | 14801605 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_hook_accepting_another_quest_keeps_counts_after_16_bit_wrap` | 16912922 | 17758569 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_abandon_later_quest_not_progressed` | 21818786 | 22909726 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_abandon_other_quest_leaves_outer_unchanged` | 62070234 | 65173746 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_abandon_then_accept_not_progressed` | 18714662 | 19650396 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_abandon_accept_not_progressed` | 13219226 | 13880188 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_after_completion_refused` | 8138036 | 8544938 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_not_progressed_by_the_call` | 17799102 | 18689058 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_accept_other_quest_leaves_outer_unchanged` | 62998574 | 66148503 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_claim_other_quest_leaves_outer_unchanged` | 64803154 | 68043312 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_claim_same_quest_refused` | 12735296 | 13372061 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_progress_later_quest_completes_once` | 18906062 | 19851366 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_progress_other_quest_leaves_outer_unchanged` | 66783670 | 70122854 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_progress_same_quest_completes_once` | 11536602 | 12113433 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_renewal_after_counter_wrap_not_progressed` | 18837812 | 19779703 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_renewed_not_progressed_others_are` | 21145046 | 22202299 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_reentrant_retire_other_quest_leaves_outer_unchanged` | 61410274 | 64480788 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_reentry::quest_retired_by_hook_not_progressed` | 14360576 | 15078605 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_redefine_retired_reverts` | 4899080 | 5005046 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retire_abandon_before_is_kept` | 6311260 | 6410975 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retire_dependent_then_prerequisite` | 7542880 | 7631936 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retire_frees_slot` | 15802030 | 15893220 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retire_prerequisite_with_live_dependent_reverts` | 6663710 | 6791967 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retire_twice_reverts` | 5129050 | 5235374 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retired_accept_reverts` | 4993840 | 5104533 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retired_completed_still_claimable` | 13867116 | 13971244 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retired_definition_readable` | 4676110 | 4769457 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retired_is_not_accepted` | 6209390 | 6330891 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_retire::quest_retired_not_progressed` | 8979366 | 9100766 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_track_none::track_none_component_emits_action_events_only` | 7012942 | 7089781 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_track_none::track_none_component_revoked_reporter_emits_nothing` | 842940 | 845009 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_track_own::own_impl_tracks_the_definition_only` | 2059420 | 2120423 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_track_own::own_impl_tracks_the_reporter_only` | 1991090 | 2048676 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::baseline_writes_setup` | 4585280 | 4660730 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::baseline_writes_setup_totals_two` | 4585280 | 4660730 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::quest_progress_completing_writes_p_and_r` | 6554576 | 6624877 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::quest_progress_duplicate_entries_write_p_once` | 5967079 | 6036355 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::quest_progress_duplicates_several_counts_write_each_p_once` | 6633295 | 6714042 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::quest_progress_not_completing_writes_p_only` | 5926296 | 5993533 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::quest_progress_two_tasks_not_completing_write_p_once` | 5941502 | 6009499 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::quest_progress_two_tasks_write_p_and_r_once` | 6507192 | 6581424 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_component_writes::write_costs_73_820_sierra_gas` | 1399770 | 1431150 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::baseline_models` | 272230 | 285842 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::baseline_models_existing` | 1107190 | 1162550 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::baseline_models_get` | 1110240 | 1165752 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::baseline_models_wide` | 273470 | 287144 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_hand_get` | 1145660 | 1202943 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_hand_set_tracked_created` | 786780 | 818801 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_hand_set_tracked_overwritten` | 1219740 | 1273283 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_hand_set_untracked_created` | 741760 | 771530 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_hand_set_untracked_overwritten` | 1174720 | 1226012 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_store_get` | 1145660 | 1202943 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_store_set_tracked_created` | 786780 | 818801 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_store_set_tracked_overwritten` | 1219740 | 1273283 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_store_set_untracked_created` | 741760 | 771530 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_store_set_untracked_overwritten` | 1174720 | 1226012 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::bench_store_set_wide_created` | 743200 | 773042 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::store_tracked_set_emits_its_event_on_every_write` | 2556790 | 2624601 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::store_untracked_set_emits_nothing` | 2054560 | 2112800 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store::store_writes_what_the_hand_writes` | 3006230 | 3084333 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::baseline_definition` | 332780 | 349419 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::baseline_definition_read` | 2133440 | 2201504 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::bench_hand_get_definition_worst` | 2281870 | 2338455 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::bench_hand_set_definition_worst` | 2035230 | 2098173 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::bench_store_get_definition_worst` | 2281840 | 2338424 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::bench_store_set_definition_worst` | 2030270 | 2092965 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::store_focused_reads_return_the_slots` | 3204000 | 3276242 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::store_get_definition_reads_the_model_back` | 4603400 | 4701722 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::store_set_definition_emits_quest_defined_once` | 3167180 | 3255431 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::store_set_definition_writes_the_slots_of_0_1_0` | 6438750 | 6612249 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_definition::store_status_write_emits_nothing_and_keeps_the_definition` | 3397630 | 3441543 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::baseline_model_definition` | 332780 | 349419 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::baseline_reporter` | 271020 | 284571 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::baseline_silent_definition` | 332780 | 349419 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::baseline_silent_reporter` | 271020 | 284571 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_hand_set_definition_silent_worst` | 1880130 | 1935318 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_hand_set_model_definition_silent_worst` | 1875170 | 1930110 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_hand_set_model_definition_worst` | 2030270 | 2092965 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_hand_set_reporter` | 784250 | 816144 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_hand_set_reporter_silent` | 740650 | 770364 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_store_set_definition_silent_worst` | 1875170 | 1930110 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_store_set_model_definition_worst` | 2030270 | 2092965 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_store_set_reporter` | 784250 | 816144 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::bench_store_set_reporter_silent` | 740650 | 770364 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::store_held_list_writes_only_the_slots_that_change` | 2941810 | 2972802 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::store_prerequisites_met_reads_each_record` | 4085630 | 4136013 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::track_all_definition_rewritten_emits_once_per_write` | 3191870 | 3215625 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::track_all_reporter_emits_once_per_write` | 1043890 | 1051596 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::track_none_definition_emits_nothing` | 6448990 | 6623001 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::track_none_reporter_emits_nothing` | 1225750 | 1242549 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::untracked_held_slot_emits_nothing` | 1160630 | 1189713 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::untracked_progress_emits_nothing` | 1480530 | 1503978 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::untracked_record_emits_nothing` | 1099180 | 1125191 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_store_models::untracked_status_emits_nothing` | 3016170 | 3050460 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::baseline_track_all` | 272230 | 285842 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::baseline_track_none` | 272230 | 285842 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::bench_track_all_by_constant` | 786780 | 818801 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::bench_track_all_by_emitter` | 786780 | 818801 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::bench_track_all_hand_emitted` | 786780 | 818801 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::bench_track_none_by_constant` | 741760 | 771530 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::bench_track_none_by_emitter` | 741760 | 771530 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::bench_track_none_hand_silent` | 741760 | 771530 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::track_all_emits_once_per_write` | 2049700 | 2098247 | 2026-10-02 | 04091f9 |
+| `quiver_quest_integrationtest::test_tracking::track_none_emits_nothing` | 1683810 | 1714062 | 2026-10-02 | 04091f9 |
+
+## Scarb 2.20.1 and snforge 0.64.0 (ARC-10, D-180)
+
+**The table above is measured on Scarb 2.20.1 (Cairo 2.20.0) and snforge 0.64.0**, single-threaded
+(`RAYON_NUM_THREADS=1`, D-176, kept). The sections below are written by hand; those that give the
+package's *current* figures were re-derived from this table: "Optional tracking", "Every
+entrypoint, before and after" (the *Before* column is Scarb 2.19.4, so the difference now holds the
+compiler's effect too), "The grid", "Against the cap" and Grim World's case. The others are records
+of the step they describe, measured on Scarb 2.19.4 and snforge 0.61, and are left as they were
+(ARC-07c's table of moved tests, ARC-06's mechanism, 0.1.0's cost model, the fix loops).
+
+What moved against `a74f2f1` (Scarb 2.19.4, snforge 0.61.0), 511 tests in both (one renamed):
+
+- **Every test moved** (319 up, 192 down). Two causes. snforge 0.64 charges **15 000 more per
+  storage write** (a created slot 474 106, was 459 106; an overwritten one 72 106, was 57 106) and
+  **6 000 more per storage read** (36 205, was 30 205): the probes of `test_component_probe`. And a
+  fixed overhead of every test is 8 030 lower (the empty benchmark baselines).
+- **The smallest tests** (no storage) are cheaper by the overhead: the 13 720 of the guard tests of
+  the bounds and the error strings become 6 010.
+- **The calls that write move most**: +24.8 % on `probe_transition_zero_set_then_restored`
+  (12 054 530 → 15 046 300), +24.6 % on `probe_transition_value_to_zero`.
+- **Largest rises, in L2 gas**: `quest_batch_bound_accepted` +16 072 370 (553 122 046 → 569 194 416,
+  the §5.1 witness with its 28 quests per task not held), `baseline_batch_bound_accepted` +15 817 370,
+  `probe_transition_value_changed_then_restored` +4 491 770.
+- **Largest falls, in L2 gas**: 8 230 at most (`probe_transition_baseline_empty`), the overhead
+  above.
+- **Budgets**: 30 tests exceeded theirs and **were raised**, each with the note
+  `// gas: raised, D-180 Scarb 2.20.1` (9 in `test_component_probe`, 18 in
+  `test_component_reentry`, 3 in `test_component_bench`; the rise is at most 5 % over the new
+  measure, as for every budget). 192 budgets were far above their new measure and were
+  **lowered**, to `ceil(1.05 × measured)`. The six `test_component_writes` guards are on Sierra
+  gas, not on the budget: their references moved with the writes (below).
+- **The guard of the writes** (`test_component_writes`): a second write in a call now costs
+  **73 820** Sierra gas, not 58 820 (the test is `write_costs_73_820_sierra_gas`); the six
+  references moved by +59 710 to +87 570 and are set to the new measures, the tolerance of 20 000
+  is kept (a write added to a call still moves it by 73 820).
+- **The worst calls stay under the 20 M cap** (against the cap, above): the worst, `progress_many`
+  with H = 8, created, a hook writing one slot, is 15 666 913 (78 % of the cap; 15 045 913 and 75 % on 2.19.4).
 
 ## Where the tests went (ARC-07c, D-167)
 
@@ -577,88 +615,88 @@ models and the mechanism are in [docs/research/ARC-06-model-store.md](../../docs
 ### Optional tracking
 
 `tests/test_tracking.cairo` (`MockTrackAll`, `MockTrackNone`: one model of one slot, created, each
-choice with its hand-written twins in the same contract; baseline 280 260):
+choice with its hand-written twins in the same contract; baseline 272 230):
 
 | Choice | The constant (`if Tracking::X`) | An emitter impl per model | By hand | Store − hand |
 |---|---|---|---|---|
-| `TrackNone` | 454 530 | 454 530 | 454 530, the write with no event code (`bench_track_none_hand_silent`) | **0** |
-| `TrackAll` | 499 550 | 499 550 | 499 550, the write then `emit` (`bench_track_all_hand_emitted`) | **0** |
+| `TrackNone` | 469 530 | 469 530 | 469 530, the write with no event code (`bench_track_none_hand_silent`) | **0** |
+| `TrackAll` | 514 550 | 514 550 | 514 550, the write then `emit` (`bench_track_all_hand_emitted`) | **0** |
 
 The constant is folded: the untracked choice is ARC-06's hand-written untracked write to the unit
-(454 530, `test_store`), the tracked one ARC-06's tracked write (499 550). The constant is adopted.
+(469 530, `test_store`), the tracked one ARC-06's tracked write (514 550). The constant is adopted.
 
 `tests/test_store_models.cairo`, the package's tracked models (`MockDefinitionStore` under
 `TrackAll`, `MockSilentStore` under `TrackNone`):
 
 | Model | Choice | Benchmarks (baseline) | Store | 0.1.0 by hand | Store − hand |
 |---|---|---|---|---|---|
-| `QuestReporter`, created | `TrackNone` | `bench_store_set_reporter_silent`, `bench_hand_set_reporter_silent` (`baseline_silent_reporter`) | 454 630 | 454 630 | **0** |
-| `QuestReporter`, created | `TrackAll` | `bench_store_set_reporter`, `bench_hand_set_reporter` (`baseline_reporter`) | 498 230 | 498 230 | **0** |
-| `QuestDefinition`, 3 tasks, 7 conditions, both arms from one model | `TrackNone` | `bench_store_set_definition_silent_worst`, `bench_hand_set_model_definition_silent_worst` (`baseline_silent_definition`) | 1 497 390 | 1 497 390, the model's slots written, no event code | **0** |
-| `QuestDefinition`, the same | `TrackAll` | `bench_store_set_model_definition_worst`, `bench_hand_set_model_definition_worst` (`baseline_model_definition`) | 1 652 490 | 1 652 490, the same writes, then `emit` | **0** |
+| `QuestReporter`, created | `TrackNone` | `bench_store_set_reporter_silent`, `bench_hand_set_reporter_silent` (`baseline_silent_reporter`) | 469 630 | 469 630 | **0** |
+| `QuestReporter`, created | `TrackAll` | `bench_store_set_reporter`, `bench_hand_set_reporter` (`baseline_reporter`) | 513 230 | 513 230 | **0** |
+| `QuestDefinition`, 3 tasks, 7 conditions, both arms from one model | `TrackNone` | `bench_store_set_definition_silent_worst`, `bench_hand_set_model_definition_silent_worst` (`baseline_silent_definition`) | 1 542 390 | 1 542 390, the model's slots written, no event code | **0** |
+| `QuestDefinition`, the same | `TrackAll` | `bench_store_set_model_definition_worst`, `bench_hand_set_model_definition_worst` (`baseline_model_definition`) | 1 697 490 | 1 697 490, the same writes, then `emit` | **0** |
 
 **The definition, to the unit** (fix loop 1). Both arms build the model with `DefinitionTrait::new`
 and write its slots; the hand arm writes them itself, then (tracked) emits `QuestDefined` built
 from the model's fields through the component's emit, as 0.1.0's `define` did. The only
 difference is the tracking path: untracked, the store is the write with no event code; tracked,
 the write plus the event, 155 100, which is also 0.1.0's event (1 657 450 − 1 502 350). Before
-fix loop 1 the tracked store measured 1 652 890, 400 more: `DefinedTrait::new` desnapped each field
+fix loop 1 the tracked store measured 1 697 890 (1 652 890 on Scarb 2.19.4), 400 more: `DefinedTrait::new` desnapped each field
 of the model (`*definition.tasks`, …); it now desnaps the model once, and every `define` is 400
 cheaper.
 
 Against 0.1.0's own code (`definition_new`, kept in `tests/oracle.cairo`), the store is 4 960
-cheaper under both choices (`bench_hand_set_definition_silent_worst` 1 502 350,
-`bench_hand_set_definition_worst` 1 657 450): `DefinitionTrait::new` validates for less.
+cheaper under both choices (`bench_hand_set_definition_silent_worst` 1 547 350,
+`bench_hand_set_definition_worst` 1 702 450): `DefinitionTrait::new` validates for less.
 
 The component's tests run under `TrackAll`, as 0.1.0 behaves: `define` and `set_reporter` cost
 what they cost before, to the unit (below).
 
 ### Every entrypoint, before and after
 
-| Entrypoint | Benchmark (baseline) | Before | 0.2.0 | Difference |
+| Entrypoint | Benchmark (baseline) | Before | 0.2.0 on Scarb 2.20.1 | Difference |
 |---|---|---|---|---|
-| `progress_many`, **the worst**, H = 4, created | `bench_progress_many_worst_held4` (`baseline_progress_many_worst_held4`) | 6 213 063 | **6 205 843** | −7 220 |
-| `progress_many`, H = 4, existing | `bench_progress_many_worst_held4_existing` | 2 997 063 | 2 989 843 | −7 220 |
-| `progress_many`, H = 4, created, hook writes one slot | `bench_progress_many_worst_held4_hook` | 8 027 983 | 8 020 763 | −7 220 |
-| `progress_many`, H = 4, existing, hook writes one slot | `bench_progress_many_worst_held4_existing_hook` | 4 811 983 | 4 804 763 | −7 220 |
-| `progress_many`, H = 8, created | `bench_progress_many_worst_held8` | 11 430 213 | **11 416 073** | −14 140 |
-| `progress_many`, H = 8, existing | `bench_progress_many_worst_held8_existing` | 4 998 213 | 4 984 073 | −14 140 |
-| `progress_many`, H = 8, created, hook writes one slot | `bench_progress_many_worst_held8_hook` | 15 060 053 | **15 045 913** | −14 140 |
-| `progress_many`, H = 8, existing, hook writes one slot | `bench_progress_many_worst_held8_existing_hook` | 8 628 053 | 8 613 913 | −14 140 |
-| `progress_many`, §5.1 witness adapted | `quest_batch_bound_accepted` (`baseline_batch_bound_accepted`) | 5 630 846 | 5 623 626 | −7 220 |
-| `progress_many`, 4 held all completing, 4 entries | `bench_progress_full_list_all_complete` (`baseline_full_list`) | 5 190 634 | 5 183 414 | −7 220 |
-| `progress`, 4 held, one completes | `bench_progress_full_list_one_completes` (`baseline_full_list`) | 2 116 496 | 2 105 066 | −11 430 |
-| `progress`, 4 held, one counts | `bench_progress_full_list_one_counts` (`baseline_full_list`) | 1 404 436 | 1 392 146 | −12 290 |
-| `progress`, 4 held, none in the batch | `bench_progress_full_list_none_counts` (`baseline_full_list`) | 943 726 | 930 626 | −13 100 |
-| `progress`, 1 held, counts | `bench_progress_plain` (`baseline_accepted`) | 837 546 | 835 456 | −2 090 |
-| `progress`, 1 held, completes | `bench_progress_plain_completing` (`baseline_accepted`) | 1 382 646 | 1 381 416 | −1 230 |
-| `progress`, nothing held | `bench_progress_nothing_held` (`baseline_plain`) | 226 756 | 227 256 | +500 |
-| `accept`, **the worst**: grows into a slot never used, K = 7 | `bench_accept_growth` (`baseline_accept_growth`) | 1 921 540 | **1 917 170** | −4 370 |
-| `accept`, grows back into a slot used before | `bench_accept_regrow` (`baseline_accept_regrow`) | 712 750 | 703 980 | −8 770 |
-| `accept`, mixed list, K = 7 | `bench_accept_mixed` (`baseline_accept_mixed`) | 1 684 750 | 1 680 280 | −4 470 |
-| `accept`, 4 dead entries completed, K = 7 | `bench_accept_worst_completed` (`baseline_accept_worst_completed`) | 1 760 960 | 1 755 690 | −5 270 |
-| `accept`, 4 entries expired, K = 7 | `bench_accept_worst_expired` (`baseline_accept_worst_expired`) | 1 599 200 | 1 593 930 | −5 270 |
-| `accept`, a player's first | `bench_accept_plain` (`baseline_plain`) | 778 830 | 769 490 | −9 340 |
-| `abandon`, **the worst**: the first of 4 | `bench_abandon_worst` (`baseline_full_list`) | 574 060 | **564 150** | −9 910 |
-| `abandon`, the third of 3 | `bench_abandon_shrink` (`baseline_three_held`) | 459 470 | 450 860 | −8 610 |
-| `abandon`, the second of 2 | `bench_abandon` (`baseline_two_held`) | 430 750 | 422 370 | −8 380 |
-| `claim` | `bench_claim` (`baseline_completed`) | 364 020 | 364 520 | +500 |
-| `define`, **the worst**: 3 tasks, 7 conditions | `bench_define_worst` (`baseline_define_worst`) | 2 583 680 | **2 583 280** | −400 |
-| `retire`, **the worst**: 7 conditions | `bench_retire_worst` (`baseline_retire_worst`) | 1 003 240 | **1 003 540** | +300 |
-| `set_reporter`, a new reporter | `bench_set_reporter` (`baseline_deployed`) | 608 210 | 608 210 | 0 |
-| `set_reporter`, set again, unchanged | `bench_set_reporter_unchanged` (`baseline_reporter_registered`) | 207 330 | 207 330 | 0 |
-| `progress`, event mode, 1 entry | `bench_progress_event_mode` (`baseline_deployed`) | 212 366 | 212 866 | +500 |
-| `progress_many`, event mode, 16 entries, late collision | `bench_progress_many_event_mode_late_collision` (`baseline_deployed`) | 1 831 823 | 1 831 523 | −300 |
-| `quest_definition`, 3 tasks, 7 conditions | `bench_view_definition_worst` (`baseline_prerequisites`) | 304 400 | 304 500 | +100 |
-| `quest_is_unlocked`, K = 7, not cached | `bench_view_is_unlocked_worst` (`baseline_prerequisites`) | 492 490 | 496 790 | +4 300 |
-| `quest_is_accepted`, full list | `bench_view_is_accepted` (`baseline_prerequisites`) | 332 950 | 333 350 | +400 |
-| `quest_held`, full list | `bench_view_held_full` (`baseline_prerequisites`) | 298 690 | 298 690 | 0 |
-| `quest_progress` + `quest_record` | `bench_view_progress_and_record` (`baseline_prerequisites`) | 288 290 | 289 090 | +800 |
-| `quest_current_interval` | `bench_view_current_interval` (`baseline_prerequisites`) | 160 630 | 160 630 | 0 |
-| `quest_is_reporter` | `bench_view_is_reporter` (`baseline_prerequisites`) | 124 690 | 124 690 | 0 |
+| `progress_many`, **the worst**, H = 4, created | `bench_progress_many_worst_held4` (`baseline_progress_many_worst_held4`) | 6 213 063 | **6 460 843** | +247 780 |
+| `progress_many`, H = 4, existing | `bench_progress_many_worst_held4_existing` | 2 997 063 | 3 244 843 | +247 780 |
+| `progress_many`, H = 4, created, hook writes one slot | `bench_progress_many_worst_held4_hook` | 8 027 983 | 8 335 763 | +307 780 |
+| `progress_many`, H = 4, existing, hook writes one slot | `bench_progress_many_worst_held4_existing_hook` | 4 811 983 | 5 119 763 | +307 780 |
+| `progress_many`, H = 8, created | `bench_progress_many_worst_held8` | 11 430 213 | **11 917 073** | +486 860 |
+| `progress_many`, H = 8, existing | `bench_progress_many_worst_held8_existing` | 4 998 213 | 5 485 073 | +486 860 |
+| `progress_many`, H = 8, created, hook writes one slot | `bench_progress_many_worst_held8_hook` | 15 060 053 | **15 666 913** | +606 860 |
+| `progress_many`, H = 8, existing, hook writes one slot | `bench_progress_many_worst_held8_existing_hook` | 8 628 053 | 9 234 913 | +606 860 |
+| `progress_many`, §5.1 witness adapted | `quest_batch_bound_accepted` (`baseline_batch_bound_accepted`) | 5 630 846 | 5 878 626 | +247 780 |
+| `progress_many`, 4 held all completing, 4 entries | `bench_progress_full_list_all_complete` (`baseline_full_list`) | 5 190 634 | 5 438 294 | +247 660 |
+| `progress`, 4 held, one completes | `bench_progress_full_list_one_completes` (`baseline_full_list`) | 2 116 496 | 2 251 946 | +135 450 |
+| `progress`, 4 held, one counts | `bench_progress_full_list_one_counts` (`baseline_full_list`) | 1 404 436 | 1 500 026 | +95 590 |
+| `progress`, 4 held, none in the batch | `bench_progress_full_list_none_counts` (`baseline_full_list`) | 943 726 | 1 023 506 | +79 780 |
+| `progress`, 1 held, counts | `bench_progress_plain` (`baseline_accepted`) | 837 546 | 877 336 | +39 790 |
+| `progress`, 1 held, completes | `bench_progress_plain_completing` (`baseline_accepted`) | 1 382 646 | 1 444 296 | +61 650 |
+| `progress`, nothing held | `bench_progress_nothing_held` (`baseline_plain`) | 226 756 | 236 256 | +9 500 |
+| `accept`, **the worst**: grows into a slot never used, K = 7 | `bench_accept_growth` (`baseline_accept_growth`) | 1 921 540 | **2 061 170** | +139 630 |
+| `accept`, grows back into a slot used before | `bench_accept_regrow` (`baseline_accept_regrow`) | 712 750 | 778 980 | +66 230 |
+| `accept`, mixed list, K = 7 | `bench_accept_mixed` (`baseline_accept_mixed`) | 1 684 750 | 1 842 280 | +157 530 |
+| `accept`, 4 dead entries completed, K = 7 | `bench_accept_worst_completed` (`baseline_accept_worst_completed`) | 1 760 960 | 1 929 690 | +168 730 |
+| `accept`, 4 entries expired, K = 7 | `bench_accept_worst_expired` (`baseline_accept_worst_expired`) | 1 599 200 | 1 743 930 | +144 730 |
+| `accept`, a player's first | `bench_accept_plain` (`baseline_plain`) | 778 830 | 799 490 | +20 660 |
+| `abandon`, **the worst**: the first of 4 | `bench_abandon_worst` (`baseline_full_list`) | 574 060 | **621 030** | +46 970 |
+| `abandon`, the third of 3 | `bench_abandon_shrink` (`baseline_three_held`) | 459 470 | 486 740 | +27 270 |
+| `abandon`, the second of 2 | `bench_abandon` (`baseline_two_held`) | 430 750 | 458 370 | +27 620 |
+| `claim` | `bench_claim` (`baseline_completed`) | 364 020 | 404 920 | +40 900 |
+| `define`, **the worst**: 3 tasks, 7 conditions | `bench_define_worst` (`baseline_define_worst`) | 2 583 680 | **2 779 560** | +195 880 |
+| `retire`, **the worst**: 7 conditions | `bench_retire_worst` (`baseline_retire_worst`) | 1 003 240 | **1 175 940** | +172 700 |
+| `set_reporter`, a new reporter | `bench_set_reporter` (`baseline_deployed`) | 608 210 | 621 610 | +13 400 |
+| `set_reporter`, set again, unchanged | `bench_set_reporter_unchanged` (`baseline_reporter_registered`) | 207 330 | 220 610 | +13 280 |
+| `progress`, event mode, 1 entry | `bench_progress_event_mode` (`baseline_deployed`) | 212 366 | 217 146 | +4 780 |
+| `progress_many`, event mode, 16 entries, late collision | `bench_progress_many_event_mode_late_collision` (`baseline_deployed`) | 1 831 823 | 1 835 803 | +3 980 |
+| `quest_definition`, 3 tasks, 7 conditions | `bench_view_definition_worst` (`baseline_prerequisites`) | 304 400 | 322 180 | +17 780 |
+| `quest_is_unlocked`, K = 7, not cached | `bench_view_is_unlocked_worst` (`baseline_prerequisites`) | 492 490 | 556 470 | +63 980 |
+| `quest_is_accepted`, full list | `bench_view_is_accepted` (`baseline_prerequisites`) | 332 950 | 355 630 | +22 680 |
+| `quest_held`, full list | `bench_view_held_full` (`baseline_prerequisites`) | 298 690 | 316 370 | +17 680 |
+| `quest_progress` + `quest_record` | `bench_view_progress_and_record` (`baseline_prerequisites`) | 288 290 | 300 570 | +12 280 |
+| `quest_current_interval` | `bench_view_current_interval` (`baseline_prerequisites`) | 160 630 | 164 910 | +4 280 |
+| `quest_is_reporter` | `bench_view_is_reporter` (`baseline_prerequisites`) | 124 690 | 130 370 | +5 680 |
 
-Grim World's case (`game_case_three_per_task`, `game_case_two_per_task`): 4 553 406 → 4 546 186
-(−7 220).
+Grim World's case (`game_case_three_per_task`, `game_case_two_per_task`): 4 553 406 → 4 801 186
+(+247 780, Scarb 2.20.1).
 
 **The worst calls are not raised**: `progress_many` is 7 220 cheaper at H = 4 and 14 140 at H = 8,
 `accept` 4 370, `abandon` 9 910, `define` 400; `retire` is 300 more (3 steps, 0.03 %). The walk of the held list is cheaper because `ProgressTrait::add` is inlined (`#[inline]`);
@@ -677,24 +715,28 @@ quest than 0.1.0's `progress_add` (measured: +4 900 at H = 4 before the attribut
 
 ### The grid (`test_component_grid`), before and after
 
-The call `progress_many(PLAYER, [1..=15, 129], Storage)` minus its seeded baseline:
+The call `progress_many(PLAYER, [1..=15, 129], Storage)` minus its seeded baseline, on Scarb 2.20.1
+(the difference is against the same cell on Scarb 2.19.4, `5fb465a`):
 
 | H | all complete | all count | none in the batch | all completed earlier | all expired |
 |---|---|---|---|---|---|
-| 1 | 2 234 343 (−2 030) | 1 689 123 (−2 890) | 1 235 053 (−3 700) | 1 100 853 (+380) | 1 056 703 (−80) |
-| 2 | 3 576 433 (−3 760) | 2 430 373 (−5 480) | 1 522 233 (−7 100) | 1 253 833 (+1 060) | 1 165 533 (+140) |
-| 4 | 6 207 063 (−7 220) | 3 859 223 (−10 660) | 2 042 943 (−13 900) | 1 506 143 (+2 420) | 1 329 543 (+580) |
-| 8 | 11 418 413 (−14 140) | 6 667 013 (−21 020) | 3 034 453 (−27 500) | 1 960 853 (+5 140) | 1 607 653 (+1 460) |
+| 1 | 2 297 343 (+63 000) | 1 731 123 (+42 000) | 1 262 053 (+27 000) | 1 121 853 (+21 000) | 1 071 703 (+15 000) |
+| 2 | 3 705 433 (+129 000) | 2 511 373 (+81 000) | 1 573 233 (+51 000) | 1 292 833 (+39 000) | 1 192 533 (+27 000) |
+| 4 | 6 462 063 (+255 000) | 4 012 223 (+153 000) | 2 135 943 (+93 000) | 1 575 143 (+69 000) | 1 374 543 (+45 000) |
+| 8 | 11 919 413 (+501 000) | 6 958 013 (+291 000) | 3 205 453 (+171 000) | 2 083 853 (+123 000) | 1 682 653 (+75 000) |
 
 ### Against the cap
 
 | Worst call | Call, snforge | Created / overwritten | Network estimate | Against 20 M (snforge / network) | Against 1.1 × 10⁹ |
 |---|---|---|---|---|---|
-| H = 4, created, hooks empty | **6 205 843** | 8 / 0 | 6 160 995 | 31 % / 31 % | 0.56 % |
-| H = 4, created, hook writes one slot | **8 020 763** | 12 / 0 | 7 953 491 | 40 % / 40 % | 0.73 % |
-| H = 8, created, hooks empty | **11 416 073** | 16 / 0 | 11 326 377 | 57 % / 57 % | 1.04 % |
-| H = 8, created, hook writes one slot | **15 045 913** | 24 / 0 | 14 911 369 | 75 % / 75 % | 1.37 % |
-| Grim World's use | 4 546 186 | 6 / 2 | 4 462 338 | 23 % / 22 % | 0.41 % |
+| H = 4, created, hooks empty | **6 460 843** | 8 / 0 | 6 160 995 | 32 % / 31 % | 0.59 % |
+| H = 4, created, hook writes one slot | **8 335 763** | 12 / 0 | 7 953 491 | 42 % / 40 % | 0.76 % |
+| H = 8, created, hooks empty | **11 917 073** | 16 / 0 | 11 326 377 | 60 % / 57 % | 1.08 % |
+| H = 8, created, hook writes one slot | **15 666 913** | 24 / 0 | 14 911 369 | 78 % / 75 % | 1.42 % |
+| Grim World's use | 4 801 186 | 6 / 2 | 4 462 338 | 24 % / 22 % | 0.44 % |
+
+Snforge figures are measured on Scarb 2.20.1 / snforge 0.64.0 (ARC-10). The network estimate is the
+state-diff model of FND-04, not an snforge figure: it is not re-derived here.
 
 The reads, writes and events of each call are those of 0.1.0: the store reads and writes the same
 slots, in the same order, and emits the same events under `TrackAll`.
@@ -807,7 +849,7 @@ cheaper than in 0.1.0.
 This section is written by hand below the generated table. `scripts/gas.py --write` rewrites
 this file and drops the section; `--check` reads only the rows above.
 
-- Figures are L2 gas as snforge 0.61 reports it, from the full run of this commit.
+- Figures are L2 gas as snforge 0.64 reports it, from the full run of this commit.
 - Reads, writes and events come from `snforge test --detailed-resources`.
 - A call's cost is its test minus its baseline (the same fixture without the call), through a
   dispatcher.
@@ -818,36 +860,37 @@ this file and drops the section; `--check` reads only the rows above.
 A written slot is priced by whether it is **created** (zero before the transaction, non-zero
 after) or **overwritten** (non-zero before; this includes a slot zeroed or rewritten unchanged).
 
-| Written slot | snforge 0.61, measured here (`test_component_probe`) | The network: FND-04 of the game, the state diffs of 149 Sepolia transactions (decision of 2026-09-28, correction of 2026-09-29) |
+| Written slot | snforge 0.64, measured here (`test_component_probe`; 0.61: 459 106 and 57 106) | The network: FND-04 of the game, the state diffs of 149 Sepolia transactions (decision of 2026-09-28, correction of 2026-09-29) |
 |---|---|---|
-| Created (zero → non-zero) | 459 106: the write 57 106 + the allocation 402 000 | about 453 500 |
-| Overwritten, zeroed or unchanged | 57 106 | about 32 000 |
+| Created (zero → non-zero) | 474 106: the write 72 106 + the allocation 402 000 | about 453 500 |
+| Overwritten, zeroed or unchanged | 72 106 | about 32 000 |
 
 **The figures of this file are snforge's**, measured. Where a figure is set against the 20 M cap,
 the **network's estimate** is given beside it. That estimate is the measure with each slot the
-call writes repriced at the network's price: −5 606 per created slot and −25 106 per
-overwritten one. snforge is within 1.3 % of the network on a created slot and overcharges an
-overwritten one by 25 000.
+call writes repriced at the network's price: −20 606 per created slot and −40 106 per
+overwritten one (−5 606 and −25 106 on snforge 0.61). snforge is within 4.5 % of the network on a
+created slot and overcharges an overwritten one by 40 000.
 
 The probes of fix loop 1, each transition in its own test, 100 cells per test:
 
 | Transition in the measured call | Test | L2 gas per write |
 |---|---|---|
-| 0 → 1 (created) | `probe_transition_zero_to_value` | 459 106 |
-| 0 → 0 | `probe_transition_zero_unchanged` | 57 106 |
-| 0 → 1 → 0 in one call | `probe_transition_zero_set_then_restored` | 113 293 (two writes, nothing created) |
-| 1 → 2 (overwritten) | `probe_transition_value_to_other` | 57 106 |
-| 1 → 1 | `probe_transition_value_unchanged` | 57 106 |
-| 1 → 2 → 1 in one call | `probe_transition_value_changed_then_restored` | 113 293 |
-| 1 → 0 (zeroed) | `probe_transition_value_to_zero` | −344 894 in the test: the write, minus the allocation the test's first call made and the clear undid |
+| 0 → 1 (created) | `probe_transition_zero_to_value` | 474 106 |
+| 0 → 0 | `probe_transition_zero_unchanged` | 72 106 |
+| 0 → 1 → 0 in one call | `probe_transition_zero_set_then_restored` | 143 293 (two writes, nothing created) |
+| 1 → 2 (overwritten) | `probe_transition_value_to_other` | 72 106 |
+| 1 → 1 | `probe_transition_value_unchanged` | 72 106 |
+| 1 → 2 → 1 in one call | `probe_transition_value_changed_then_restored` | 143 293 |
+| 1 → 0 (zeroed) | `probe_transition_value_to_zero` | −314 894 in the test: the write, minus the allocation the test's first call made and the clear undid |
 
 snforge counts a whole test as one transaction, so a call that zeroes a slot its setup created
 reads 402 000 low. Since fix loop 2 **the held list is never zeroed** (below). The one
 entrypoint that zeroes a slot is `set_reporter(reporter, false)` on a registered reporter: its
-benchmark reads −194 470, and it costs 207 530 in a transaction of its own. Every other figure is
+benchmark reads −181 190, and it costs 220 810 in a transaction of its own (−194 470 and 207 530 on
+Scarb 2.19.4). Every other figure is
 the call in a transaction of its own.
 
-Other unit costs: storage read 30 205; event of 3 keys and 1 data felt 48 542; unpack
+Other unit costs (storage read 36 205 on snforge 0.64; the rest of this line is 0.61's, not re-measured): storage read 30 205; event of 3 keys and 1 data felt 48 542; unpack
 `QuestDefinition` / `QuestTasks` / `QuestRecord` / `QuestHeldSlot` 18 633 / 12 625 / 7 075 /
 22 301 (17 221 at the 16-bit widths; the counter now straddles bit 128).
 
@@ -1022,7 +1065,7 @@ by 2 or 3 quests in all; the others are not accepted.
 
 | Case | Call, snforge | Slots created / overwritten | Network estimate |
 |---|---|---|---|
-| 3 quests per task (48), or 2 (32) | 4 553 406 | 6 / 2 | 4 469 558 |
+| 3 quests per task (48), or 2 (32) | 4 801 186 (4 553 406 on Scarb 2.19.4) | 6 / 2 | 4 469 558 |
 
 - **Created**: the four P and the records of quests 1 and 4.
 - **Overwritten**: the records of quests 2 and 3, whose unlock `accept` cached.

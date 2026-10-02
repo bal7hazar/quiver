@@ -250,18 +250,18 @@ cap is far lower: the worst call the package allows must stay **under 20 √ó 10‚Å
 Measured through a dispatcher with snforge, under `TrackAll`
 ([GAS.md](GAS.md#quiver_achievement-020-arc-07b); the cost model in
 [GAS.md](GAS.md#cost-model-of-quiver_achievement-010-arc-04-event-mode-only)). The network's
-estimate reprices each written slot: a created slot about 453 500 (snforge 459 106), an
-overwritten one about 32 000 (snforge 57 106).
+estimate reprices each written slot: a created slot about 453 500 (snforge 474 106), an
+overwritten one about 32 000 (snforge 72 106).
 
 | Call | snforge / network | Against 20 M |
 |---|---|---|
-| **The worst `progress_many`**: 16 entries, the slowest merge, 16 events | **1 816 813** / 1 816 813 (nothing written) | 9.1 % |
-| `progress`, 1 entry | 209 236 / 209 236 | 1.0 % |
-| Grim World's results transaction: 6 character and 2 account tasks, two calls | 829 728 / 829 728 | 4.1 % |
-| `define`, 3 tasks (2 slots created) | 1 198 640 / 1 187 428 | 6.0 % |
-| `define`, 1 task (1 slot created) | 703 270 / 697 664 | 3.5 % |
-| `retire` | 243 330 / 218 224 | 1.2 % |
-| `set_reporter`, a new reporter | 607 410 / 601 804 | 3.0 % |
+| **The worst `progress_many`**: 16 entries, the slowest merge, 16 events | **1 821 093** / 1 821 093 (nothing written) | 9.1 % |
+| `progress`, 1 entry | 213 636 / 213 636 | 1.1 % |
+| Grim World's results transaction: 6 character and 2 account tasks, two calls | 838 408 / 838 408 | 4.2 % |
+| `define`, 3 tasks (2 slots created) | 1 232 920 / 1 191 708 | 6.2 % |
+| `define`, 1 task (1 slot created) | 722 550 / 701 944 | 3.6 % |
+| `retire` | 262 730 / 222 624 | 1.3 % |
+| `set_reporter`, a new reporter | 620 810 / 600 204 | 3.1 % |
 
 Under `TrackNone`, `define` costs 70 180 less on 1 task and 94 760 less on 3 (no
 `AchievementDefined`), `set_reporter` 41 200 less; progress and `retire` cost the same.
@@ -271,7 +271,7 @@ only), merges the batch and emits; about 69 000 per distinct entry. The achievem
 cost a progress call nothing.
 
 **Definitions in bulk.** Each `define` creates one or two slots. Defining Grim World's 26 tiers
-in one transaction costs 18 412 110 (18 266 354 at the network's prices), 92.1 % of the cap:
+in one transaction costs 18 916 390 (18 380 634 at the network's prices), 94.6 % of the cap:
 define over several transactions, at most about 25 single-task achievements or 16 of three tasks
 in one.
 
