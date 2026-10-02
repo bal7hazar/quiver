@@ -729,14 +729,14 @@ The call `progress_many(PLAYER, [1..=15, 129], Storage)` minus its seeded baseli
 
 | Worst call | Call, snforge | Created / overwritten | Network estimate | Against 20 M (snforge / network) | Against 1.1 × 10⁹ |
 |---|---|---|---|---|---|
-| H = 4, created, hooks empty | **6 460 843** | 8 / 0 | 6 160 995 | 32 % / 31 % | 0.59 % |
-| H = 4, created, hook writes one slot | **8 335 763** | 12 / 0 | 7 953 491 | 42 % / 40 % | 0.76 % |
-| H = 8, created, hooks empty | **11 917 073** | 16 / 0 | 11 326 377 | 60 % / 57 % | 1.08 % |
-| H = 8, created, hook writes one slot | **15 666 913** | 24 / 0 | 14 911 369 | 78 % / 75 % | 1.42 % |
-| Grim World's use | 4 801 186 | 6 / 2 | 4 462 338 | 24 % / 22 % | 0.44 % |
+| H = 4, created, hooks empty | **6 460 843** | 8 / 0 | 6 295 995 | 32 % / 31 % | 0.59 % |
+| H = 4, created, hook writes one slot | **8 335 763** | 12 / 0 | 8 088 491 | 42 % / 40 % | 0.76 % |
+| H = 8, created, hooks empty | **11 917 073** | 16 / 0 | 11 587 377 | 60 % / 58 % | 1.08 % |
+| H = 8, created, hook writes one slot | **15 666 913** | 24 / 0 | 15 172 369 | 78 % / 76 % | 1.42 % |
+| Grim World's use | 4 801 186 | 6 / 2 | 4 597 338 | 24 % / 23 % | 0.44 % |
 
-Snforge figures are measured on Scarb 2.20.1 / snforge 0.64.0 (ARC-10). The network estimate is the
-state-diff model of FND-04, not an snforge figure: it is not re-derived here.
+Snforge figures are measured on Scarb 2.20.1 / snforge 0.64.0 (ARC-10). The network estimate is the snforge figure with each written slot repriced at the network's
+price: −20 606 per created slot and −40 106 per overwritten one.
 
 The reads, writes and events of each call are those of 0.1.0: the store reads and writes the same
 slots, in the same order, and emits the same events under `TrackAll`.
@@ -1065,7 +1065,7 @@ by 2 or 3 quests in all; the others are not accepted.
 
 | Case | Call, snforge | Slots created / overwritten | Network estimate |
 |---|---|---|---|
-| 3 quests per task (48), or 2 (32) | 4 801 186 (4 553 406 on Scarb 2.19.4) | 6 / 2 | 4 469 558 |
+| 3 quests per task (48), or 2 (32) | 4 801 186 (4 553 406 on Scarb 2.19.4) | 6 / 2 | 4 597 338 (4 469 558 on 2.19.4) |
 
 - **Created**: the four P and the records of quests 1 and 4.
 - **Overwritten**: the records of quests 2 and 3, whose unlock `accept` cached.

@@ -20,7 +20,7 @@ case "$SNFORGE" in
     ;;
 esac
 
-# The same compiler serves both snforge versions (CI ran them with it).
+# universal-sierra-compiler 2.10.1 serves snforge 0.64.0 (CI runs it with that compiler).
 usc=2.10.1
 usc_sha=8f6d9faf2ce644faa99e2acee7e855e3fbeb7919b99ec13d29f57c08089f2fb9
 

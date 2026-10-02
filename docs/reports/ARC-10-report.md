@@ -165,3 +165,17 @@ it as a regression of the toolchain.
 
 - Should `docs/BUDGETS.md`'s ARC-06 paragraph and the fix-loop sections of `GAS.md` be re-measured (a
   separate lot), or stay as records?
+
+## Fix loop 1
+
+Review of PR #37 at `1fe4c10` (review-opus), two findings, both fixed:
+
+1. `packages/quest/GAS.md`, "Against the cap": the five network cells and percentages were the
+   2.19.4 values. Re-derived with snforge − 20 606 per created slot − 40 106 per overwritten slot:
+   6 295 995 (31 %), 8 088 491 (40 %), 11 587 377 (58 %), 15 172 369 (76 %), 4 597 338 (23 %); they
+   equal `README.md` and `docs/BUDGETS.md` exactly. "It is not re-derived here" is replaced by the
+   formula. The same stale cell in Grim World's case table of the 0.1.0 cost model section (4 469 558)
+   is now 4 597 338. The achievement's `GAS.md`, `README.md` and changelogs hold no other stale network
+   cell (the README's were updated in the first pass).
+2. `.github/ci/install-snforge.sh`: the comment now says universal-sierra-compiler 2.10.1 serves
+   snforge 0.64.0.
