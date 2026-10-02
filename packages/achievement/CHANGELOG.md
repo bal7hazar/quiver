@@ -6,7 +6,7 @@ events and error strings are named.
 
 ## [Unreleased]
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-10-02
 
 Not yet released. The package organised as the owner's rule D-143 says (docs/CAIRO.md §7), as
 `quiver_quest` 0.2.0 is: no `logic`, every stored entity a model read and written only through

@@ -4,7 +4,7 @@ All notable changes to `quiver_quest` are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Changes to results, storage layout,
 events and error strings are named.
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-10-02
 
 Not yet released. The package organised as the owner's rule D-143 says (docs/CAIRO.md §7) and as
 the owner's review of ARC-06 asks (D-147): no `logic`, every stored entity a model read and
