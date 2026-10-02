@@ -150,3 +150,5 @@ counters is planned for a later version; its layout is not reserved by 0.1.0.
 
 - `ACHIEVEMENTS_PER_PAGE` and `MAX_PAGES` of the unreleased skeleton: there are no task pages in
   event mode, and no cap of achievements per task.
+
+Acceptance note.
