@@ -578,6 +578,20 @@ mod tests {
         assert!(all == to_felt(pow2(212) - pow2(196)));
     }
 
+    /// 2^196 - 1: every field of 0.1.0's slot A at its maximum (`head(U64_MAX, U64_MAX, 3, true,
+    /// true, U32_MAX, U32_MAX)`), the highest bit it ever wrote being 195.
+    const SLOT_A_0_1_0_WIDEST: felt252 = 0xfffffffffffffffffffffffffffffffffffffffffffffffff;
+
+    /// A slot A as 0.1.0 packed it, with no `points` (it never wrote a bit at or above 196), reads
+    /// with `points == 0` and every other field as written (ARC-07d).
+    #[test]
+    #[available_gas(l2_gas: 100000)]
+    fn achievement_unpacking_slot_of_0_1_0_reads_zero_points() {
+        let d: HeadSlot = StorePacking::unpack(SLOT_A_0_1_0_WIDEST);
+        assert!(d.points == 0);
+        assert!(d == head(U64_MAX, U64_MAX, 3, true, true, U32_MAX, U32_MAX, 0));
+    }
+
     /// The widest value of each slot stays below 2^212 (A) and 2^128 (B).
     #[test]
     #[available_gas(l2_gas: 719019)]
