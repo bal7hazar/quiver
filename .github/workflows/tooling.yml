@@ -27,7 +27,10 @@ jobs:
       - name: shellcheck
         run: |
           shellcheck --version
-          shellcheck scripts/*.sh
+          shellcheck scripts/*.sh .githooks/pre-push .github/ci/install-snforge.sh
+
+      - name: pre-push hook tests
+        run: python3 -m unittest scripts/test_hook.py
 
       - name: launcher dry-run
         run: |
