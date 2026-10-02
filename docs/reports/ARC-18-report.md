@@ -43,3 +43,14 @@ None for the lot. The local check of the snippets was refused (see Commands run)
 ## Open questions
 - A failing `changes` step falls back to all `true` (fail closed); a `git` or Python error there
   therefore runs every job instead of failing the workflow. Intended, noted for the reviewer.
+
+## Fix loop 1
+Review of f77a866 (review-opus): pass with findings; both fixed in one push.
+1. (minor) `.gitignore` concerns the tooling `scripts` job: `scripts/test_hook.py` seeds its clone
+   with `git archive HEAD` and checks the hook's refusal of untracked files, which reads `.gitignore`.
+   `.gitignore` is now in `TOOLING_FILES` of `affected.py`, with a unit case, and is removed from the
+   docs-only list of `docs/WORKSPACE.md` §4. **The brief's list was wrong on this point** (it named
+   `.gitignore` as a docs-only path).
+2. (note) On events other than `pull_request`, the `changes` job of both workflows writes the
+   all-true outputs directly (`all_true`) instead of running `affected.py changes`, so a broken script
+   on `main` cannot skip the backstop jobs. Edited with the file-editing tool only.

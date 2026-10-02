@@ -126,8 +126,12 @@ class Changes(unittest.TestCase):
         self.assertEqual(groups(["README.md", "STATUS.md"]), ("links",))
 
     def test_other_documents_run_no_test_and_no_links(self):
-        for path in ("LICENSE", ".gitignore", "docs/decisions/x.txt"):
+        for path in ("LICENSE", "docs/decisions/x.txt"):
             self.assertEqual(groups([path]), (), path)
+
+    def test_gitignore_runs_tooling(self):
+        # test_hook.py's untracked-file refusal reads it, through `git archive HEAD`.
+        self.assertEqual(groups([".gitignore"]), ("tooling",))
 
     def test_package_readme_and_changelog_skip_cairo(self):
         self.assertEqual(groups(["packages/quest/README.md"]), ("links",))

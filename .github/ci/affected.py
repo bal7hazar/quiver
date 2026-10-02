@@ -39,7 +39,9 @@ ALL_PREFIXES = (".github/ci/",)
 CAIRO_FILES = ALL_FILES | {"scripts/test_gas.py"}
 PACKAGE_DOCS_RE = re.compile(r"^packages/[^/]+/(README|CHANGELOG)\.md$")
 TOOLING_PREFIXES = ("scripts/", ".githooks/", ".github/ci/")
-TOOLING_FILES = {".github/workflows/tooling.yml"}
+# .gitignore: test_hook.py seeds its clone with `git archive HEAD` and checks the hook's refusal of
+# untracked files, which reads it.
+TOOLING_FILES = {".github/workflows/tooling.yml", ".gitignore"}
 LINKS_FILES = {".github/ci/check-links.py", ".github/workflows/tooling.yml"}
 PACKAGE_DIR_RE =re.compile(r"^packages/[a-z0-9][a-z0-9_-]*$")
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")

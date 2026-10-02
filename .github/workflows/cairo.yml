@@ -57,7 +57,7 @@ jobs:
               all_true
             fi
           else
-            python3 "$script" changes
+            all_true
           fi
 
   # A pull request controls .tool-versions and the manifests: every value is validated by

@@ -74,9 +74,9 @@ writes `cairo`, `tooling` and `links` to a `changes` job of each workflow; delet
 count). **Cairo** (`affected`, `package`): `packages/**` except a package's `README.md` and
 `CHANGELOG.md`, the root `Scarb.toml` and `Scarb.lock`, `.tool-versions`, `.github/ci/**`,
 `scripts/gas.py`, `scripts/test_gas.py`, `cairo.yml`, `release.yml`. **Tooling `scripts`**:
-`scripts/**`, `.githooks/**`, `.github/ci/**`, `tooling.yml`. **Tooling `links`**: any `*.md`,
+`scripts/**`, `.githooks/**`, `.github/ci/**`, `.gitignore`, `tooling.yml`. **Tooling `links`**: any `*.md`,
 `check-links.py`, `tooling.yml`, and any deleted or renamed file. A docs-only pull request (Markdown,
-`docs/**`, `LICENSE`, `.gitignore`, package READMEs and changelogs) therefore runs no test: only
+`docs/**`, `LICENSE`, package READMEs and changelogs) therefore runs no test: only
 `changes`, `links` when a Markdown file changed, and the two summary jobs, `cairo` and `tooling`,
 which always run and fail when a job that was needed did not succeed (or a job not needed ran). The
 `changes` job runs the base branch's copy of `affected.py` and fails closed: with no such script or

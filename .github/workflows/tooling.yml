@@ -49,7 +49,7 @@ jobs:
               all_true
             fi
           else
-            python3 "$script" changes
+            all_true
           fi
 
   scripts:
