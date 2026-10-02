@@ -23,7 +23,7 @@ used by this track. Its handover note is
   is done: [#42](https://github.com/bal7hazar/quiver/pull/42), `5caf08d`.
 - ARC-07d (the deferred notes, [brief](docs/briefs/ARC-07d-deferred-notes.md)) is done:
   [#47](https://github.com/bal7hazar/quiver/pull/47), `5061428`, [report](docs/reports/ARC-07d-report.md).
-  A 0.2.1 candidate: nothing is bumped. The quest definition view costs +1 770 L2 gas per call with no
+  It stays under `[Unreleased]` in the changelogs, nothing bumped, to be batched with the next change a consumer needs (likely the game's GLD-02 feedback on `quiver_quest` 0.2.0); reversed if a consumer needs a fix that is in `[Unreleased]`. The quest definition view costs +1 770 L2 gas per call with no
   conditions (+1 200 in the worst case; `Store::get_definition` +1 140), accepted by the orchestrator
   and documented in the bench note, the changelog and the report.
 - The pre-push tooling is done, all review only (D-177): ARC-13 the pre-push check and hook
@@ -34,7 +34,7 @@ used by this track. Its handover note is
   ([#45](https://github.com/bal7hazar/quiver/pull/45), `3750b5d`, [report](docs/reports/ARC-15-report.md));
   ARC-16 the pre-push lock fixes ([#46](https://github.com/bal7hazar/quiver/pull/46), `8d6c7c3`,
   [report](docs/reports/ARC-16-report.md)).
-- Next: a 0.2.1 publication request when the project manager asks; a lot for the hook's automated
+- Next: no 0.2.1 request now (ARC-07d waits under `[Unreleased]`, project manager, 2026-10-02); a lot for the hook's automated
   tests and a shellcheck of the hook (review notes, later).
 
 ## Resumed 2026-09-30, under Nexus (D-162)
@@ -56,7 +56,7 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 | ARC-07c, `quiver_quest`'s tests into their modules | **Done**: [#28](https://github.com/bal7hazar/quiver/pull/28) merged (`7afe131`) on its review, no audit (D-177), [report](docs/reports/ARC-07c-report.md) | — |
 | ARC-09, measured and packaged builds single-threaded (D-176) | **Done**: [#32](https://github.com/bal7hazar/quiver/pull/32) merged (`7066040`), review only; no figure moved | — |
 | ARC-10, Scarb 2.20.1 and starknet-foundry 0.64.0 (D-180) | **Done**: [#37](https://github.com/bal7hazar/quiver/pull/37) merged (`0fd494e`), [brief](docs/briefs/ARC-10-scarb-latest.md), [report](docs/reports/ARC-10-report.md); two reviews by Opus 5.5 (`review-opus`), no audit (D-177); single-thread pin kept, SPK-13 | — |
-| ARC-07d, deferred notes | **Done**: [#47](https://github.com/bal7hazar/quiver/pull/47) merged (`5061428`), [report](docs/reports/ARC-07d-report.md); review only, no audit (D-177) | A 0.2.1 candidate, nothing bumped |
+| ARC-07d, deferred notes | **Done**: [#47](https://github.com/bal7hazar/quiver/pull/47) merged (`5061428`), [report](docs/reports/ARC-07d-report.md); review only, no audit (D-177) | Stays under `[Unreleased]`, batched with the next consumer-needed change |
 | Publication of both packages as 0.2.0 | **Published 2026-10-02** from `2e6bb77` (D-186), [quest record](docs/decisions/2026-10-02-publish-quiver_quest-0.2.0.md), [achievement record](docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md) | — |
 | ARC-05, `leaderboard` and `social` | Waits for the game's MVP and a decision of the project manager | — |
 
@@ -134,4 +134,4 @@ machine capacity read before each launch.
 
 ## Open
 
-Nothing open with the project manager. Waiting for the project manager to ask for a 0.2.1 publication request.
+Nothing open with the project manager. Waiting for the game's GLD-02 feedback on `quiver_quest` 0.2.0; no 0.2.1 is requested before a consumer needs a change.
