@@ -35,8 +35,8 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::component::QuestComponent::{ComponentState, HasComponent};
 use crate::constants::HELD_SLOTS;
 use crate::models::definition::{
-    ConditionsSlotTrait, DefinitionStorage, DefinitionTracked, HeadSlot, NO_CONDITIONS, NO_TASKS,
-    QuestDefinition, TasksSlot,
+    ConditionsSlot, ConditionsSlotTrait, DefinitionStorage, DefinitionTracked, HeadSlot,
+    NO_CONDITIONS, NO_TASKS, QuestDefinition, TasksSlot,
 };
 use crate::models::held::{HeldSlotStorage, HeldSlotTrait, QuestHeldSlot};
 use crate::models::progress::{ProgressStorage, QuestProgress};
@@ -95,9 +95,21 @@ pub impl StoreImpl<
     /// task, from A alone.
     #[inline]
     fn get_definition(self: @ComponentState<TContractState>, id: u32) -> QuestDefinition {
+        let (slot_a, slot_b, slot_c) = self.get_definition_slots(id);
+        DefinitionStorage::from_slots(id, slot_a, slot_b, slot_c)
+    }
+
+    /// The slots of the definition, A, B and C: the one place that holds the rule of the optional
+    /// slots. A quest not defined reads from A alone (`NO_TASKS`, `NO_CONDITIONS`); a defined one
+    /// reads B, and C only when it has conditions (`NO_CONDITIONS` otherwise). What
+    /// `get_definition` and the view need.
+    #[inline]
+    fn get_definition_slots(
+        self: @ComponentState<TContractState>, id: u32,
+    ) -> (HeadSlot, TasksSlot, ConditionsSlot) {
         let slot_a = self.Quest_definitions.read(id);
         if !slot_a.defined {
-            return DefinitionStorage::from_slots(id, slot_a, NO_TASKS, NO_CONDITIONS);
+            return (slot_a, NO_TASKS, NO_CONDITIONS);
         }
         let slot_b = self.Quest_tasks.read(id);
         let slot_c = if slot_a.condition_count == 0 {
@@ -105,7 +117,7 @@ pub impl StoreImpl<
         } else {
             self.Quest_conditions.read(id)
         };
-        DefinitionStorage::from_slots(id, slot_a, slot_b, slot_c)
+        (slot_a, slot_b, slot_c)
     }
 
     /// Whether `id` is defined, from A alone: the check of `define`, which needs no more.

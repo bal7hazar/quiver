@@ -35,7 +35,7 @@ pub mod QuestComponent {
     use crate::events::retired::RetiredTrait;
     use crate::interface::{IQuest, IQuestView};
     use crate::models::definition::{
-        ConditionsSlot, DefinitionTrait, HeadSlot, TasksSlot, TasksSlotTrait,
+        ConditionsSlot, ConditionsSlotTrait, DefinitionTrait, HeadSlot, TasksSlot, TasksSlotTrait,
     };
     use crate::models::held::HeldSlot;
     use crate::models::progress::{ProgressSlot, ProgressStorage, ProgressTrait};
@@ -370,14 +370,9 @@ pub mod QuestComponent {
         fn definition(
             self: @ComponentState<TContractState>, quest_id: u32,
         ) -> (HeadSlot, Span<QuestTask>, Span<u32>) {
-            let head = self.get_definition_head(quest_id);
+            let (head, quest_tasks, slot_c) = self.get_definition_slots(quest_id);
             head.status(quest_id).assert_does_exist();
-            let quest_tasks = self.get_definition_tasks(quest_id);
-            let conditions = if head.condition_count == 0 {
-                array![].span()
-            } else {
-                self.get_definition_conditions(quest_id, head.condition_count)
-            };
+            let conditions = slot_c.ids(head.condition_count);
             (head, quest_tasks.tasks(head.task_count), conditions)
         }
 

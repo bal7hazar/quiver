@@ -32,7 +32,7 @@ pub mod AchievementComponent {
     use crate::events::progressed::ProgressedTrait;
     use crate::events::retired::RetiredTrait;
     use crate::interface::{IAchievement, IAchievementView};
-    use crate::models::definition::{DefinitionTrait, HeadSlot, HeadSlotTrait, NO_TASKS, TasksSlot};
+    use crate::models::definition::{DefinitionTrait, HeadSlot, HeadSlotTrait, TasksSlot};
     use crate::models::reporter::{AchievementReporter, ReporterAssert};
     use crate::models::status::{StatusAssert, StatusStorage, StatusTrait};
     use crate::store::{AchievementTracking, StoreTrait};
@@ -152,13 +152,8 @@ pub mod AchievementComponent {
         fn definition(
             self: @ComponentState<TContractState>, achievement_id: u32,
         ) -> (HeadSlot, Span<AchievementTask>) {
-            let head = self.get_definition_head(achievement_id);
+            let (head, slot_b) = self.get_definition_slots(achievement_id);
             head.status(achievement_id).assert_does_exist();
-            let slot_b = if head.task_count > 1 {
-                self.get_definition_tasks(achievement_id)
-            } else {
-                NO_TASKS
-            };
             (head, head.tasks(@slot_b))
         }
     }

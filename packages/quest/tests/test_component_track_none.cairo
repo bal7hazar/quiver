@@ -3,8 +3,11 @@
 //! (`QuestCompleted`, `QuestClaimed`, `QuestProgressed` in event mode, `QuestRetired`) is, with
 //! 0.1.0's keys and data. The state written is the same as under `TrackAll`.
 
+use quiver_quest::errors;
 use quiver_quest::interface::{
-    IQuestDispatcher, IQuestDispatcherTrait, IQuestViewDispatcher, IQuestViewDispatcherTrait,
+    IQuestDispatcher, IQuestDispatcherTrait, IQuestSafeDispatcher, IQuestSafeDispatcherTrait,
+    IQuestViewDispatcher, IQuestViewDispatcherTrait, IQuestViewSafeDispatcher,
+    IQuestViewSafeDispatcherTrait,
 };
 use quiver_quest::types::batch::TaskProgress;
 use quiver_quest::types::mode::Mode;
@@ -12,7 +15,7 @@ use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, spy_events, test_address,
 };
 use super::helpers::{one_off, task};
-use super::setup::PLAYER;
+use super::setup::{PLAYER, assert_error};
 
 fn deploy() -> (IQuestDispatcher, IQuestViewDispatcher) {
     let class = declare("MockBenchSilent").unwrap().contract_class();
@@ -76,4 +79,30 @@ fn track_none_component_revoked_reporter_emits_nothing() {
     quest.set_reporter(test_address(), false);
     assert!(spy.get_events().events.len() == 0);
     assert!(!view.quest_is_reporter(test_address()));
+}
+
+/// The refusals hold under `TrackNone` (ARC-07d), on `MockSilentGuarded`, whose `authorize_admin`
+/// refuses: the package's own strings, nothing written (a reverted call emits nothing).
+#[test]
+#[feature("safe_dispatcher")]
+#[available_gas(l2_gas: 940000)]
+fn track_none_refuses_with_the_packages_errors() {
+    let class = declare("MockSilentGuarded").unwrap().contract_class();
+    let (address, _) = class.deploy(@array![]).unwrap();
+    let safe = IQuestSafeDispatcher { contract_address: address };
+    let view = IQuestViewDispatcher { contract_address: address };
+    let mut spy = spy_events();
+    assert_error(
+        safe.define(1, one_off(), array![task(7, 1)].span(), array![].span()), errors::NOT_ADMIN,
+    );
+    assert_error(safe.set_reporter(test_address(), true), errors::NOT_ADMIN);
+    // No reporter is registered: the unregistered caller is refused as well
+    assert_error(safe.progress(PLAYER, 7, 1, Mode::Storage), errors::NOT_REPORTER);
+    assert!(spy.get_events().events.len() == 0);
+    assert!(!view.quest_is_reporter(test_address()));
+    // Nothing was written: the quest still does not exist
+    assert_error(
+        IQuestViewSafeDispatcher { contract_address: address }.quest_definition(1),
+        errors::DOES_NOT_EXIST,
+    );
 }

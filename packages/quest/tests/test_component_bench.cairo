@@ -716,6 +716,10 @@ fn bench_view_is_unlocked_worst() {
     assert!(bench.view.quest_is_unlocked(PLAYER, D));
 }
 
+// gas: raised, ARC-07d, per call of `quest_definition`: +1200 with seven conditions (40709526 to
+// 40710726, 0.003 %), +1770 for a defined quest with no condition, the common case; both because
+// slot C now comes back through the store's tuple (`NO_CONDITIONS` included) before it is
+// unpacked. `Store::get_definition`: +1140. Undefined quest: cheaper. Budgets unchanged
 #[test]
 #[available_gas(l2_gas: 40783214)]
 fn bench_view_definition_worst() {

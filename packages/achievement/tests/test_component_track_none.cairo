@@ -3,15 +3,17 @@
 //! (`AchievementProgressed`, the only record of progress in event mode, and `AchievementRetired`)
 //! is, with 0.1.0's keys and data. The state written is the same as under `TrackAll`.
 
+use quiver_achievement::errors;
 use quiver_achievement::interface::{
-    IAchievementDispatcher, IAchievementDispatcherTrait, IAchievementViewDispatcher,
-    IAchievementViewDispatcherTrait,
+    IAchievementDispatcher, IAchievementDispatcherTrait, IAchievementSafeDispatcher,
+    IAchievementSafeDispatcherTrait, IAchievementViewDispatcher, IAchievementViewDispatcherTrait,
+    IAchievementViewSafeDispatcher, IAchievementViewSafeDispatcherTrait,
 };
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, spy_events, test_address,
 };
 use super::helpers::{always, entry, one, task};
-use super::setup::PLAYER;
+use super::setup::{PLAYER, assert_error};
 
 fn deploy() -> (IAchievementDispatcher, IAchievementViewDispatcher) {
     let class = declare("MockBenchSilent").unwrap().contract_class();
@@ -53,4 +55,28 @@ fn track_none_component_emits_action_events_only() {
     assert!(retired.data.len() == 0);
     let (after, _) = view.achievement_definition(2);
     assert!(after.retired);
+}
+
+/// The refusals hold under `TrackNone` (ARC-07d), on `MockSilentGuarded`, whose `authorize_admin`
+/// refuses: the package's own strings, nothing written (a reverted call emits nothing).
+#[test]
+#[feature("safe_dispatcher")]
+#[available_gas(l2_gas: 900000)]
+fn track_none_refuses_with_the_packages_errors() {
+    let class = declare("MockSilentGuarded").unwrap().contract_class();
+    let (address, _) = class.deploy(@array![]).unwrap();
+    let safe = IAchievementSafeDispatcher { contract_address: address };
+    let view = IAchievementViewDispatcher { contract_address: address };
+    let mut spy = spy_events();
+    assert_error(safe.define(1, always(), one(7, 1), 10), errors::NOT_ADMIN);
+    assert_error(safe.set_reporter(test_address(), true), errors::NOT_ADMIN);
+    // No reporter is registered: the unregistered caller is refused as well
+    assert_error(safe.progress(PLAYER, 7, 1), errors::NOT_REPORTER);
+    assert!(spy.get_events().events.len() == 0);
+    assert!(!view.achievement_is_reporter(test_address()));
+    // Nothing was written: the achievement still does not exist
+    assert_error(
+        IAchievementViewSafeDispatcher { contract_address: address }.achievement_definition(1),
+        errors::DOES_NOT_EXIST,
+    );
 }
