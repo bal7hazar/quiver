@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Pre-push hook (ARC-13): runs scripts/prepush.sh. Enabled by `git config core.hooksPath .githooks`
+# in each clone. Never skip it (no --no-verify): fix what it reports. A push that only deletes
+# refs is not checked; a pushed release tag quiver_*-v* also gets the release check.
+set -euo pipefail
+
+tags=()
+checked=0
+zero=0000000000000000000000000000000000000000
+# stdin: <local ref> <local sha> <remote ref> <remote sha>, one line per ref pushed
+while read -r local_ref local_sha _ _; do
+  [ "$local_sha" = "$zero" ] && continue
+  checked=1
+  case "$local_ref" in
+    refs/tags/quiver_*-v*) tags+=("${local_ref#refs/tags/}") ;;
+  esac
+done
+[ "$checked" = 1 ] || exit 0
+
+exec "$(git rev-parse --show-toplevel)/scripts/prepush.sh" ${tags[@]+"${tags[@]}"}
