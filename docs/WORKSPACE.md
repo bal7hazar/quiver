@@ -12,6 +12,7 @@ Scarb.lock            committed
 packages/quest/       quiver_quest        (Scarb.toml, README.md, CHANGELOG.md, GAS.md, src/, tests/)
 packages/achievement/ quiver_achievement  (same shape)
 scripts/gas.py        the gas tool (test_gas.py: its unit tests)
+scripts/prepush.sh    the local check before a push; .githooks/pre-push runs it
 .github/workflows/    tooling.yml, cairo.yml, release.yml
 .github/ci/           affected.py, release_check.py, install-snforge.sh, and their tests
 ```
@@ -49,6 +50,12 @@ python3 .github/ci/check-links.py
 ```
 
 Run the tests of the package you touched and of the packages that depend on it.
+
+**Before every push, run `scripts/prepush.sh`, and never push red** ([AGENTS.md](../AGENTS.md)):
+the unit tests of the scripts, the links, `scarb fmt --check`, `scarb build` of the affected
+packages and, when a package's gas inputs changed, `scripts/gas.py --check` for it (that step runs
+`snforge` and can take minutes). `git config core.hooksPath .githooks` makes `.githooks/pre-push`
+run it on every push; never skip the hook. The full check stays with the CI.
 
 ## 4. What the CI runs, and when
 

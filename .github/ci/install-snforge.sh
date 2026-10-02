@@ -28,10 +28,20 @@ dest="$RUNNER_TEMP/cairo-tools"
 mkdir -p "$dest"
 
 # fetch_and_extract <name> <url> <sha256>
+# Up to three attempts, ten seconds apart, for the infrastructure failures of the download (an
+# HTTP 500 from GitHub, a reset connection, a truncated archive). The SHA-256 is verified on every
+# attempt and before extraction: a wrong archive still fails the step, after the last attempt.
 fetch_and_extract() {
-  local archive="$dest/$1.tar.gz"
-  curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --output "$archive" "$2"
-  echo "$3  $archive" | sha256sum --check --strict -
+  local archive="$dest/$1.tar.gz" attempt
+  for attempt in 1 2 3; do
+    if curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --output "$archive" "$2" \
+      && echo "$3  $archive" | sha256sum --check --strict -; then
+      break
+    fi
+    [ "$attempt" -lt 3 ] || { echo "$1: download or checksum failed 3 times" >&2; exit 1; }
+    echo "$1: download or checksum failed (attempt $attempt of 3), retrying in 10 s" >&2
+    sleep 10
+  done
   tar --extract --gzip --strip-components=1 --file "$archive" --directory "$dest"
 }
 
