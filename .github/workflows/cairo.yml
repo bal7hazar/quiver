@@ -27,9 +27,44 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # ARC-18: on a pull request, whether a changed path concerns the Cairo jobs (affected.py
+  # changes). Fail closed: when the base branch's copy of the script is missing, lacks the
+  # subcommand or fails, the output is true. Any other event: true, with no git diff.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      cairo: ${{ steps.paths.outputs.cairo }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          script=.github/ci/affected.py
+          all_true() { printf 'cairo=true\ntooling=true\nlinks=true\n' >> "$GITHUB_OUTPUT"; }
+          if [ "$EVENT" = pull_request ]; then
+            if git show "origin/$BASE:$script" > "$RUNNER_TEMP/affected.py" \
+              && python3 "$RUNNER_TEMP/affected.py" changes; then
+              echo "used the base branch's $script"
+            else
+              echo "the base branch has no $script with a changes command (or it failed): every job runs"
+              all_true
+            fi
+          else
+            python3 "$script" changes
+          fi
+
   # A pull request controls .tool-versions and the manifests: every value is validated by
   # affected.py (exact versions, packages/<name> directories) before any step uses it.
   affected:
+    needs: changes
+    if: needs.changes.outputs.cairo == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -84,8 +119,8 @@ jobs:
           fi
 
   package:
-    needs: affected
-    if: needs.affected.outputs.any == 'true'
+    needs: [changes, affected]
+    if: needs.changes.outputs.cairo == 'true' && needs.affected.outputs.any == 'true'
     name: package (${{ matrix.dir }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -149,22 +184,31 @@ jobs:
 
   # The stable name for a required check.
   cairo:
-    needs: [affected, package]
+    needs: [changes, affected, package]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: every package job succeeded, or none was needed
+      - name: every job that was needed succeeded, and no other ran
         env:
+          CHANGES: ${{ needs.changes.result }}
+          CAIRO: ${{ needs.changes.outputs.cairo }}
           AFFECTED: ${{ needs.affected.result }}
           PACKAGE: ${{ needs.package.result }}
           ANY: ${{ needs.affected.outputs.any }}
         run: |
           set -euo pipefail
-          echo "affected=$AFFECTED package=$PACKAGE any=$ANY"
-          [ "$AFFECTED" = success ] || { echo "affected did not succeed" >&2; exit 1; }
-          if [ "$ANY" = true ]; then
-            [ "$PACKAGE" = success ] || { echo "a package job did not succeed" >&2; exit 1; }
+          echo "changes=$CHANGES cairo=$CAIRO affected=$AFFECTED package=$PACKAGE any=$ANY"
+          [ "$CHANGES" = success ] || { echo "changes did not succeed" >&2; exit 1; }
+          if [ "$CAIRO" = true ]; then
+            [ "$AFFECTED" = success ] || { echo "affected did not succeed" >&2; exit 1; }
+            if [ "$ANY" = true ]; then
+              [ "$PACKAGE" = success ] || { echo "a package job did not succeed" >&2; exit 1; }
+            else
+              [ "$PACKAGE" = skipped ] || { echo "unexpected package result" >&2; exit 1; }
+            fi
           else
+            [ "$CAIRO" = false ] || { echo "unexpected changes output" >&2; exit 1; }
+            [ "$AFFECTED" = skipped ] || { echo "unexpected affected result" >&2; exit 1; }
             [ "$PACKAGE" = skipped ] || { echo "unexpected package result" >&2; exit 1; }
           fi
