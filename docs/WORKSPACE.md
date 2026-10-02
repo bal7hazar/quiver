@@ -92,8 +92,8 @@ Workflow: write the test, run `scripts/gas.py <dir> --write` (it prints nothing 
 budgets exist: set a high one, run, then set `N` from the measured value), edit `N` in the
 source, run `--write` again, then `--check`. `--write` rewrites the generated part of the package's `GAS.md` (its header and table: test,
 measured, budget, date, commit; tests are named as snforge names them, by module path) and keeps, byte
-for byte, everything after the table (the hand-written sections);
-`--check` fails, naming the test, when a budget is missing, below the measure, above
+for byte, everything after the table (the hand-written sections; the table ends at its last generated row), and refuses, writing nothing, a non-empty `GAS.md` in which it finds no generated table;
+`--check` reads the generated table only and fails, naming the test, when a budget is missing, below the measure, above
 `ceil(1.05 × measured)`, or when `GAS.md` disagrees with the measures. Both fail when a `#[test]`
 of the sources has no measured result (an `#[ignore]`d or filtered test included) or when
 snforge's summary reports a test ignored or filtered out: every test runs and has a budget.

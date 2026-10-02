@@ -6,7 +6,8 @@ Usage: scripts/gas.py <package dir> [--check | --write]
 Runs `snforge test` in the package (with RAYON_NUM_THREADS=1 unless set, D-176), reads each test's measured L2 gas from snforge's output and
 its budget from `#[available_gas(l2_gas: N)]` in the sources (src/ and tests/), then
   --write  rewrites the generated part of the package's GAS.md (header and table: test, measured,
-           budget, date, commit) and keeps, byte for byte, everything after the table;
+           budget, date, commit) and keeps, byte for byte, everything after the table; it refuses
+           (exit 1, nothing written) a non-empty GAS.md in which no generated table is found;
   --check  (the default) fails, naming the test, when a test has no budget, when its budget is
            below the measured value or above ceil(1.05 * measured); it also fails when GAS.md
            disagrees with the measured values.
@@ -37,7 +38,9 @@ TOKEN_RE = re.compile(
 COMMENT_RE = re.compile(r"//[^\n]*")
 BUDGET_RE = re.compile(r"#\[available_gas\(\s*l2_gas:\s*(\d+)\s*\)\]")
 ROW_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|", re.M)
-TABLE_HEAD = "| Test |"  # first line of the generated table, see render()
+# The generated table's first two lines: render() writes them and the parser looks for them.
+TABLE_HEAD = "| Test | Measured (l2_gas) | Budget (l2_gas) | Date | Commit |"
+TABLE_SEPARATOR = "|---|---|---|---|---|"
 
 
 def parse_snforge_output(text):
@@ -145,9 +148,34 @@ def check(package, measured, tests, table, summary=None):
     return problems
 
 
+def generated_table(lines):
+    """(start, end) line indexes of the generated table of a GAS.md, or None when there is none.
+
+    The table starts at the header line `render()` writes and ends at the first line that is not
+    its header, its separator or a generated row (a hand-written `|` line glued to it is not).
+    """
+    start = next((i for i, line in enumerate(lines) if line.rstrip("\r\n") == TABLE_HEAD), None)
+    if start is None:
+        return None
+    end = start + 1
+    if end < len(lines) and lines[end].rstrip("\r\n") == TABLE_SEPARATOR:
+        end += 1
+    while end < len(lines) and ROW_RE.match(lines[end]):
+        end += 1
+    return start, end
+
+
 def parse_table(markdown):
-    """Returns [(test, measured, budget)] from the rows of a GAS.md."""
-    return [(name, int(gas), int(budget)) for name, gas, budget in ROW_RE.findall(markdown)]
+    """Returns [(test, measured, budget)] from the rows of the generated table of a GAS.md.
+
+    Tables of the hand-written sections are not read.
+    """
+    lines = markdown.splitlines(keepends=True)
+    span = generated_table(lines)
+    if span is None:
+        return []
+    rows = (ROW_RE.match(line) for line in lines[span[0] : span[1]])
+    return [(m.group(1), int(m.group(2)), int(m.group(3))) for m in rows if m]
 
 
 def render(package, measured, tests, date, commit):
@@ -159,8 +187,8 @@ def render(package, measured, tests, date, commit):
         "set at `ceil(1.05 x measured)` and never above it; a budget kept tighter, between the",
         "measure and that ceiling, also passes (docs/CAIRO.md §2).",
         "",
-        "| Test | Measured (l2_gas) | Budget (l2_gas) | Date | Commit |",
-        "|---|---|---|---|---|",
+        TABLE_HEAD,
+        TABLE_SEPARATOR,
     ]
     for path in sorted(measured):
         lines.append(
@@ -173,18 +201,23 @@ def render(package, measured, tests, date, commit):
 def hand_written(existing):
     """What follows the generated table in an existing GAS.md ("" when there is none).
 
-    The generated part is the header and one table: the table starts at the line `| Test |` and
-    runs over the consecutive lines that start with `|`. The rest, from the line after the last
-    table row on, is hand-written and is returned as it is.
+    The generated part is the header and one table, see `generated_table`. The rest, from the line
+    after the table's last row on, is hand-written and is returned as it is.
     """
     lines = existing.splitlines(keepends=True)
-    start = next((i for i, line in enumerate(lines) if line.startswith(TABLE_HEAD)), None)
-    if start is None:
-        return ""
-    end = start
-    while end < len(lines) and lines[end].startswith("|"):
-        end += 1
-    return "".join(lines[end:])
+    span = generated_table(lines)
+    return "" if span is None else "".join(lines[span[1] :])
+
+
+def rewrite(existing, package, measured, tests, date, commit):
+    """The new GAS.md: a fresh generated part, then the hand-written part of `existing` as it is.
+
+    A missing or blank `existing` gets a fresh table alone; a non-blank one without a generated
+    table is refused with a ValueError, since its content would be lost.
+    """
+    if existing.strip() and generated_table(existing.splitlines(keepends=True)) is None:
+        raise ValueError("no generated table found (the line `" + TABLE_HEAD + "`)")
+    return render(package, measured, tests, date, commit) + hand_written(existing)
 
 
 def read_tests(package, package_dir):
@@ -222,6 +255,13 @@ def main(argv):
         return 2
     named = re.search(r'^name\s*=\s*"([^"]+)"', (package_dir / "Scarb.toml").read_text(), re.M)
     package = named.group(1) if named else package_dir.resolve().name
+    gas_md = package_dir / "GAS.md"
+    if flags == ["--write"] and gas_md.is_file():  # refuse before the long run, not after it
+        try:
+            rewrite(gas_md.read_text(), package, {}, {}, "", "")
+        except ValueError as refusal:
+            print(f"{gas_md}: {refusal}; nothing written", file=sys.stderr)
+            return 1
     run = subprocess.run(
         ["snforge", "test"], cwd=package_dir, capture_output=True, text=True, env=snforge_env()
     )
@@ -236,24 +276,26 @@ def main(argv):
         return 1
     tests = read_tests(package, package_dir)
     summary = parse_summary(output)
-    gas_md = package_dir / "GAS.md"
     if flags == ["--write"]:
         problems = coverage(package, measured, tests, summary)
         for problem in problems:
             print(problem, file=sys.stderr)
         if problems:
             return 1
-        kept = hand_written(gas_md.read_text()) if gas_md.is_file() else ""
-        gas_md.write_text(
-            render(
+        existing = gas_md.read_text() if gas_md.is_file() else ""
+        try:
+            text = rewrite(
+                existing,
                 package,
                 measured,
                 tests,
                 datetime.datetime.now(datetime.timezone.utc).date().isoformat(),
                 git_commit(),
             )
-            + kept
-        )
+        except ValueError as refusal:
+            print(f"{gas_md}: {refusal}; nothing written", file=sys.stderr)
+            return 1
+        gas_md.write_text(text)
         print(f"{package}: wrote {gas_md} ({len(measured)} tests)")
         return 0
     table = parse_table(gas_md.read_text()) if gas_md.is_file() else []
