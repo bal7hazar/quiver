@@ -386,3 +386,5 @@ the types' and models' benchmarks in the `mod tests` of their modules (D-167), t
 ARC-01 §5.1; the grid over the held list in `test_component_grid`; Grim World's case in
 `test_component_game`. Per entrypoint, the measure and the budget are in
 [docs/BUDGETS.md](https://github.com/bal7hazar/quiver/blob/main/docs/BUDGETS.md).
+
+Acceptance note.
