@@ -1,126 +1,114 @@
 # ARC-05a — `quiver_leaderboard` 0.1.0
 
+## Held: the owner's licence answer
+**This lot does not start until the owner answers on the licence.** Arcade's licence is "all rights
+reserved", non-commercial use only. The design below is written **from Paved's specification**; it
+shares some design ideas with Arcade's leaderboard, named in the
+[mapping](../research/ARC-05a-arcade-leaderboard-mapping.md). The lot **may not copy or port Arcade
+code**, nor read it as a model to transcribe, unless the owner's answer allows it. The package
+declares the workspace's licence (MIT, compatible with Paved's Apache-2.0).
+
 ## Agent
-Profile `impl-sonnet` (the design below is complete, and an oracle checks the one tricky part; the
-review is on `review-opus`, another model than the author's). Branch `feat/ARC-05a-leaderboard`;
-pull request `[Sonnet 5.5] ARC-05a quiver_leaderboard 0.1.0`.
+Profile `impl-sonnet`: the design is complete, and the tests are Paved's own. Branch
+`feat/ARC-05a-leaderboard`; pull request `[Sonnet 5.5] ARC-05a quiver_leaderboard 0.1.0`. Read
+first: this brief, [COMMON.md](COMMON.md), [CAIRO.md](../CAIRO.md) in full,
+[WORKSPACE.md](../WORKSPACE.md), [BUDGETS.md](../BUDGETS.md), `packages/achievement/` for the shape
+of a package (models, store, errors, `GAS.md`, budgets).
 
-## Goal
-A new package `quiver_leaderboard` 0.1.0 in `packages/leaderboard/`: Arcade's leaderboard without
-Dojo, organised as `quiver_quest` 0.2.0 ([CAIRO.md](../CAIRO.md) §7), meeting the consumer's needs
-below. Read first: the [mapping to Arcade](../research/ARC-05a-arcade-leaderboard-mapping.md),
-CAIRO.md in full, [WORKSPACE.md](../WORKSPACE.md), [BUDGETS.md](../BUDGETS.md), and
-`packages/achievement/` as the shape to copy (store, tracking, hook, errors, `GAS.md`).
+## Paved's specification
+Paved (an on-chain Carcassonne) replaces its own `Tournament::score` with this package once a
+version is published and its measures beat today's. Its request (2026-10-07) is the specification;
+every line is met by the design:
 
-## The consumer's needs
-Paved (an on-chain Carcassonne), preliminary; exact figures come later from its design.
-
-| Need | The design |
+| Paved asks | The design |
 |---|---|
-| 1. No Dojo; on scarbs.xyz; Scarb 2.20.1, Cairo 2.20 | Depends on `starknet` only; `snforge_std` a dev-dependency; published by version (below) |
-| 2. `submit` only by contracts the consumer registers, per leaderboard id, with player, score, game id, time | Submitters registered per `(leaderboard_id, submitter)` by the admin hook; the trusted internal layer for a consumer that embeds the component |
-| 3. A bounded on-chain top-N (Paved: 3) with a defined tie rule; nothing unbounded | `size` per leaderboard, 1 to `MAX_SIZE` = 16; at most 1 + 2 × 16 slots per leaderboard; the tie rule below |
-| 4. Events keyed by player and leaderboard id | `LeaderboardSubmitted`, keys `leaderboard_id` and `player`, on every submission |
-| 5. Per-call gas small against Paved's move (5.59M L2 gas) | Measured in `GAS.md`, each figure also as a share of 5.59M; targets below |
+| Internal code on the contract's own storage, from a storage node or path; no entry point in the consumer's ABI | A `#[starknet::storage_node]` the consumer places in its storage; the functions are trait methods on its storage path. The package has no `#[starknet::interface]`, no `#[abi]`, no contract, no component outside its tests |
+| `submit(tournament_id: u64, Submission) -> u8`, `ranked(tournament_id, rank: u8) -> Ranked`, `top(tournament_id) -> Top3` | Exactly these, with Paved's types (below) |
+| Key: any `u64`, 0 and 213 503 982 334 600 included | A map key, never packed nor checked |
+| Higher score ranks higher; an equal score never displaces (earlier call stays above); a placed submission shifts lower ranks down; score 0 never ranks; games ranked, not players; `time` and `game_id` data only, never compared; no block timestamp read | The rule below |
+| Never reverts on a valid game end: score 0, player 0, or not placed → returns 0, writes nothing | No refusal exists in the package |
+| N = 3; nothing below rank 3 stored; a larger N must not cost more at N = 3 | N fixed at 3 in 0.1.0 (`Top3`); no loop over N |
+| Only the game contract submits | By construction: no entry point; the consumer's own entrypoints call it |
+| Ceilings: `submit` placing ≤ 1.3M (rank 1, two shifted), not placing ≤ 0.6M; `top` ≤ 0.6M; `ranked` ≤ 0.3M; none depending on the number of submissions | Constant reads and writes per call (below); measured at 10, 100 and 1,000 prior submissions |
+| 4 slots per tournament (player and score), 6 at most; a submit writes only the slots that changed | **4 slots**: one word of three scores, one player slot per rank; a slot whose value is unchanged is not written |
+| No event from the consumer's address, or behind a switch off by default | **The package emits nothing.** It may offer an event type the consumer emits itself |
+| Scarb 2.20.1, snforge 0.64.0, `starknet` 2.20.x; `snforge_std` in dev-dependencies only | The workspace's toolchain |
+| Published version on scarbs.xyz, pinned (O-1) | Published as 0.1.0 (below); a breaking release announced to the project manager first |
 
-## Models and storage (all one felt per slot, packed by `StorePacking`)
-| Model | Slot, key | Layout | Tracked |
-|---|---|---|---|
-| `LeaderboardDefinition { leaderboard_id, size }` | H, `leaderboard_id` | `size` [0, 8) | Yes: `LeaderboardDefined` |
-| `LeaderboardRanking { leaderboard_id, len, order }` | H, shared | `len` [8, 16); `order` [16, 80): nibble `r` = the slot index of rank `r`, for `r < len`; [80, 252) reserved, rejected on unpack | No |
-| `LeaderboardEntry { leaderboard_id, index, player, game_id, score, time }` | P `(leaderboard_id, index)`: `player`; S, same key: `score` [0, 64), `time` [64, 128), `game_id` [128, 192), [192, 252) reserved | | No |
-| `LeaderboardSubmitter { leaderboard_id, submitter, allowed }` | `Map<(felt252, ContractAddress), bool>` | | Yes: `LeaderboardSubmitterSet` |
+## Types and storage
+`Submission { player_id: felt252, game_id: u32, score: u32, time: u64 }`;
+`Ranked { player_id: felt252, score: u32 }` (zero player and zero score: an empty rank);
+`Top3 { first: Ranked, second: Ranked, third: Ranked }`.
 
-Storage members are prefixed `Leaderboard_`. A leaderboard is defined when `size != 0`. Types:
-`leaderboard_id: felt252` (only a key, never packed: the consumer's scheme, a day number or a short
-string), `player: felt252` (as Arcade's `player_id`), `score`, `time`, `game_id`: `u64`. No `u256`.
+`LeaderboardStorage`, a storage node with two members: `scores: Map<u64, ScoresSlot>`, the three
+scores of a tournament in one felt, rank 1 at [0, 32), rank 2 at [32, 64), rank 3 at [64, 96),
+[96, 252) zero; and `players: Map<(u64, u8), felt252>`, the player of rank 1, 2 or 3. A model per
+CAIRO §7 (`models/`: the ranking of a tournament; `types/`: the three structs; a store with the
+reads and writes; packing by `StorePacking`), the store being implemented on the node's storage
+path instead of a component state: say so in the README.
 
-**Why an order nibble**: entering the top writes the entry's own slots and H, three writes at most
-whatever `size`, instead of shifting every lower entry (two slots each). The order is updated by
-arithmetic with a table of powers of 16 (CAIRO §3, rank 1), never by a loop over nibbles.
+## The rule, exactly
+`submit(t, s)`:
+1. `s.score == 0` or `s.player_id == 0`: return 0; nothing read, nothing written.
+2. Read the scores word `(s1, s2, s3)` (an empty rank reads 0). `s.score <= s3`: return 0.
+3. The rank: 1 if `s.score > s1`, else 2 if `s.score > s2`, else 3 (an equal score goes below).
+4. Shift the lower ranks down by one (rank 3's entry, if displaced, is dropped), write the new
+   scores word once (arithmetic shifts, CAIRO §3), write each player slot **only if its value
+   changes** (a player shifted onto a slot holding the same player is not written), return the rank.
 
-## The tie rule, and a submission
-Entry A ranks above entry B when, in this order: `A.score > B.score`; equal scores and
-`A.time < B.time`; equal scores and times and `A.game_id < B.game_id`. On full equality, **the entry
-already on the board stays above**: a new entry never displaces an equal one.
+`ranked(t, r)`: `r` outside 1..=3 → empty `Ranked`; else the score from the word and the player
+(the player slot not read when the score is 0). `top(t)`: one read of the word, and the player of
+each non-empty rank. Worst case: `submit` at rank 1 on a full board, 3 reads (word, players 1 and 2)
+and 4 writes; not placed, 1 read; `top` 4 reads; `ranked` 2 reads. No loop depends on the number of
+submissions; every loop is bounded by 3 and written in the doc comments and the README.
 
-**One place per player**: a player holds at most one entry, their best. `submit` (after its checks):
-1. Emits `LeaderboardSubmitted`, always.
-2. Reads H. If the board is full and the new entry does not rank above the bottom entry: returns
-   `None` (H and one S read; nothing written).
-3. Looks for the player among the `len` entries (P reads). Present and the new entry not above
-   their own: returns `None`, nothing written. Present and above: their slot is reused (S written,
-   P unchanged). Absent: the bottom's slot when full (evicted), else slot `len` (P and S written).
-4. Finds the rank from the bottom (at most `len` S reads), writes H once if `len` or `order`
-   changed, and returns `Some(rank)`, 0 the top.
+## Events
+None emitted. The package offers `LeaderboardSubmitted { #[key] tournament_id: u64, #[key]
+player_id: felt252, game_id: u32, score: u32, time: u64, rank: u8 }` for a consumer that wants to
+emit one itself, from its own contract; its README says Paved's indexer does not read it.
 
-Every loop is bounded by `size` ≤ 16, written in the doc comments and the README.
-
-## API
-- **Hooks**: `LeaderboardHooksTrait { fn authorize_admin(self: @ComponentState<T>, caller) -> bool }`.
-- **Tracking**: `LeaderboardTracking { const DEFINITION: bool; const SUBMITTER: bool; }` in `store`,
-  ready impls `store::tracking::{TrackAll, TrackNone}`, emitted `if Tracking::X`, as the achievement.
-- **Internal, trusted** (`InternalImpl`, no caller check): `define`, `set_submitter`, `submit`,
-  `assert_submitter(leaderboard_id, caller)`, and the reads of the views.
-- **`ILeaderboard`** (optional to embed): `define(leaderboard_id, size)` and
-  `set_submitter(leaderboard_id, submitter, allowed)`, by `authorize_admin`;
-  `submit(leaderboard_id, player, game_id, score, time) -> Option<u8>`, by a registered submitter.
-- **`ILeaderboardView`** (optional): `leaderboard_definition(id) -> LeaderboardDefinition`,
-  `leaderboard_top(id) -> Span<LeaderboardEntry>` (rank order, `len` entries),
-  `leaderboard_at(id, rank: u8) -> Option<LeaderboardEntry>`, `leaderboard_is_submitter(id, submitter) -> bool`.
-
-**Errors** (API, in `errors.cairo`, each model naming its own): `'Leaderboard: not admin'`,
-`'Leaderboard: not submitter'` (not registered for **that** leaderboard, or revoked), `'Leaderboard: invalid id'`
-(0), `'Leaderboard: invalid size'` (0 or above 16), `'Leaderboard: already defined'`,
-`'Leaderboard: does not exist'` (`set_submitter`, `submit`, the views but `is_submitter`),
-`'Leaderboard: invalid submitter'` (address 0), `'Leaderboard: invalid player'` (0). Checks in
-this order: the caller, then the leaderboard, then the arguments.
-
-**Events**: `LeaderboardSubmitted { #[key] leaderboard_id, #[key] player, game_id, score, time }`
-(action, always emitted); `LeaderboardDefined { #[key] leaderboard_id, size }` and
-`LeaderboardSubmitterSet { #[key] leaderboard_id, #[key] submitter, allowed }` (tracked models).
-
-## Tests (written first, each with a budget, CAIRO §2; unit tests in their module, D-167)
-- **In modules**: H, S packing (widths, reserved bits rejected, an empty slot reads undefined); the
-  tie comparison at each level; the order update (insert, move up, evict); the bounds and errors.
-- **Oracle**: a plain sorted array in `src/testing/` (as `quiver_quest`'s), compared with the
-  ranking after each step of a fixed sequence of at least 200 submissions (sizes 1, 3, 16; repeats,
-  ties at every level, players improving and not).
-- **`tests/`** (deploy a contract): every `ILeaderboard` entrypoint refusing an unauthorised caller;
-  a submitter of leaderboard A refused on B; a revoked submitter refused at once; the internal
-  layer unreachable unless exposed; events field by field (`spy_events`); `TrackAll` and
-  `TrackNone` (an untracked write costs the write alone, to the unit); untracked models never emit.
+## Tests (written first, each with a budget; unit tests in their module, D-167)
+- **Paved's acceptance tests, reproduced** in the package: a **table test** of the rule (ties at
+  every rank, shifts, score 0, player 0, a player on all three ranks, a score equal to rank 3,
+  tournament ids 0 and 213 503 982 334 600); a **property test** (`#[fuzzer]`, runs stated) of
+  sequences of submissions against a **reference model** in `src/testing/`, a plain list of three
+  that applies the rule as written above, compared after each step on `top` and on every return.
+- **In modules**: the scores word's packing and shifts; `ranked` outside 1..=3.
+- **`tests/`** (a mock contract holding the node in its storage, with test-only wrappers): the
+  calls through a storage path; no event emitted (`spy_events` empty) after every kind of submit;
+  submits not placed leave storage unchanged (`load` before and after); a placing submit writes only
+  the changed slots (`load`, and the gas difference between rank 1, 2 and 3); tournaments isolated.
+- **Edition**: Paved builds with edition `2023_11`; quiver's packages use `2024_07`. A dependency
+  keeps its own edition; if the lot finds otherwise, it stops and reports.
 
 ## Gas (Linux only, `RAYON_NUM_THREADS=1`, D-176; bench minus baseline, as `quiver_achievement`)
-Benchmarks: `define` (sizes 3 and 16); `set_submitter` (new, revoked, unchanged); `submit` on boards
-of sizes 3 and 16 after **10, 100 and 1,000** submissions to one leaderboard: rejected below the
-bottom, entering at the bottom and at the top, a present player improving and not, and the
-first entries (created slots); `leaderboard_top` and `leaderboard_at` at sizes 3 and 16. Each
-figure in `GAS.md` with its network estimate, its share of the 20M cap and of Paved's 5.59M move.
-**Targets**: a `submit` on a full board of 3 at most 10 % of the move (559 000); its cost the same,
-to noise, after 10, 100 and 1,000 submissions (bounded storage). A target missed is reported, not
-hidden. **Memory first**: the package's first `snforge test`, and the 1,000-submission benchmark,
-under `prlimit --as=8589934592 -- /usr/bin/time -v …`; the peak goes in `AGENTS.md`; above ~8 GB,
-stop and report (the Mac). If 1,000 real submissions in one test is too slow or too large, write
-the equivalent full board with `snforge_std::store` and say so.
+Each operation is measured **after 10, 100 and 1,000 prior submissions** to one tournament, to show
+it is flat: `submit` at rank 1 with two shifted (worst), at ranks 2 and 3, not placed (below rank 3;
+equal to rank 3), score 0, player 0, and the first submissions of a tournament (created slots,
+measured apart and named); `top`; `ranked` (empty and full rank). `GAS.md` gives each figure against
+Paved's ceiling, the 20M cap, and with its network estimate. A ceiling missed is reported under
+Escalations, not hidden. **Memory first**: the first `snforge test` of the package and the
+1,000-submission benchmark run under `prlimit --as=8589934592 -- /usr/bin/time -v …`; the peak goes in
+`AGENTS.md`; above ~8 GB, stop and report. If 1,000 real submissions in one test is too slow, write the
+same board with `snforge_std::store` and say so.
 
 ## Scope and allowlist
 **In**: `packages/leaderboard/**` (`Scarb.toml` `quiver_leaderboard` 0.1.0, `README.md` with the
-layout, the tie rule, the bounds, access control and the integration budget; `CHANGELOG.md`
-`[Unreleased]`; `GAS.md`; `src/`; `tests/`); `Scarb.lock`; a `quiver_leaderboard` section of
-`docs/BUDGETS.md`; the layout line of `docs/WORKSPACE.md` §1; the row of `AGENTS.md`'s test table.
-**Out**: any other package; `.github/` and `scripts/`: the CI and the pre-push find the package
-through `scarb metadata` (`members = ["packages/*"]`, WORKSPACE §2), so `affected.py` and the matrix
-need no change; show it with the PR's CI (a `packages/leaderboard` job). Publishing (never by a thread).
+storage node usage, the rule, the bounds, the costs and "no entry point, no event"; `CHANGELOG.md`;
+`GAS.md`; `src/`; `tests/`); `Scarb.lock`; a `quiver_leaderboard` section of `docs/BUDGETS.md`; the
+layout line of `docs/WORKSPACE.md` §1; the row of `AGENTS.md`'s test table. **Out**: other packages,
+`.github/`, `scripts/` (the CI and the pre-push find the package through `scarb metadata`,
+WORKSPACE §2; the PR's CI shows a `packages/leaderboard` job); Arcade's code; publishing.
 
 ## Acceptance criteria
-- [ ] AC-1 Needs 1 to 5 met as the table says; no Dojo, no `u256`, no unbounded storage.
-- [ ] AC-2 The tie rule and one place per player, checked against the oracle.
-- [ ] AC-3 Every refusal of the error list tested, by entrypoint; submitters scoped per leaderboard.
-- [ ] AC-4 §7 layers; tracking optional at compile time, measured to the unit.
-- [ ] AC-5 Every test budgeted; `python3 scripts/gas.py packages/leaderboard --check` passes; the
-      gas table with network estimates, cap and move shares; targets met or reported.
-- [ ] AC-6 README, CHANGELOG, GAS.md, BUDGETS, WORKSPACE and AGENTS (measured peak) written.
+- [ ] AC-1 Every line of Paved's specification met as the table says; no Dojo, no `u256`.
+- [ ] AC-2 Paved's table test and property test pass in the package.
+- [ ] AC-3 No entry point and no event: no interface, ABI item, contract or component outside tests;
+      `spy_events` empty.
+- [ ] AC-4 4 slots per tournament; unchanged slots not written; no read of the block timestamp.
+- [ ] AC-5 Every test budgeted; `python3 scripts/gas.py packages/leaderboard --check` passes; every
+      ceiling met and flat at 10, 100, 1,000, or reported.
+- [ ] AC-6 README, CHANGELOG, GAS.md, BUDGETS, WORKSPACE, AGENTS (measured peak) written.
 - [ ] AC-7 CI green, with a `packages/leaderboard` job.
 
 ## Verification
@@ -130,21 +118,21 @@ need no change; show it with the PR's CI (a `packages/leaderboard` job). Publish
 then `scripts/prepush.sh` (the hook). CI at most once per 5 minutes.
 
 ## After the lot
-Review on `review-opus`, then a **security-lens audit of the access control** (`audit`, Opus;
-D-177: access control on a published interface): `define`, `set_submitter`, `submit`, the internal
-layer, the per-leaderboard scope. Then the orchestrator commits
+**Review on `review-opus`; no audit.** The package has no entry point: its access control is the
+consumer's. A security-lens audit (D-177) comes back only if a later design adds a separate contract
+(a `register_game` and a guarded `submit`). Then the orchestrator commits
 `docs/decisions/PENDING-publish-quiver_leaderboard-0.1.0.md` (commit, archive sha256 from two clean
-clones, what the consumer must do: Scarb 2.20) and sends it through the project manager: **the go
-is the owner's**, not delegated. Tag `quiver_leaderboard-v0.1.0` after the publication.
+clones, Scarb 2.20) and sends it through the project manager: **the go is the owner's**, not delegated.
 
-## To the project manager (before the design is cut)
-1. **One place per player** (decided, the brief's rule): Arcade ranks games, so one player could
-   hold several prizes. Reversed if Paved wants games ranked: a flag in `define`, no new slot.
-2. **Who submits**: if Paved embeds the component, no registration (trusted internal layer). If it
-   uses a separate leaderboard contract, each daily leaderboard costs a `define` and a
-   `set_submitter`, two created slots a day (estimate ~0.95M on snforge). Which one?
-3. **No window or closing**: `submit` takes the consumer's `time` and the board stays open; the
-   game refuses late submissions. If Paved wants the board frozen on-chain at the day's end, a
-   `close` is one bit of H: ask now, it changes the API.
-4. **Widths**: `score`, `time`, `game_id` as `u64`, `player` as `felt252`. Widening after 0.1.0 is
-   breaking; Paved's exact figures should confirm them before the lot starts.
+## To the project manager
+1. **Licence (the owner's)**: the lot is held. Paved also asks that Arcade's licence and headers be
+   named for ported code; Arcade's is non-commercial, so a port could not be published under MIT or
+   Apache-2.0. Recommended: a clean implementation from Paved's specification, nothing ported.
+2. **Storage node**: the design assumes Cairo 2.20 lets trait methods on a node's storage path read
+   and write its maps from the consumer's `Store`. If the lot finds it cannot, it stops; the fallback
+   is a component, which costs Paved a signature change at its three call sites.
+3. **Ceilings**: Paved's figures come from `cairo-profiler`; the package measures snforge L2 gas.
+   Paved measures its own delta at its interface PR; the package's `GAS.md` is the reference on its side.
+4. **Dropped from the preliminary brief**: submitters registered per leaderboard, one place per
+   player, a configurable N, ties by time, events by default. A separate contract, if ever wanted, is a
+   new lot with its audit.

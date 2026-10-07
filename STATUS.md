@@ -40,9 +40,11 @@ used by this track. Its handover note is
   first (passed to Paved through the Overseer); a request from Paved through the project manager is
   a consumer request.
 - **ARC-05a, `quiver_leaderboard` 0.1.0, in progress** (2026-10-07, the owner's request): the
-  [design brief](docs/briefs/ARC-05a-leaderboard.md) and the
-  [mapping to Arcade](docs/research/ARC-05a-arcade-leaderboard-mapping.md) are written; four points
-  wait for the project manager before the lot starts; the publication's go is the owner's.
+  [design brief](docs/briefs/ARC-05a-leaderboard.md), written from Paved's specification, and the
+  [mapping to Arcade's design](docs/research/ARC-05a-arcade-leaderboard-mapping.md) are written. The
+  lot is **held** until the owner answers on the licence (Arcade's is non-commercial; no Arcade code
+  is copied or ported unless the answer allows it). Review only, no audit; the publication's go is
+  the owner's.
 - Next: no 0.2.1 request now (ARC-07d waits under `[Unreleased]`, project manager, 2026-10-02); a lot for the hook's automated
   tests and a shellcheck of the hook (review notes, later).
 
@@ -67,7 +69,7 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 | ARC-10, Scarb 2.20.1 and starknet-foundry 0.64.0 (D-180) | **Done**: [#37](https://github.com/bal7hazar/quiver/pull/37) merged (`0fd494e`), [brief](docs/briefs/ARC-10-scarb-latest.md), [report](docs/reports/ARC-10-report.md); two reviews by Opus 5.5 (`review-opus`), no audit (D-177); single-thread pin kept, SPK-13 | — |
 | ARC-07d, deferred notes | **Done**: [#47](https://github.com/bal7hazar/quiver/pull/47) merged (`5061428`), [report](docs/reports/ARC-07d-report.md); review only, no audit (D-177) | Stays under `[Unreleased]`, batched with the next consumer-needed change |
 | Publication of both packages as 0.2.0 | **Published 2026-10-02** from `2e6bb77` (D-186), [quest record](docs/decisions/2026-10-02-publish-quiver_quest-0.2.0.md), [achievement record](docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md) | — |
-| ARC-05a, `quiver_leaderboard` 0.1.0 | **In progress**: [design brief](docs/briefs/ARC-05a-leaderboard.md) written | The project manager's answers, then the lot |
+| ARC-05a, `quiver_leaderboard` 0.1.0 | **In progress**: [design brief](docs/briefs/ARC-05a-leaderboard.md) written; the lot **held** for the owner's licence answer | The owner's licence answer, then the lot |
 | ARC-05, `social` | Waits for the game's MVP and a decision of the project manager | — |
 
 **Reviews and audits while Codex has no quota** (the owner's rules of 2026-10-01): reviews by Claude
