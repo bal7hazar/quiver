@@ -85,3 +85,51 @@ measure and that ceiling, also passes (docs/CAIRO.md §2).
 | `quiver_leaderboard_integrationtest::test_contract::the_gas_of_a_placing_submit_falls_with_the_rank` | 10293080 | 10807734 | 2026-10-07 | 1788d97 |
 | `quiver_leaderboard_integrationtest::test_contract::the_slots_hold_the_ranks` | 3525210 | 3701471 | 2026-10-07 | 1788d97 |
 | `quiver_leaderboard_integrationtest::test_contract::tournaments_are_isolated` | 7045430 | 7397702 | 2026-10-07 | 1788d97 |
+
+## `quiver_leaderboard` 0.1.0 (ARC-05a)
+
+Measured on Linux, Scarb 2.20.1, snforge 0.64.0, `RAYON_NUM_THREADS=1`, L2 gas. The tests in the
+table above are the data; this section is their reading. Every benchmark
+(`src/bench.cairo`) has a baseline that builds the same board without the call: **the operation's cost
+is the benchmark minus its baseline**. The call is internal to a contract (no dispatcher), which is
+what a consumer pays. The prior submissions are real: `n` submissions of rising scores, each taking
+rank 1 with two ranks shifted. One `assert` per benchmark (a few hundred gas) is in the figure.
+
+The **network estimate** reprices the slots written at the network's price (BUDGETS: −20 606 per
+created slot, −40 106 per overwritten one); reads are unchanged.
+
+| Operation | After 10 | After 100 | After 1 000 | Paved's ceiling | Network estimate | Against 20 M cap |
+|---|---|---|---|---|---|---|
+| `submit` rank 1, two shifted (worst; 4 overwritten) | 427 420 | 427 420 | 427 420 | 1 300 000 | 266 996 | 2.1 % |
+| `submit` rank 2 (3 overwritten) | 313 540 | 313 540 | 313 540 | 1 300 000 | 193 222 | 1.6 % |
+| `submit` rank 3 (2 overwritten) | 198 050 | 198 050 | 198 050 | 1 300 000 | 117 838 | 1.0 % |
+| `submit` not placed, below rank 3 | 47 920 | 47 920 | 47 920 | 600 000 | 47 920 | 0.2 % |
+| `submit` not placed, equal to rank 3 | 47 920 | 47 920 | 47 920 | 600 000 | 47 920 | 0.2 % |
+| `submit` score 0 | 0 | 0 | 0 | 600 000 | 0 | 0 % |
+| `submit` player 0 | 0 | 0 | 0 | 600 000 | 0 | 0 % |
+| `top`, full board | 163 910 | 163 910 | 163 910 | 600 000 | 163 910 | 0.8 % |
+| `ranked`, full rank | 83 450 | 83 450 | 83 450 | 300 000 | 83 450 | 0.4 % |
+| `ranked`, empty rank | 44 530 | 44 530 | 44 530 | 300 000 | 44 530 | 0.2 % |
+
+Score 0 and player 0 return before any read: their call costs less than the baseline's noise (0).
+
+**The first submissions of a tournament** create slots (a created slot costs 474 106 in snforge,
+72 106 overwritten) and do not depend on prior submissions:
+
+| Submission | Call | Slots written | Network estimate | Paved's ceiling |
+|---|---|---|---|---|
+| 1st (rank 1 on an empty board) | 1 005 030 | word and player 1, created | 963 818 | 1 300 000 |
+| 2nd (rank 2) | 602 200 | word overwritten, player 2 created | 541 488 | 1 300 000 |
+| 3rd (rank 3) | 599 750 | word overwritten, player 3 created | 539 038 | 1 300 000 |
+| rank 1 on a board of two | 829 680 | word, players 1 and 2 overwritten, player 3 created | 688 756 | 1 300 000 |
+
+**Every ceiling is met**, the largest figure being the first submission of a tournament (1 005 030
+against 1 300 000, its two created slots being 948 212 of it). None depends on the number of
+submissions: the figures are identical at 10, 100 and 1 000.
+
+**Unchanged slots** (`tests/test_contract.cairo`): a rank-1 submit by the player already holding
+ranks 1 and 2 writes two slots fewer than the same submit over distinct players; the gas of a
+placing submit falls with the rank (3, 2 or 1 player slots moved).
+
+**Memory** (capped, `prlimit --as=8589934592 -- /usr/bin/time -v`): first full `snforge test`
+1 022 620 kB maximum resident set size; the 1 000-submission benchmark alone 876 584 kB.
