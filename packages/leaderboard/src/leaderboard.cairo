@@ -102,8 +102,10 @@ impl SubmitImpl of LeaderboardTrait<StoragePath<Mutable<LeaderboardStorage>>> {
             return 0;
         }
         let Scores { first, second, third } = scores;
-        // An empty rank holds the player 0 and is not read. A slot is written only when its value
-        // changes; the value now in a slot is known when it was read or when its rank was empty.
+        // An empty rank holds the player 0 and is not read. Slots 1 and 2 are written only when
+        // their value changes: the value now in them is known, read or empty. Slot 3 is not read,
+        // so it is written on every placement that reaches it, even with the same value (one
+        // overwrite, about 72 106 gas, no state diff on the network; a read costs about 38 920).
         if rank == 1 {
             let old_first = if first == 0 {
                 0

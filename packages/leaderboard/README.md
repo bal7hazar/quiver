@@ -41,7 +41,10 @@ another node). `Submission { player_id: felt252, game_id: u32, score: u32, time:
 2. A score not above the third's: returns 0; nothing written.
 3. Otherwise the rank is 1 above the first, else 2 above the second, else 3. **An equal score goes
    below** (the earlier call stays above). The lower ranks shift down by one; the third falls out.
-   The scores word is written once; each player slot is written **only if its value changes**.
+   The scores word is written once; player slots 1 and 2 are written **only if their value changes**.
+   Slot 3 is not read, so it is written on every placement that reaches it, even with the same value
+   (one overwrite, about 72 106 gas, no state diff on the network; reading it would cost about 38 920
+   on every placing submit).
 
 Games are ranked, not players: one player may hold two or three ranks. `game_id` and `time` are
 data, never compared; the block timestamp is never read. `ranked` with a rank outside 1..=3 answers

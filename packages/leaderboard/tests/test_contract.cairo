@@ -1,7 +1,7 @@
 //! What needs a deployed contract (ARC-05a): the calls through a storage path of a consumer's
 //! contract, no event after any kind of submit, a submit that does not place leaving the storage as
-//! it was, a placing submit writing only the slots that change, tournaments isolated, and no read
-//! of the block timestamp.
+//! it was, a placing submit writing slots 1 and 2 only when they change, tournaments isolated, and
+//! no read of the block timestamp.
 
 use quiver_leaderboard::types::ranked::Ranked;
 use quiver_leaderboard::types::top3::Top3;
@@ -105,11 +105,12 @@ fn a_placing_submit_changes_only_the_slots_it_moves() {
     assert_eq!(*after.at(3), 'D');
 }
 
-/// Gas of the call, of a rank-1 submit shifting two ranks: when the shifted players are the same
-/// player, the slots whose value does not change are not written (two writes fewer).
+/// Gas of the call, of a rank-1 submit shifting two ranks: when the players of ranks 1 and 2 are
+/// the player submitting, slots 1 and 2 keep their value and are not written (two writes fewer).
+/// Slot 3 is written all the same, with the same value: it is not read.
 #[test]
 #[available_gas(l2_gas: 7054152)]
-fn an_unchanged_slot_is_not_written() {
+fn slots_one_and_two_are_written_only_when_they_change() {
     let (_, distinct) = deploy();
     distinct.submit(T, 'C', 5);
     distinct.submit(T, 'B', 8);
@@ -123,7 +124,8 @@ fn an_unchanged_slot_is_not_written() {
     same.submit(T, 'D', 10);
     let (rank, gas_same) = same.submit_gas(T, 'D', 12);
     assert_eq!(rank, 1);
-    // Slots 1 and 2 keep 'D': only the word and slot 3 are written. A write is at least 70 000.
+    // Slots 1 and 2 keep 'D': only the word and slot 3 are written (slot 3 is not read, so it is
+    // always written). A write is at least 70 000.
     assert!(gas_distinct > gas_same + 140000, "distinct {}, same {}", gas_distinct, gas_same);
 }
 

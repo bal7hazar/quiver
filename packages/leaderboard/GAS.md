@@ -78,7 +78,7 @@ measure and that ceiling, also passes (docs/CAIRO.md §2).
 | `quiver_leaderboard::models::scores::tests::rank_of_a_score` | 6010 | 6311 | 2026-10-07 | 1788d97 |
 | `quiver_leaderboard_integrationtest::test_contract::a_placing_submit_changes_only_the_slots_it_moves` | 4307380 | 4522749 | 2026-10-07 | 1788d97 |
 | `quiver_leaderboard_integrationtest::test_contract::a_submit_that_does_not_place_leaves_the_storage_unchanged` | 4518780 | 4744719 | 2026-10-07 | 1788d97 |
-| `quiver_leaderboard_integrationtest::test_contract::an_unchanged_slot_is_not_written` | 6718240 | 7054152 | 2026-10-07 | 1788d97 |
+| `quiver_leaderboard_integrationtest::test_contract::slots_one_and_two_are_written_only_when_they_change` | 6718240 | 7054152 | 2026-10-07 | 1788d97 |
 | `quiver_leaderboard_integrationtest::test_contract::no_event_after_any_kind_of_submit` | 4468710 | 4692146 | 2026-10-07 | 1788d97 |
 | `quiver_leaderboard_integrationtest::test_contract::the_block_timestamp_changes_nothing` | 4554650 | 4782383 | 2026-10-07 | 1788d97 |
 | `quiver_leaderboard_integrationtest::test_contract::the_calls_go_through_a_consumers_storage_path` | 2392640 | 2512272 | 2026-10-07 | 1788d97 |
@@ -127,9 +127,12 @@ Score 0 and player 0 return before any read: their call costs less than the base
 against 1 300 000, its two created slots being 948 212 of it). None depends on the number of
 submissions: the figures are identical at 10, 100 and 1 000.
 
-**Unchanged slots** (`tests/test_contract.cairo`): a rank-1 submit by the player already holding
-ranks 1 and 2 writes two slots fewer than the same submit over distinct players; the gas of a
-placing submit falls with the rank (3, 2 or 1 player slots moved).
+**Unchanged slots** (`tests/test_contract.cairo`): player slots 1 and 2 are written only when their
+value changes; slot 3 is written on every placement that reaches it, even with the same value, since
+it is not read (a read would cost about 38 920 on every placing submit; the rewrite costs one
+overwrite, about 72 106, and no state diff on the network). A rank-1 submit by the player already
+holding ranks 1 and 2 therefore writes two slots fewer (1 and 2) than the same submit over distinct
+players; the gas of a placing submit falls with the rank (3, 2 or 1 player slots moved).
 
 **Memory** (capped, `prlimit --as=8589934592 -- /usr/bin/time -v`): first full `snforge test`
 1 022 620 kB maximum resident set size; the 1 000-submission benchmark alone 876 584 kB.

@@ -30,7 +30,7 @@ snforge L2 gas, benchmark minus baseline, after 10 / 100 / 1,000 prior submissio
 - AC-1 Every line of the specification: types and signatures as asked; key any `u64` (tests at 0, 213 503 982 334 600, `u64::MAX`); the rule and ties (table tests in `leaderboard::tests`); never reverts (score 0 / player 0 / not placed return 0); N = 3; 4 slots; no Dojo, no `u256`.
 - AC-2 Paved's table test (separate tests: ties at every rank, shifts, score 0, player 0, one player on three ranks, a score equal to rank 3, ids 0 and 213 503 982 334 600) and the property test `property_sequences_match_the_reference` (100 runs of 16 steps against `src/testing/reference.cairo`, compared after each step on `top` and on every return) pass.
 - AC-3 No interface, ABI item, contract or component outside tests: only `src/testing/mock.cairo` (cfg(test)) and `tests/mocks.cairo` declare contracts; `no_event_after_any_kind_of_submit` (`spy_events` empty).
-- AC-4 `the_slots_hold_the_ranks`, `a_placing_submit_changes_only_the_slots_it_moves`, `an_unchanged_slot_is_not_written` (two writes fewer when the shifted players are equal), `a_submit_that_does_not_place_leaves_the_storage_unchanged` (`load` before and after), `tournaments_are_isolated`; `the_block_timestamp_changes_nothing`; the package reads no timestamp.
+- AC-4 `the_slots_hold_the_ranks`, `a_placing_submit_changes_only_the_slots_it_moves`, `slots_one_and_two_are_written_only_when_they_change` (two writes fewer when the player already holds ranks 1 and 2; slot 3 is written all the same, see Fix loop 1), `a_submit_that_does_not_place_leaves_the_storage_unchanged` (`load` before and after), `tournaments_are_isolated`; `the_block_timestamp_changes_nothing`; the package reads no timestamp.
 - AC-5 Every test has a budget; `python3 scripts/gas.py packages/leaderboard --check`; every ceiling is met and flat at 10, 100 and 1,000.
 - AC-6 README, CHANGELOG, GAS.md, BUDGETS, WORKSPACE, AGENTS (peak 1,022,620 kB).
 - AC-7 CI: see the pull request; the matrix includes `packages/leaderboard`.
@@ -47,3 +47,9 @@ snforge L2 gas, benchmark minus baseline, after 10 / 100 / 1,000 prior submissio
 
 ## Open questions
 None.
+
+## Fix loop 1 (review-opus, PASS WITH FINDINGS, at 1ac6efa)
+
+**Deviation from Paved's "a submit writes only the slots that changed".** Player slots 1 and 2 are written only when their value changes; slot 3 is written on every placement that reaches it (rank 1, 2 or 3), even with the same value, since it is not read (a read would cost about 38 920 on every placing submit). The exception costs one overwrite, about 72 106 snforge L2 gas, and leaves no state diff on the network. Examples: on the board D 10, D 8, D 5, `submit(D, 12)` rewrites slot 3 with D over D; a player improving their own rank 3 rewrites it. Reason (orchestrator, option a): the 3-read budget is kept; reading slot 3 would cost about 38 920 on every placing submit to save a rewrite only in rare cases.
+
+The same sentence is in the code comment (`src/leaderboard.cairo`), `README.md` and GAS.md's "Unchanged slots" paragraph; the test `an_unchanged_slot_is_not_written` is renamed `slots_one_and_two_are_written_only_when_they_change` and its comment says what it checks. **No code behaviour change; no figure moved** (re-run on this machine: `gas.py --check`, see below).
