@@ -15,8 +15,8 @@ scarbs.xyz and consumed by the game **by version**.
 
 | | |
 |---|---|
-| Reference | `cartridge-gg/arcade`, `packages/quest` and `packages/achievement` (MIT by the owner's statement) |
-| Order | `quiver_quest` (needed by the game's GLD-02, Phase 3), then `quiver_achievement` (titles); `leaderboard` and `social` after the game's MVP |
+| Reference | `cartridge-gg/arcade`, `packages/quest`, `packages/achievement` and `packages/leaderboard` (MIT by the owner's statement) |
+| Order | `quiver_quest` (needed by the game's GLD-02, Phase 3), then `quiver_achievement` (titles); `quiver_leaderboard` for Paved (ARC-05a, the owner's request of 2026-10-07); `social` after the game's MVP |
 | CI | Runs the checks of the packages a change touches and of those that depend on them; the whole workspace on `main` and before a release |
 | Publication | Per package (D-132, the game's OPERATIONS §7 "Publications"). **No sub-agent publishes, ever.** The orchestrator's session publishes, only after a go of the project manager naming the package, the version and the commit, asked with `docs/decisions/PENDING-publish-<package>-<version>.md` (renamed to the dated record once published) and one message; the project manager checks the commit, CI, audits, changelog, gas tables, `scarb package` from a clean checkout, the registry and the dependencies first |
 | Out of scope | Moving the owner's other `*-cairo` libraries here: the owner decides, library by library |
@@ -43,7 +43,8 @@ scarbs.xyz and consumed by the game **by version**.
 | ARC-14 | The pre-push waits at most 90 s for the VPS build lock and skips its compile steps when it stays busy; `lock.sh` takes the heavy lock for every compile | ARC-13 | Sonnet 5.5 | — (review only, D-177) | done: [#44](https://github.com/bal7hazar/quiver/pull/44) (`0c840f4`), [report](docs/reports/ARC-14-report.md) |
 | ARC-15 | CI cancels superseded runs of a pull request, never other runs | — | Sonnet 5.5 | — (review only, D-177) | done: [#45](https://github.com/bal7hazar/quiver/pull/45) (`3750b5d`), [report](docs/reports/ARC-15-report.md) |
 | ARC-16 | Lock fixes of the pre-push | ARC-14 | Sonnet 5.5 | — (review only, D-177) | done: [#46](https://github.com/bal7hazar/quiver/pull/46) (`8d6c7c3`), [report](docs/reports/ARC-16-report.md) |
-| ARC-05 | `leaderboard`, `social` | After the game's MVP | — | — | todo |
+| ARC-05a | `quiver_leaderboard` 0.1.0: Arcade's leaderboard without Dojo, for Paved (a bounded top-N per leaderboard, submitters registered per leaderboard, events keyed by player and leaderboard) ([brief](docs/briefs/ARC-05a-leaderboard.md), [mapping to Arcade](docs/research/ARC-05a-arcade-leaderboard-mapping.md)); then its publication request, the go the owner's (not delegated) | The owner's request (2026-10-07); the project manager's answers to the brief's points | Sonnet 5.5 | Opus 5.5 (access control, security lens, D-177) | design brief written; the lot waits for the project manager's answers |
+| ARC-05 | `social` | After the game's MVP | — | — | todo |
 
 ## Budget and rules
 
