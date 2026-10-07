@@ -1,0 +1,20 @@
+[package]
+name = "quiver_leaderboard"
+version = "0.1.0"
+edition.workspace = true
+cairo-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A top-3 leaderboard for Starknet games, as internal code on the consumer's own storage: no entry point, no event. No Dojo."
+
+[dependencies]
+starknet.workspace = true
+
+[dev-dependencies]
+assert_macros = "2.20.0"
+snforge_std.workspace = true
+
+[lib]
+
+[scripts]
+test = "snforge test"

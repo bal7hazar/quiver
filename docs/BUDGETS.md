@@ -244,3 +244,25 @@ figure includes the test's setup (`bench_baseline_sixteen_entries`: 49 990).
 | `HeadSlot` (slot A, with `points`) pack and unpack | every field at its maximum | `bench_pack_unpack_definition` | 26 960 | 28 308 |
 | `TasksSlot` (slot B) pack and unpack | every field at its maximum | `bench_pack_unpack_extra_tasks` | 17 100 | 17 955 |
 | `DefinitionTrait::new`, then `into_slots` | 3 tasks | `bench_definition_new_three_tasks` | 12 410 | 13 031 |
+
+## `quiver_leaderboard`: the storage node (ARC-05a)
+
+Measured 2026-10-07 on Scarb 2.20.1, snforge 0.64.0, Linux, `RAYON_NUM_THREADS=1` (the commit is in
+`packages/leaderboard/GAS.md`), L2 gas. The package has no entry point: each figure is the internal
+call, the benchmark minus its baseline (the same board without the call), after 10, 100 and 1,000
+prior submissions, and **identical at all three**. Network estimates and the detail are in
+[packages/leaderboard/GAS.md](../packages/leaderboard/GAS.md#quiver_leaderboard-010-arc-05a).
+
+| Operation | Call (snforge) | Network estimate | Paved's ceiling | Test (benchmark) |
+|---|---|---|---|---|
+| `submit` rank 1, two shifted (worst) | 427 420 | 266 996 | 1 300 000 | `bench_submit_rank1_after_n` |
+| `submit` rank 2 | 313 540 | 193 222 | 1 300 000 | `bench_submit_rank2_after_n` |
+| `submit` rank 3 | 198 050 | 117 838 | 1 300 000 | `bench_submit_rank3_after_n` |
+| `submit` not placed | 47 920 | 47 920 | 600 000 | `bench_submit_not_placed_*_after_n` |
+| `submit` score 0 or player 0 | 0 | 0 | 600 000 | `bench_submit_score_zero_after_n`, `bench_submit_player_zero_after_n` |
+| `top` | 163 910 | 163 910 | 600 000 | `bench_top_after_n` |
+| `ranked` (full / empty rank) | 83 450 / 44 530 | same | 300 000 | `bench_ranked_*_after_n` |
+| first submission of a tournament (2 slots created) | 1 005 030 | 963 818 | 1 300 000 | `bench_first_submission` |
+
+Ceilings are Paved's (estimates from `cairo-profiler`); these are snforge's L2 gas. All are met. The
+worst call against the 20 M cap: 1 005 030 (5.0 %).

@@ -11,6 +11,7 @@ Scarb.lock            committed
 .tool-versions        scarb 2.20.1, starknet-foundry 0.64.0: read by the CI
 packages/quest/       quiver_quest        (Scarb.toml, README.md, CHANGELOG.md, GAS.md, src/, tests/)
 packages/achievement/ quiver_achievement  (same shape)
+packages/leaderboard/ quiver_leaderboard  (same shape; a storage node, no entry point)
 scripts/gas.py        the gas tool (test_gas.py: its unit tests)
 scripts/prepush.sh    the local check before a push; .githooks/pre-push runs it
 .github/workflows/    tooling.yml, cairo.yml, release.yml

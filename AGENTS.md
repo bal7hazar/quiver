@@ -31,6 +31,7 @@ heavy locks.
 | --- | --- | --- |
 | `packages/quest` (`quiver_quest`, 513 tests) | `cd packages/quest && snforge test [<filter>]` | never measured: measure first |
 | `packages/achievement` (`quiver_achievement`, 147 tests) | `cd packages/achievement && snforge test [<filter>]` | never measured: measure first |
+| `packages/leaderboard` (`quiver_leaderboard`, 78 tests) | `cd packages/leaderboard && snforge test [<filter>]` | 1.0 GB (1 022 620 kB, first full run, ARC-05a; the 1,000-submission benchmark alone 0.88 GB) |
 | `scripts/` (Python) | `python3 -m unittest scripts/test_gas.py`; `python3 -m unittest scripts/test_hook.py` (outside prepush's discovery, to avoid recursion) | no Cairo build |
 | `.github/ci/` (Python) | `python3 -m unittest discover -s .github/ci -p "test_*.py"` | no Cairo build |
 
