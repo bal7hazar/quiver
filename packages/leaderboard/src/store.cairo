@@ -9,7 +9,8 @@
 //! map key, never packed nor checked: any `u64` is valid.
 
 use starknet::storage::{
-    Map, Mutable, StoragePath, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    Map, Mutable, StoragePath, StoragePathEntry, StoragePointerReadAccess,
+    StoragePointerWriteAccess,
 };
 use crate::models::scores::Scores;
 
@@ -41,7 +42,9 @@ pub impl StoreImpl of StoreTrait {
 pub impl StoreMutImpl of StoreMutTrait {
     /// One write.
     #[inline(always)]
-    fn set_scores(self: StoragePath<Mutable<LeaderboardStorage>>, tournament_id: u64, scores: Scores) {
+    fn set_scores(
+        self: StoragePath<Mutable<LeaderboardStorage>>, tournament_id: u64, scores: Scores,
+    ) {
         self.scores.entry(tournament_id).write(scores);
     }
 

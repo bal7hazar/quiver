@@ -10,6 +10,8 @@
 //! The unit tests of a module are in its file, under `#[cfg(test)] mod tests` (D-167); `tests/`
 //! holds what needs a deployed contract.
 
+#[cfg(test)]
+pub mod bench;
 pub mod leaderboard;
 pub mod store;
 

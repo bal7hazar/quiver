@@ -63,22 +63,20 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 6311)]
     fn packing_ranks_sit_at_their_bits() {
         assert_eq!(StorePacking::pack(scores(1, 0, 0)), 1);
         assert_eq!(StorePacking::pack(scores(0, 1, 0)), 0x100000000);
         assert_eq!(StorePacking::pack(scores(0, 0, 1)), 0x10000000000000000);
-        assert_eq!(
-            StorePacking::pack(scores(MAX, MAX, MAX)), 0xffffffffffffffffffffffff,
-        );
+        assert_eq!(StorePacking::pack(scores(MAX, MAX, MAX)), 0xffffffffffffffffffffffff);
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 71789)]
     fn packing_round_trips() {
         let cases = array![
-            scores(0, 0, 0), scores(1, 0, 0), scores(3, 2, 1), scores(MAX, 0, 7), scores(MAX, MAX, MAX),
-            scores(0x12345678, 0x9abcdef0, 0x0fedcba9),
+            scores(0, 0, 0), scores(1, 0, 0), scores(3, 2, 1), scores(MAX, 0, 7),
+            scores(MAX, MAX, MAX), scores(0x12345678, 0x9abcdef0, 0x0fedcba9),
         ];
         for case in cases {
             let word: felt252 = StorePacking::pack(case);
@@ -87,13 +85,13 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 14753)]
     fn packing_empty_slot_unpacks_to_zero_scores() {
         assert_eq!(StorePacking::unpack(0), scores(0, 0, 0));
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 6311)]
     fn rank_of_a_score() {
         let board = scores(10, 8, 5);
         assert_eq!(board.rank(11), 1);
@@ -109,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 6311)]
     fn place_shifts_the_lower_ranks_down() {
         let board = scores(10, 8, 5);
         assert_eq!(board.place(1, 12), scores(12, 10, 8));
@@ -120,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 6311)]
     fn at_reads_a_rank_and_zero_outside() {
         let board = scores(10, 8, 5);
         assert_eq!(board.at(0), 0);

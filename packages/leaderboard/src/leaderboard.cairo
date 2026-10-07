@@ -64,7 +64,9 @@ impl ViewImpl of LeaderboardViewTrait<StoragePath<LeaderboardStorage>> {
 impl OccupantImpl of OccupantTrait {
     /// The ranked entry of `rank` whose score is `score`: empty, without a read, when it is 0.
     #[inline(always)]
-    fn occupant(self: StoragePath<LeaderboardStorage>, tournament_id: u64, rank: u8, score: u32) -> Ranked {
+    fn occupant(
+        self: StoragePath<LeaderboardStorage>, tournament_id: u64, rank: u8, score: u32,
+    ) -> Ranked {
         if score == 0 {
             Default::default()
         } else {
@@ -74,7 +76,9 @@ impl OccupantImpl of OccupantTrait {
 }
 
 impl ViewMutImpl of LeaderboardViewTrait<StoragePath<Mutable<LeaderboardStorage>>> {
-    fn ranked(self: StoragePath<Mutable<LeaderboardStorage>>, tournament_id: u64, rank: u8) -> Ranked {
+    fn ranked(
+        self: StoragePath<Mutable<LeaderboardStorage>>, tournament_id: u64, rank: u8,
+    ) -> Ranked {
         self.as_non_mut().ranked(tournament_id, rank)
     }
 
@@ -171,11 +175,11 @@ impl PathableImpl<
 #[cfg(test)]
 mod tests {
     use crate::testing::mock::MockBoard;
+    use crate::testing::mock::MockBoard::BoardTrait;
     use crate::testing::reference::{ReferenceImpl, ReferenceTrait};
     use crate::types::ranked::Ranked;
     use crate::types::submission::Submission;
     use crate::types::top3::Top3;
-    use crate::testing::mock::MockBoard::BoardTrait;
 
     /// Paved's largest tournament id (`timestamp / 86400` at its highest).
     const BIG: u64 = 213503982334600;
@@ -202,7 +206,7 @@ mod tests {
     // The table
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 106838)]
     fn empty_board_reads_empty() {
         let state = MockBoard::contract_state_for_testing();
         assert_eq!(state.top(1), Default::default());
@@ -210,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 1155809)]
     fn first_submission_takes_rank_one() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(1, game('A', 3)), 1);
@@ -218,7 +222,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2497026)]
     fn ranks_fill_in_order_of_score() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(1, game('A', 10)), 1);
@@ -228,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 3187559)]
     fn rank_one_shifts_two_down_and_drops_the_third() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -237,7 +241,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 3067985)]
     fn rank_two_shifts_one_down() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -246,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2946720)]
     fn rank_three_replaces_the_third() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -255,7 +259,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 3067985)]
     fn a_tie_with_the_first_goes_below_it() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -264,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2946720)]
     fn a_tie_with_the_second_goes_below_it() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -273,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2790344)]
     fn a_score_equal_to_the_third_is_not_placed() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -282,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2790344)]
     fn a_score_below_the_third_is_not_placed() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -291,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2547237)]
     fn ties_on_a_board_of_equal_scores_keep_the_earlier_call_above() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(1, game('A', 4)), 1);
@@ -302,7 +306,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2792223)]
     fn score_zero_never_ranks() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(1, game('A', 0)), 0);
@@ -313,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2792223)]
     fn player_zero_never_ranks() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(1, game(0, 9)), 0);
@@ -324,7 +328,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 3048224)]
     fn a_player_holds_all_three_ranks() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(1, game('A', 5)), 1);
@@ -336,7 +340,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 1827557)]
     fn game_id_and_time_are_data_only() {
         let mut state = MockBoard::contract_state_for_testing();
         let early = Submission { player_id: 'A', game_id: 1, score: 6, time: 1 };
@@ -347,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 1827557)]
     fn the_largest_score_and_player_are_kept() {
         let mut state = MockBoard::contract_state_for_testing();
         let player = 0x800000000000011000000000000000000000000000000000000000000000000;
@@ -357,7 +361,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 4598360)]
     fn tournament_ids_zero_and_largest_are_valid_and_isolated() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(0, game('A', 3)), 1);
@@ -373,7 +377,7 @@ mod tests {
     // `ranked`
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2830076)]
     fn ranked_reads_each_rank() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -383,7 +387,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2564877)]
     fn ranked_outside_one_to_three_is_empty() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -393,7 +397,7 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 1203668)]
     fn ranked_of_an_empty_rank_is_empty() {
         let mut state = MockBoard::contract_state_for_testing();
         assert_eq!(state.submit(1, game('A', 3)), 1);
@@ -405,7 +409,7 @@ mod tests {
     // The reads on a snapshot of the state
 
     #[test]
-    #[available_gas(l2_gas: 100000000)]
+    #[available_gas(l2_gas: 2828091)]
     fn reads_work_on_a_snapshot_state() {
         let mut state = MockBoard::contract_state_for_testing();
         full(ref state, 1);
@@ -416,55 +420,56 @@ mod tests {
 
     // The property: sequences against the reference model
 
-    /// Eight submissions from the bytes of four words: scores of 0..=5 (ties and zeros often),
-    /// players of 0..=4 (zero often, repeats often), compared with the reference after each step on
-    /// the return and on `top`.
-    #[test]
-    #[fuzzer(runs: 64, seed: 20261007)]
-    #[available_gas(l2_gas: 100000000)]
-    fn property_sequences_match_the_reference(
-        scores_a: u64, scores_b: u64, players_a: u64, players_b: u64, t: u64,
-    ) {
+    /// Runs of the property, and steps of each: 100 sequences of 16 submissions.
+    const RUNS: u64 = 100;
+    const STEPS: u32 = 16;
+
+    /// The next state of the generator (a 48-bit linear congruence, deterministic: a failure
+    /// replays from its run number).
+    fn next(state: u128) -> u128 {
+        (state * 25214903917 + 11) % 0x1000000000000
+    }
+
+    /// One sequence, drawn from `run`: scores of 0..=5 and players of 0..=4 (ties, zeros and a
+    /// player on several ranks all come often), on its own tournament (runs 0 to 2: 0, Paved's
+    /// largest id, the largest `u64`; then the run number: the contract's storage is shared by
+    /// every run). After each step the package and the reference agree on the return and on `top`.
+    fn sequence(run: u64) {
         let mut state = MockBoard::contract_state_for_testing();
         let mut model: crate::testing::reference::Reference = Default::default();
-        let mut scores = array![];
-        let mut players = array![];
-        let mut word = scores_a;
-        let mut i = 0_u8;
-        while i != 8 {
-            scores.append(word % 256);
-            word = word / 256;
-            i += 1;
-        }
-        word = scores_b;
-        i = 0;
-        while i != 8 {
-            scores.append(word % 256);
-            word = word / 256;
-            i += 1;
-        }
-        word = players_a;
-        i = 0;
-        while i != 8 {
-            players.append(word % 256);
-            word = word / 256;
-            i += 1;
-        }
-        word = players_b;
-        i = 0;
-        while i != 8 {
-            players.append(word % 256);
-            word = word / 256;
-            i += 1;
-        }
+        let mut seed = next(run.into() + 1);
+        let t: u64 = if run == 0 {
+            0
+        } else if run == 1 {
+            BIG
+        } else if run == 2 {
+            0xffffffffffffffff
+        } else {
+            run
+        };
         let mut step = 0;
-        while step != 16 {
-            let score: u32 = (*scores.at(step) % 6).try_into().unwrap();
-            let player: felt252 = (*players.at(step) % 5).into();
+        while step != STEPS {
+            seed = next(seed);
+            let score: u32 = ((seed / 65536) % 6).try_into().unwrap();
+            seed = next(seed);
+            let player: felt252 = ((seed / 65536) % 5).into();
             let submission = game(player, score);
             assert_eq!(state.submit(t, submission), model.apply(submission));
             assert_eq!(state.top(t), model.board());
             step += 1;
+        }
+    }
+
+    /// A deterministic property test with its runs stated (`RUNS`), not `#[fuzzer]`:
+    /// `scripts/gas.py`
+    /// reads one `l2_gas` figure per test and a fuzzer prints a summary (ARC-05a report).
+    #[test]
+    #[available_gas(l2_gas: 647750229)]
+    fn property_sequences_match_the_reference() {
+        let mut run = 0;
+        while run != RUNS {
+            sequence(run);
+            run += 1;
         }
     }
 }

@@ -1,6 +1,6 @@
 //! A contract that holds the node in its storage, for the unit tests: they take its state with
-//! `contract_state_for_testing` and go through its internal functions, which call the leaderboard on
-//! `self.leaderboard` as a consumer does (`ref self` to write, `@self` to read). Test code only;
+//! `contract_state_for_testing` and go through its internal functions, which call the leaderboard
+//! on `self.leaderboard` as a consumer does (`ref self` to write, `@self` to read). Test code only;
 //! `tests/` has its own mock with wrappers for what needs a deployed contract.
 
 #[starknet::contract]
