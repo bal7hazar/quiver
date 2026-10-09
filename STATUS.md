@@ -1,8 +1,8 @@
 # Status
 
-**2026-10-02 19:30 UTC**, written by the orchestrator of track ARC (herdr, project `grimworld-arc`).
+**2026-10-09 17:05 UTC**, written by the orchestrator of track ARC (herdr, project `grimworld-arc`).
 
-## State, 2026-10-02
+## State, 2026-10-09
 
 The track runs in herdr since 2026-10-02. The Nexus-era orchestrator stopped at the soft stop of
 2026-10-01 (lifted for all of Grim World on 2026-10-02); Nexus and `scripts/agent.sh` are no longer
@@ -39,14 +39,31 @@ used by this track. Its handover note is
   and `quiver_leaderboard`. A breaking release of any package is announced to the project manager
   first (passed to Paved through the Overseer); a request from Paved through the project manager is
   a consumer request.
-- **ARC-05a, `quiver_leaderboard` 0.1.0, in progress** (2026-10-07, the owner's request): the
-  [design brief](docs/briefs/ARC-05a-leaderboard.md), written from Paved's specification, and the
-  [mapping to Arcade's design](docs/research/ARC-05a-arcade-leaderboard-mapping.md) are written. The
-  lot is **held** until the owner answers on the licence (Arcade's is non-commercial; no Arcade code
-  is copied or ported unless the answer allows it). Review only, no audit; the publication's go is
-  the owner's.
-- Next: no 0.2.1 request now (ARC-07d waits under `[Unreleased]`, project manager, 2026-10-02); a lot for the hook's automated
-  tests and a shellcheck of the hook (review notes, later).
+- ARC-17 (tests of the hook and shellcheck): [#50](https://github.com/bal7hazar/quiver/pull/50), `e3a0a5d`;
+  ARC-18 (CI jobs run by changed paths, a final job always runs):
+  [#52](https://github.com/bal7hazar/quiver/pull/52), `fadc476`,
+  [brief](docs/briefs/ARC-18-ci-by-changed-paths.md), [report](docs/reports/ARC-18-report.md). Both done,
+  review only (D-177). How a thread scopes its tests: [AGENTS.md](AGENTS.md).
+- **ARC-05a, `quiver_leaderboard` 0.1.0, is done and merged** (2026-10-07, the owner's request). The
+  [design brief](docs/briefs/ARC-05a-leaderboard.md) is [#61](https://github.com/bal7hazar/quiver/pull/61).
+  The licence question was settled by D-230 (project manager): a clean implementation from Paved's
+  specification, no Arcade code. The implementation is [#62](https://github.com/bal7hazar/quiver/pull/62),
+  `6294a8d`, [report](docs/reports/ARC-05a-report.md): review `[Opus 5.5]` PASS at `32d76ad` after one fix
+  loop; D-232 documents the rewrite of player slot 3 on a placement; no audit (no external entry point).
+  The changelog is dated ([#63](https://github.com/bal7hazar/quiver/pull/63), `3f09125`). Gas (snforge L2
+  gas, flat at 10, 100 and 1 000 prior submissions): worst submit 427 420, first submission 1 005 030,
+  against Paved's ceiling of 1.3M; Paved measured its own delta: equal on placing submits, cheaper
+  elsewhere.
+- **`quiver_leaderboard` 0.1.0 waits for the owner's go.** The publication request is
+  [docs/decisions/PENDING-publish-quiver_leaderboard-0.1.0.md](docs/decisions/PENDING-publish-quiver_leaderboard-0.1.0.md)
+  ([#64](https://github.com/bal7hazar/quiver/pull/64)): commit `3f0912507e9e71e1adeac663037050d468596861`,
+  archive sha256 `f8900c602c983acbbc39513a964eefacdbcb861902b2501d9e50b891981e770e`. D-186 does not cover
+  this package.
+- Answered for Paved (2026-10-07): event-mode `progress_many` reverts only on more than 16 entries or a
+  task id 0, so no 0.2.1 is needed. 0.2.1 stays held (ARC-07d waits under `[Unreleased]`). `social`
+  (ARC-05) stays after the game's MVP.
+- Next: the owner's go for `quiver_leaderboard` 0.1.0; no 0.2.1 request now (ARC-07d waits under
+  `[Unreleased]`, project manager, 2026-10-02).
 
 ## Resumed 2026-09-30, under Nexus (D-162)
 
@@ -69,7 +86,7 @@ docs/CAIRO.md §2: a module's unit tests live in its file under `#[cfg(test)] mo
 | ARC-10, Scarb 2.20.1 and starknet-foundry 0.64.0 (D-180) | **Done**: [#37](https://github.com/bal7hazar/quiver/pull/37) merged (`0fd494e`), [brief](docs/briefs/ARC-10-scarb-latest.md), [report](docs/reports/ARC-10-report.md); two reviews by Opus 5.5 (`review-opus`), no audit (D-177); single-thread pin kept, SPK-13 | — |
 | ARC-07d, deferred notes | **Done**: [#47](https://github.com/bal7hazar/quiver/pull/47) merged (`5061428`), [report](docs/reports/ARC-07d-report.md); review only, no audit (D-177) | Stays under `[Unreleased]`, batched with the next consumer-needed change |
 | Publication of both packages as 0.2.0 | **Published 2026-10-02** from `2e6bb77` (D-186), [quest record](docs/decisions/2026-10-02-publish-quiver_quest-0.2.0.md), [achievement record](docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md) | — |
-| ARC-05a, `quiver_leaderboard` 0.1.0 | **In progress**: [design brief](docs/briefs/ARC-05a-leaderboard.md) written; the lot **held** for the owner's licence answer | The owner's licence answer, then the lot |
+| ARC-05a, `quiver_leaderboard` 0.1.0 | **Done**: [#62](https://github.com/bal7hazar/quiver/pull/62) merged (`6294a8d`), [report](docs/reports/ARC-05a-report.md); review-opus PASS at `32d76ad`, no audit; licence D-230; **publication request** [#64](https://github.com/bal7hazar/quiver/pull/64) | The owner's go to publish (D-186 does not cover it) |
 | ARC-05, `social` | Waits for the game's MVP and a decision of the project manager | — |
 
 **Reviews and audits while Codex has no quota** (the owner's rules of 2026-10-01): reviews by Claude
@@ -138,7 +155,7 @@ the game's `74c7d50`).
 
 ## Agents
 
-None running. The track runs in herdr on the VPS; the Mac is off.
+None running. The track runs in herdr on the VPS and the Mac.
 
 ## Budget
 
@@ -147,4 +164,4 @@ machine capacity read before each launch.
 
 ## Open
 
-Nothing open with the project manager. Waiting for the game's GLD-02 feedback on `quiver_quest` 0.2.0; no 0.2.1 is requested before a consumer needs a change.
+Waiting for the owner's go to publish `quiver_leaderboard` 0.1.0 (request above). Nothing else open with the project manager. Waiting for the game's GLD-02 feedback on `quiver_quest` 0.2.0; no 0.2.1 is requested before a consumer needs a change.
