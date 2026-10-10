@@ -43,11 +43,13 @@ runaway stopper, not a measure (a real peak of 7.3 GB aborted under 8 GiB). So:
    the peak is measured on the Mac. Never measure an unknown peak on the VPS under a 16 GiB cap, and
    never uncapped.
 2. A run whose measured peak RSS is under about 8 GB may run on the VPS under `prlimit --as` set to
-   1.5 × its measured peak, rounded up, and at most 16 GiB (17179869184).
+   1.5 × its measured peak, rounded up, never below 8 GiB (8589934592) and at most 16 GiB
+   (17179869184): a 2 GiB cap (1.5 × a 0.81 GB peak) aborted `scarb package -p hexx` in zstd
+   ("Allocation error: not enough memory"), which passed under 8 GiB.
 3. A run whose peak RSS is above about 8 GB runs on the Mac, never on the VPS.
 
 The next lot that runs a suite of unknown peak records its peak here, with its cap (1.5 × peak, rounded
-up to whole GiB). `quiver_leaderboard`: peak 1.0 GB, cap `--as=2147483648` (2 GiB).
+up to whole GiB, never below 8 GiB). `quiver_leaderboard`: peak 1.0 GB, cap `--as=8589934592` (8 GiB).
 
 The gas check, `python3 scripts/gas.py packages/<pkg> --check` (Linux only), runs the package's
 whole snforge suite single-threaded (D-176). It is a pin check, not "the tests of the part
