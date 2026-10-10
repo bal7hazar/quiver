@@ -27,29 +27,34 @@ their modules (D-167); `tests/` holds only what deploys a contract. On the VPS, 
 `scarb` go through the machine's shims, and `scripts/lock.sh snforge test` takes the project and
 heavy locks.
 
-| Part | Local test command | Memory peak |
+| Part | Local test command | Memory peak (RSS) |
 | --- | --- | --- |
 | `packages/quest` (`quiver_quest`, 513 tests) | `cd packages/quest && snforge test [<filter>]` | never measured: measure first |
 | `packages/achievement` (`quiver_achievement`, 147 tests) | `cd packages/achievement && snforge test [<filter>]` | never measured: measure first |
-| `packages/leaderboard` (`quiver_leaderboard`, 78 tests) | `cd packages/leaderboard && snforge test [<filter>]` | 1.0 GB (1 022 620 kB, first full run, ARC-05a; the 1,000-submission benchmark alone 0.88 GB) |
+| `packages/leaderboard` (`quiver_leaderboard`, 78 tests) | `cd packages/leaderboard && snforge test [<filter>]` | 1.0 GB RSS (1 022 620 kB, first full run, ARC-05a; the 1,000-submission benchmark alone 0.88 GB RSS) |
 | `scripts/` (Python) | `python3 -m unittest scripts/test_gas.py`; `python3 -m unittest scripts/test_hook.py` (outside prepush's discovery, to avoid recursion) | no Cairo build |
 | `.github/ci/` (Python) | `python3 -m unittest discover -s .github/ci -p "test_*.py"` | no Cairo build |
 
-No Node package exists here. `prlimit --as` caps address space, which exceeds resident memory: it is a
-runaway stopper, not a measure (a real peak of 7.3 GB aborted under 8 GiB). So:
+No Node package exists here. `prlimit --as` caps address space, which exceeds resident memory (RSS): it
+is a runaway stopper, not a measure (a run with a 7.3 GB peak aborted under 8 GiB). The peak that sizes a
+cap is the run's VmPeak (address space), read with `grep VmPeak /proc/<pid>/status` during the run, not
+"Maximum resident set size" (RSS). RSS still decides whether a run goes to the Mac. D-251 (2026-10-10),
+the organisation's rule. So:
 
-1. A run whose peak RSS is unknown ("measure first") is measured on the Mac, or on the VPS under
-   `prlimit --as=8589934592 -- /usr/bin/time -v snforge test ...` (8 GiB). If that capped run aborts,
-   the peak is measured on the Mac. Never measure an unknown peak on the VPS under a 16 GiB cap, and
-   never uncapped.
-2. A run whose measured peak RSS is under about 8 GB may run on the VPS under `prlimit --as` set to
-   1.5 × its measured peak, rounded up, never below 8 GiB (8589934592) and at most 16 GiB
-   (17179869184): a 2 GiB cap (1.5 × a 0.81 GB peak) aborted `scarb package -p hexx` in zstd
-   ("Allocation error: not enough memory"), which passed under 8 GiB.
-3. A run whose peak RSS is above about 8 GB runs on the Mac, never on the VPS.
+1. A run whose peak is unknown ("measure first") is measured on the Mac, or on the VPS under
+   `prlimit --as=8589934592 -- /usr/bin/time -v snforge test ...` (8 GiB), reading its VmPeak. If that
+   capped run aborts, the peak is measured on the Mac. Never measure an unknown peak on the VPS under a
+   16 GiB cap, and never uncapped.
+2. A run whose RSS is under about 8 GB may run on the VPS under `prlimit --as` set to 1.5 × its measured
+   VmPeak, rounded up, never below 8 GiB (8589934592) and at most 16 GiB (17179869184): a 2 GiB cap
+   (1.5 × a 0.81 GB peak) aborted `scarb package -p hexx` in zstd ("Allocation error: not enough
+   memory"), which passed under 8 GiB.
+3. A run whose RSS is above about 8 GB runs on the Mac, never on the VPS.
+4. A capped run that makes no progress for 15 minutes is stopped by its own pid and moved: to the Mac,
+   or under a cap from its VmPeak. It is never left holding the heavy lock.
 
-The next lot that runs a suite of unknown peak records its peak here, with its cap (1.5 × peak, rounded
-up to whole GiB, never below 8 GiB). `quiver_leaderboard`: peak 1.0 GB, cap `--as=8589934592` (8 GiB).
+The next lot that runs a suite of unknown peak records its peak (RSS and VmPeak) here, with its cap (1.5 × VmPeak, rounded
+up to whole GiB, never below 8 GiB). `quiver_leaderboard`: RSS 1.0 GB, cap `--as=8589934592` (8 GiB).
 
 The gas check, `python3 scripts/gas.py packages/<pkg> --check` (Linux only), runs the package's
 whole snforge suite single-threaded (D-176). It is a pin check, not "the tests of the part
