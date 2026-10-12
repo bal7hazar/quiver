@@ -90,6 +90,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s .github/ci -p 'test_affected.py'
+          python3 -m unittest discover -s .github/ci -p 'test_check_archive.py'
           python3 -m unittest scripts/test_gas.py
 
       # Defence in depth: on a pull request the script that narrows the run is the base branch's
@@ -181,6 +182,14 @@ jobs:
           DIR: ${{ matrix.dir }}
           RAYON_NUM_THREADS: "1"
         run: python3 scripts/gas.py "$DIR" --check
+
+      # ARC-20 (D-286): the archive `scarb package` builds holds <name>-<version>/LICENSE.
+      - name: archive has LICENSE
+        working-directory: .
+        env:
+          DIR: ${{ matrix.dir }}
+          RAYON_NUM_THREADS: "1"
+        run: python3 .github/ci/check_archive.py "$DIR"
 
   # The stable name for a required check.
   cairo:

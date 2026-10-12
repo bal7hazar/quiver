@@ -10,7 +10,7 @@
 and the event: on a pull request the files changed since the merge base with the base branch (renames listed as
 a deletion and an addition), on any other event every package (main, the daily schedule, a manual
 run, and a release tag through release.yml, which calls cairo.yml). A file under packages/<dir>/ affects that package; the root
-Scarb.toml and Scarb.lock, .tool-versions, the Cairo workflows, .github/ci/ and scripts/gas.py
+Scarb.toml and Scarb.lock, LICENSE, .tool-versions, the Cairo workflows, .github/ci/ and scripts/gas.py
 affect all; anything else affects none. Every package that depends, transitively, on an affected
 one runs too. A pull request controls all of these inputs, so each value is validated before it
 reaches a step: exact versions, package directories of the form packages/<name>, a plain branch
@@ -27,6 +27,7 @@ import sys
 ALL_FILES = {
     "Scarb.toml",
     "Scarb.lock",
+    "LICENSE",  # ARC-20: `license-file` puts it into every package archive
     ".tool-versions",
     ".github/workflows/cairo.yml",
     ".github/workflows/release.yml",
