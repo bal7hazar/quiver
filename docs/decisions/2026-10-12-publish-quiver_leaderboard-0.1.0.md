@@ -80,8 +80,8 @@ prefix dropped) and completed with the registry's checksum, as the 0.2.0 records
 
 The go is **D-282**, 2026-10-12, given by the project manager. It carries the owner's go and the owner's
 delegation, both confirmed by the Overseer in the owner's own conversation. The archive's sha256
-(`f8900c602c983acbbc39513a964eefacdbcb861902b2501d9e50b891981e770e`) was compared with
-`sha256sum --check` in a command before the publish: match.
+(`f8900c602c983acbbc39513a964eefacdbcb861902b2501d9e50b891981e770e`) was compared in a
+command (`sha256sum` of the archive, then a string comparison with the go's value) before the publish: match.
 
 Published by the orchestrator, by hand, on 2026-10-12: `scarb publish -p quiver_leaderboard` from a clean
 detached checkout of `3f0912507e9e71e1adeac663037050d468596861` (Scarb 2.20.1). Output: "Published
