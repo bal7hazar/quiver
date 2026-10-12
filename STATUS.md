@@ -17,7 +17,8 @@ used by this track. Its handover note is
   and [docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md](docs/decisions/2026-10-02-publish-quiver_achievement-0.2.0.md);
   tags and releases `quiver_quest-v0.2.0` and `quiver_achievement-v0.2.0`. Consumers need Scarb 2.20
   (`starknet` ^2.20.0, `snforge_std` ^0.64.0).
-- ARC-19 (the `LICENSE` file in the archives, `quiver_leaderboard` 0.1.1) is merged ([#70](https://github.com/bal7hazar/quiver/pull/70), `576a711`); the [0.1.1 publication request](docs/decisions/PENDING-publish-quiver_leaderboard-0.1.1.md) is pending the project manager's go (D-132 as changed by D-186).
+- **`quiver_leaderboard` 0.1.1 is published, 2026-10-12** (D-285, the project manager's go under the owner's delegation; ARC-19, [#70](https://github.com/bal7hazar/quiver/pull/70), `576a711`). Record: [docs/decisions/2026-10-12-publish-quiver_leaderboard-0.1.1.md](docs/decisions/2026-10-12-publish-quiver_leaderboard-0.1.1.md): archive sha256 `6a347a758237fad4ce7374875858c2ab1d355860d927f8016985496dc3d321dd`, equal to the registry's checksum, 22 files including `LICENSE`; tag and release [`quiver_leaderboard-v0.1.1`](https://github.com/bal7hazar/quiver/releases/tag/quiver_leaderboard-v0.1.1).
+- D-286: a CI step that fails if a package archive lacks `LICENSE`, briefed as ARC-20 and running separately.
 - ARC-11 (`scripts/gas.py --write` keeps the hand-written sections of `GAS.md`) is done:
   [#41](https://github.com/bal7hazar/quiver/pull/41), `621baa5`.
 - ARC-12 (three safety fixes to `scripts/gas.py`, notes of ARC-11's review; no package file changes)
