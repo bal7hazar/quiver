@@ -1,4 +1,4 @@
-# `quiver_leaderboard` 0.1.1 — publication request (pending the project manager's go)
+# `quiver_leaderboard` 0.1.1 — publication request (published 2026-10-12)
 
 | | |
 |---|---|
@@ -46,3 +46,28 @@ Nothing. 0.1.1 behaves as 0.1.0; a consumer on `^0.1.0` takes it as is.
 `576a7119c856cee1f05d1318528f6a8323355161`, `sha256sum --check` of the archive first; then the
 annotated tag `quiver_leaderboard-v0.1.1` on that commit. This file is then renamed (the `PENDING-`
 prefix dropped) and completed with the registry's checksum, as the 0.1.0 record is.
+
+## Published
+
+The go is **D-285**, 2026-10-12, from the project manager, under the owner's delegation for later
+`quiver_leaderboard` versions (D-132 as changed by D-186). The project manager's checklist, in a clean
+clone: the commit is on `main` and every check run on it is a success; review-opus PASS WITH FINDINGS
+(note) at `e4a4340`, the head of [#70](https://github.com/bal7hazar/quiver/pull/70), squashed into
+`576a711`; `scarb package` gives 22 files including `LICENSE`, with the same sha256. The archive's sha256
+(`6a347a758237fad4ce7374875858c2ab1d355860d927f8016985496dc3d321dd`) was compared in a command
+(`sha256sum` of the archive, then a string comparison with the go's value) before the publish: match.
+
+Published by the orchestrator, by hand, on 2026-10-12: the bare `scarb publish -p quiver_leaderboard` (no
+prefix or wrapper) from a clean detached checkout of `576a7119c856cee1f05d1318528f6a8323355161` (Scarb
+2.20.1). Output: "Published quiver_leaderboard v0.1.1", with one warning: scarbs.xyz does not support
+uploading docs, which does not affect the package. The archive is `quiver_leaderboard-0.1.1.tar.zst`,
+22 files, 72.82 KiB (15.50 KiB compressed), containing `quiver_leaderboard-0.1.1/LICENSE`.
+
+| | |
+|---|---|
+| Registry | **https://scarbs.xyz/packages/quiver_leaderboard**, version 0.1.1 |
+| Registry checksum | `sha256:6a347a758237fad4ce7374875858c2ab1d355860d927f8016985496dc3d321dd` (the `cksum` of 0.1.1 in the index `qu/iv/quiver_leaderboard.json`, read back after publishing, equal to the go) |
+| Dependencies in the index | `starknet ^2.20.0`; for tests `snforge_std ^0.64.0` and `assert_macros ^2.20.0` |
+| 0.1.0 | Unchanged in the index |
+| Archive from the registry | Downloaded: same sha256, contains `LICENSE` |
+| Tag and release | [`quiver_leaderboard-v0.1.1`](https://github.com/bal7hazar/quiver/releases/tag/quiver_leaderboard-v0.1.1), annotated, on `576a711` |
