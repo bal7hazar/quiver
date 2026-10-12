@@ -60,7 +60,7 @@ class Affected(unittest.TestCase):
 
     def test_shared_files_run_all(self):
         for path in [
-            "Scarb.toml", "Scarb.lock", ".tool-versions", ".github/workflows/cairo.yml",
+            "Scarb.toml", "Scarb.lock", "LICENSE", ".tool-versions", ".github/workflows/cairo.yml",
             ".github/ci/affected.py", ".github/ci/new.sh", "scripts/gas.py",
         ]:
             self.assertEqual(a.affected([path], THREE), set(THREE), path)
@@ -126,7 +126,7 @@ class Changes(unittest.TestCase):
         self.assertEqual(groups(["README.md", "STATUS.md"]), ("links",))
 
     def test_other_documents_run_no_test_and_no_links(self):
-        for path in ("LICENSE", "docs/decisions/x.txt"):
+        for path in ("docs/decisions/x.txt", "docs/reports/x.txt"):
             self.assertEqual(groups([path]), (), path)
 
     def test_gitignore_runs_tooling(self):
@@ -153,7 +153,7 @@ class Changes(unittest.TestCase):
 
     def test_shared_cairo_files(self):
         for path in (
-            "Scarb.toml", "Scarb.lock", ".tool-versions", "scripts/gas.py", "scripts/test_gas.py",
+            "Scarb.toml", "Scarb.lock", "LICENSE", ".tool-versions", "scripts/gas.py", "scripts/test_gas.py",
             ".github/ci/affected.py", ".github/workflows/cairo.yml", ".github/workflows/release.yml",
         ):
             self.assertIn("cairo", groups([path]), path)
