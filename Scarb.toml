@@ -6,6 +6,7 @@ version = "0.0.0"               # not inherited: each package sets its own versi
 edition = "2024_07"
 cairo-version = "2.20.0"
 license = "MIT"
+license-file = "LICENSE"
 repository = "https://github.com/bal7hazar/quiver"
 
 [workspace.dependencies]
