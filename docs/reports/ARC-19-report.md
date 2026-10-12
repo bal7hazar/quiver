@@ -20,4 +20,15 @@ this report.
 the allowlist, so `scarb package` was run directly:
 `RAYON_NUM_THREADS=1 prlimit --as=8589934592 -- scarb package -p <pkg>` (WORKSPACE.md §6, D-176).
 
-VERIFICATION_PLACEHOLDER
+## Verification (listing, before -> after; LICENSE is entry 4 of each listing)
+| Package | Files before | Files after | LICENSE line |
+| --- | --- | --- | --- |
+| `quiver_quest` 0.2.0 | 66 | 67 | `quiver_quest-0.2.0/LICENSE` |
+| `quiver_achievement` 0.2.0 | 39 | 40 | `quiver_achievement-0.2.0/LICENSE` |
+| `quiver_leaderboard` 0.1.1 | 21 (0.1.0) | 22 | `quiver_leaderboard-0.1.1/LICENSE` |
+
+`tar --zstd -xOf … <pkg>-<version>/LICENSE | head -3` gives `MIT License`, an empty line,
+`Copyright (c) 2026 Bal7hazar` for all three. The archive contains `VCS.json` (the commit sha), so a
+sha256 of the leaderboard archive depends on the head and cannot be written in a file of that head:
+the two sha256 values of the final head are in the pull request and the thread report.
+No Cairo tests were run: nothing that compiles changed.
