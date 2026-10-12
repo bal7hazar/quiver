@@ -4,6 +4,7 @@ version = "0.2.0"
 edition.workspace = true
 cairo-version.workspace = true
 license.workspace = true
+license-file.workspace = true
 repository.workspace = true
 description = "Achievements for Starknet games: definitions on chain, progress reported as events, tiers derived by an indexer. No Dojo."
 

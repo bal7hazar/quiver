@@ -6,6 +6,11 @@ events and error strings are named.
 
 ## [Unreleased]
 
+### Fixed
+
+- The package archive now contains the `LICENSE` file (MIT): `license-file` in the workspace
+  manifest, inherited by each package (ARC-19, D-283). No source, result or gas change.
+
 ### Changed
 
 - The rule of the optional slot C (a quest with no condition has none) is written once, in the

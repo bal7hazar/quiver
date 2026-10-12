@@ -4,6 +4,13 @@ All notable changes to `quiver_leaderboard` are recorded here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Changes to results and storage layout are
 named.
 
+## [0.1.1] - 2026-10-12
+
+### Fixed
+
+- The package archive now contains the `LICENSE` file (MIT): `license-file` in the workspace
+  manifest, inherited by each package (ARC-19, D-283). No source, result or gas change.
+
 ## [0.1.0] - 2026-10-07
 
 ### Added

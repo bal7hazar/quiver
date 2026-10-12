@@ -4,6 +4,7 @@ version = "0.2.0"
 edition.workspace = true
 cairo-version.workspace = true
 license.workspace = true
+license-file.workspace = true
 repository.workspace = true
 description = "Quests for Starknet games: tasks, intervals, prerequisites, claim. No Dojo."
 

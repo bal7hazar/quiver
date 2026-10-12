@@ -1,9 +1,10 @@
 [package]
 name = "quiver_leaderboard"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 cairo-version.workspace = true
 license.workspace = true
+license-file.workspace = true
 repository.workspace = true
 description = "A top-3 leaderboard for Starknet games, as internal code on the consumer's own storage: no entry point, no event. No Dojo."
 
