@@ -75,3 +75,28 @@ emits `LeaderboardSubmitted` itself if it wants the event.
 `3f0912507e9e71e1adeac663037050d468596861`, `sha256sum --check` of the archive first; then the
 annotated tag `quiver_leaderboard-v0.1.0` on that commit. This file is then renamed (the `PENDING-`
 prefix dropped) and completed with the registry's checksum, as the 0.2.0 records are.
+
+## Published
+
+The go is **D-282**, 2026-10-12, given by the project manager. It carries the owner's go and the owner's
+delegation, both confirmed by the Overseer in the owner's own conversation. The archive's sha256
+(`f8900c602c983acbbc39513a964eefacdbcb861902b2501d9e50b891981e770e`) was compared in a
+command (`sha256sum` of the archive, then a string comparison with the go's value) before the publish: match.
+
+Published by the orchestrator, by hand, on 2026-10-12: `scarb publish -p quiver_leaderboard` from a clean
+detached checkout of `3f0912507e9e71e1adeac663037050d468596861` (Scarb 2.20.1). Output: "Published
+quiver_leaderboard v0.1.0", with one warning: scarbs.xyz does not support uploading docs, which does not
+affect the package. The archive is `quiver_leaderboard-0.1.0.tar.zst`, 21 files, 71.51 KiB (14.76 KiB
+compressed). `scarb package` measure: max RSS 761,932 kB, 7.7 s wall; VmPeak was not measured.
+
+| | |
+|---|---|
+| Registry | **https://scarbs.xyz/packages/quiver_leaderboard**, version 0.1.0 |
+| Registry checksum | `sha256:f8900c602c983acbbc39513a964eefacdbcb861902b2501d9e50b891981e770e` (the `cksum` of 0.1.0 in the index `qu/iv/quiver_leaderboard.json`, read back after publishing, equal to the go) |
+| Dependencies in the index | `starknet ^2.20.0`; for tests `snforge_std ^0.64.0` and `assert_macros ^2.20.0` |
+| Tag and release | [`quiver_leaderboard-v0.1.0`](https://github.com/bal7hazar/quiver/releases/tag/quiver_leaderboard-v0.1.0), annotated, on `3f09125` |
+
+**Delegation from now on.** Later `quiver_leaderboard` versions follow the programme's publication rule,
+D-132 as changed by D-186: a written request, the project manager's checklist and the project manager's
+go, with no owner go. A breaking `quiver_quest` or `quiver_achievement` release is still announced to the
+Overseer first.
