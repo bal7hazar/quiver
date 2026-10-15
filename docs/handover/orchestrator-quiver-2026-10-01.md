@@ -11,7 +11,7 @@ open. The session stays on standby: it starts nothing, but it answers the owner.
 | Role | Orchestrator of `bal7hazar/quiver`, **track ARC** of the Grim World plan: the owner's Arcade packages (quests, achievements) rewritten without Dojo, published on scarbs.xyz, consumed by the game by version |
 | Above | The project manager, **`[Fable 5.1] Chef de projet Grim World`** (Claude Desktop session `local_3ab2583a-0d2b-469d-872e-cffdf357185d`). Message it with `SendMessage` to that id. It relays the owner's rules and decisions (D-…), and prepares the owner's go for stable publications |
 | Below | None running. Implementers are claude CLI processes started by **`scripts/agent.sh`** (transient systemd user units `quiver-<task>-<hhmmss>`, slot locks `total-1..3` and `quiver-1`). Reviews and audits go through **`nexus review` / `nexus audit`** (project `grimworld`, repository `quiver`) |
-| Game repository | `/home/claude/projects/grimworld`, **read-only** for you. Read its `OPERATIONS.md` (Nexus roles, D-162), `docs/decisions/`, and `CHANGELOG.md` for the launcher reference |
+| Game repository | the grimworld repository, **read-only** for you. Read its `OPERATIONS.md` (Nexus roles, D-162), `docs/decisions/`, and `CHANGELOG.md` for the launcher reference |
 | Your files | `STATUS.md` (the current state; keep it true), `PLAN.md` (the track's tasks), `docs/briefs/` (one committed brief per task; `COMMON.md`, the common rules), `docs/CAIRO.md` (the owner's Cairo rules, a copy of the game's), `docs/reports/` (every report, review and audit, archived), `docs/decisions/` (publications, cost cap, A-G1), `docs/research/` (ARC-01 API, ARC-06 pattern, ARC-07a mapping) |
 
 ## State

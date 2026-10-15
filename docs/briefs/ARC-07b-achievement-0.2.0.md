@@ -21,7 +21,7 @@ version becomes **0.2.0** (its module paths change).
 ## Context
 - **The rule**: [docs/CAIRO.md](../CAIRO.md) §7 and §8; the owner's rule D-143; the owner's review of
   ARC-06, D-147 (`logic/` removed; a model's event optional for the consumer).
-- **The owner's verdict on ARC-07a, D-167** (`cd /home/claude/projects/grimworld && git fetch -q origin && git show origin/pm/d-167-tests-in-file:docs/decisions/2026-09-30-arc-07a-owner-review.md`
+- **The owner's verdict on ARC-07a, D-167** (`docs/decisions/2026-09-30-arc-07a-owner-review.md` in the grimworld repository at `origin/pm/d-167-tests-in-file`,
   until it is merged on the game's `main`, then `origin/main`): ARC-07a is **accepted** ("clean and
   close to the target"); follow its shape. It adds **the rule of tests** (docs/CAIRO.md §2, "Where a
   test lives"), which this lot is the first to apply (below). The owner is shown this lot.

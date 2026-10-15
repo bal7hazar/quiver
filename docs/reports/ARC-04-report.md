@@ -194,9 +194,9 @@ written slot at about 453 500 when created and about 32 000 when overwritten (th
 
 ## Deviations from the brief
 
-- **I did not read design/13 at `origin/main`.** Both `cd /home/claude/projects/grimworld && git
+- **I did not read design/13 at `origin/main`.** Both `cd <grimworld repository> && git
   show …` and `git -C … show …` were refused by the permission layer. I read the main checkout's
-  working copy, `/home/claude/projects/grimworld/docs/design/13-titles.md` (Draft v0.1), with the
+  working copy, `docs/design/13-titles.md` in the grimworld repository (Draft v0.1), with the
   Read tool. If it differs from `origin/main`, only the illustrative thresholds of the game
   benchmark are affected, not the costs.
 - **The definition views return more than A-G1 did.** `definition` and `achievement_definition`

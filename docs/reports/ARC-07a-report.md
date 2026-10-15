@@ -200,8 +200,8 @@ in `packages/quest/GAS.md`.
 
 ## Escalations
 
-- **I could not read the owner's review D-147.** The brief's command (`cd /home/claude/projects/
-  grimworld && git fetch … && git show origin/pm/client-visual-track:…arc-06-owner-review.md`) and
+- **I could not read the owner's review D-147.** The brief's command (`git show` of `…arc-06-owner-review.md` in the grimworld
+  repository at `origin/pm/client-visual-track`) and
   its `git -C` forms were refused by my profile. I worked from the brief's summary of it: (1)
   `logic/` disappears; (2) a model's event is optional for the consumer. If the review says more,
   it is not reflected here.

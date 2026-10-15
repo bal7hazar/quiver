@@ -13,8 +13,8 @@ single-threaded. The 0.2.0 publications follow this lot when it moves a figure.
 
 ## Context
 - **The cause** (D-176, the game's
-  `docs/decisions/2026-09-29-compiler-determinism.md`, section "D-176"; read it with
-  `cd /home/claude/projects/grimworld && git fetch -q origin && git show origin/pm/d-176-rayon-pin:docs/decisions/2026-09-29-compiler-determinism.md`
+  `docs/decisions/2026-09-29-compiler-determinism.md`, section "D-176"; read it as
+  `docs/decisions/2026-09-29-compiler-determinism.md` in the grimworld repository at `origin/pm/d-176-rayon-pin`,
   until it is merged on the game's `main`, then `origin/main`). Scarb 2.19's compiler chooses
   which function of a call-graph cycle gets the `withdraw_gas` check by the lowest intern id.
   With several rayon threads, the ids, and so the choice, follow thread order. One commit can
