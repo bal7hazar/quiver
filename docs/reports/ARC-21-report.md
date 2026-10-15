@@ -14,5 +14,5 @@ organisation's standard, no session brief, no machine paths.
   - `docs/handover/orchestrator-quiver-2026-10-01.md`;
   - `docs/decisions/2026-10-12-publish-quiver_leaderboard-0.1.1.md`.
 - The check of the rest of `docs/`, `README.md`, `STATUS.md` and `PLAN.md` found no other marker.
-  `scripts/profiles/*.txt` also name `/home/claude/` (permission patterns); they are outside this
+  `scripts/profiles/*.txt` also name machine paths (permission patterns); they are outside this
   task's allowlist and left unchanged.
