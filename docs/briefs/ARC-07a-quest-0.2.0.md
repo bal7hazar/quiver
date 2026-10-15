@@ -17,7 +17,7 @@ change, measured and named. The package's version becomes **0.2.0** (its module 
 
 ## Context
 - **The rule**: [docs/CAIRO.md](../CAIRO.md) §7 and §8; the owner's rule D-143; **the owner's review
-  of ARC-06, D-147** (`cd /home/claude/projects/grimworld && git fetch -q origin && git show origin/pm/client-visual-track:docs/decisions/2026-09-29-arc-06-owner-review.md`
+  of ARC-06, D-147** (`docs/decisions/2026-09-29-arc-06-owner-review.md` in the grimworld repository at `origin/pm/client-visual-track`,
   until it is merged on the game's `main`): (1) `logic/` disappears; (2) a model's event is
   optional for the consumer.
 - **The pattern and its reference**: [docs/research/ARC-06-model-store.md](../research/ARC-06-model-store.md)

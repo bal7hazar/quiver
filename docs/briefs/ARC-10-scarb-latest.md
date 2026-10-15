@@ -11,8 +11,8 @@ If a figure moves, the 0.2.0 versions, which are not yet published, carry it, an
 say so.
 
 ## Context
-- **The rule**: D-180, the game's `docs/decisions/2026-10-01-scarb-latest.md`. Read it with
-  `cd /home/claude/projects/grimworld && git fetch -q origin && git show origin/pm/d-180-scarb-latest:docs/decisions/2026-10-01-scarb-latest.md`
+- **The rule**: D-180, the game's `docs/decisions/2026-10-01-scarb-latest.md`. Read it as
+  `docs/decisions/2026-10-01-scarb-latest.md` in the grimworld repository at `origin/pm/d-180-scarb-latest`,
   until it is merged on the game's `main`, then `origin/main`.
 - **The single-thread pin** (D-176, ARC-09): CI, `release.yml`, `scripts/gas.py` and the manual
   release steps run the compiler with `RAYON_NUM_THREADS=1`. D-180 keeps it if the drift remains

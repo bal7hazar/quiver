@@ -158,8 +158,8 @@ figures above are unchanged. No budget was raised; the budgets of the cheaper te
 
 ## Deviations from the brief
 
-- **The decision file D-143 was not read.** The command `git -C /home/claude/projects/grimworld
-  show origin/main:docs/decisions/2026-09-29-code-organisation.md` was refused by the profile,
+- **The decision file D-143 was not read.** Reading `docs/decisions/2026-09-29-code-organisation.md` in the grimworld repository at
+  `origin/main` with `git -C <grimworld repository> show` was refused by the profile,
   and the `cd … && git show` form of the brief asked for approval. I worked from `docs/CAIRO.md`
   §7 and §8, which state the rule.
 - **The model does not hold the whole of slot A.** The status (`retired`, `live_dependents`)

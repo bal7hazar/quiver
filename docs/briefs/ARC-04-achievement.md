@@ -26,8 +26,8 @@ the package lets a consumer ask for one.
 - The game: titles in event mode (D-131, D-63 revised); design/13 (the MVP's titles: Pathfinder,
   Warden, Nestbreaker, Unbroken, Flawless, Grimoire keeper for Region 1; Veteran and Scavenger for
   the account; tiers are separate achievements on one task, A-7); at most 16 distinct tasks per call
-  (A-10). Read design/13 from the game with
-  `cd /home/claude/projects/grimworld && git show origin/main:docs/design/13-titles.md` (read only).
+  (A-10). Read design/13 from the game: `docs/design/13-titles.md` in the grimworld repository at
+  `origin/main` (read only).
 - [docs/CAIRO.md](../CAIRO.md) in full; [docs/WORKSPACE.md](../WORKSPACE.md).
 - Depends on: ARC-02, ARC-03 (merged; `quiver_quest` 0.1.0 published).
 

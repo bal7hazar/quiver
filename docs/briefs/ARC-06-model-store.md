@@ -17,8 +17,8 @@ packages as 0.2.0 afterwards).
 ## Context
 - **The rule**: [docs/CAIRO.md](../CAIRO.md) **§7 and §8** in full (the layers, scoped functions,
   every stored entity a model, the store emits on write, the organisation lens), and the owner's
-  decision (the game's `docs/decisions/2026-09-29-code-organisation.md`, D-143; read it with
-  `cd /home/claude/projects/grimworld && git show origin/main:docs/decisions/2026-09-29-code-organisation.md`).
+  decision (the game's `docs/decisions/2026-09-29-code-organisation.md`, D-143; read it as
+  `docs/decisions/2026-09-29-code-organisation.md` in the grimworld repository at `origin/main`).
 - **The reference layout, read before writing anything**: `ref/arcade/packages/quest/src/` in your
   worktree (`cartridge-gg/arcade` at `c53fadc`, read-only): `models/definition.cairo` (the struct's
   trait, `DefinitionTrait::new`, `definition.is_active(time)`, the `...Assert` impl, `mod errors`),
