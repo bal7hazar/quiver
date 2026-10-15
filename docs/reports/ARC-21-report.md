@@ -5,9 +5,9 @@ organisation's standard, no session brief, no machine paths.
 
 ## What changed
 
-- Deleted `docs/handover/successor-orchestrator-quiver-2026-10-01.md` (a 349-line session brief). The
+- Deleted the successor-orchestrator handover file of 2026-10-01 (a 349-line session brief). The
   handover that matters stays in `docs/handover/orchestrator-quiver-2026-10-01.md`. No link pointed
-  to the deleted file (`git grep -n successor-orchestrator` found none).
+  to the deleted file (a `git grep` of its name found none).
 - Replaced machine paths with neutral wording, changing only those lines:
   - six briefs (`ARC-04`, `ARC-06`, `ARC-07a`, `ARC-07b`, `ARC-09`, `ARC-10`);
   - three reports (`ARC-04`, `ARC-06`, `ARC-07a`);
