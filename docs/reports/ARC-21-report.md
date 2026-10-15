@@ -5,7 +5,7 @@ organisation's standard, no session brief, no machine paths.
 
 ## What changed
 
-- Deleted the successor-orchestrator handover file of 2026-10-01 (a 349-line session brief). The
+- Deleted the successor handover brief of 2026-10-01 (a 349-line session brief). The
   handover that matters stays in `docs/handover/orchestrator-quiver-2026-10-01.md`. No link pointed
   to the deleted file (a `git grep` of its name found none).
 - Replaced machine paths with neutral wording, changing only those lines:
